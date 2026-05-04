@@ -24,6 +24,7 @@ use App\Models\Contact;
 use App\Models\CashFlow;
 use App\Models\Debt;
 use Illuminate\Support\Str;
+use App\Models\Fitur;
 
 class ProductController extends Controller
 {
@@ -89,7 +90,8 @@ class ProductController extends Controller
             'categories' => $categories,
             'stores' => $stores,
             'selected_store_id' => $selectedStoreId,
-            'all_products' => $this->mapProductsForJs(Product::all(), $user, $selectedStoreId)
+            'all_products' => $this->mapProductsForJs(Product::all(), $user, $selectedStoreId),
+            'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ]);
     }
 
@@ -156,7 +158,8 @@ class ProductController extends Controller
                 })->get(), 
                 $user, 
                 $request->store_id
-            )
+            ),
+            'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ]);
     }
 
@@ -248,7 +251,8 @@ class ProductController extends Controller
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
             'all_products' => Product::all(),
-            'type' => $type
+            'type' => $type,
+            'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
 
         if ($request->ajax()) {
@@ -319,7 +323,8 @@ class ProductController extends Controller
             'status_bayar' => $request->status_bayar,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'supplier_id' => $request->supplier_id
+            'supplier_id' => $request->supplier_id,
+            'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
 
         if ($request->ajax()) {
@@ -424,7 +429,8 @@ class ProductController extends Controller
             'categories' => $categories,
             'stores' => $stores,
             'current_source_store' => $sourceStoreId,
-            'all_products' => $products
+            'all_products' => $products,
+            'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
 
         if ($request->ajax()) {

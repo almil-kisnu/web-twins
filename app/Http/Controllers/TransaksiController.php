@@ -8,6 +8,7 @@ use App\Models\Promo;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Http\Controllers\LandingController;
+use App\Models\Fitur;
 
 class TransaksiController extends Controller
 {
@@ -36,7 +37,8 @@ class TransaksiController extends Controller
             ];
         });
 
-        return view('transaksi.riwayat', compact('data'));
+        $sub_menus = Fitur::where('parent_id', 3)->orderBy('id')->get();
+        return view('transaksi.riwayat', compact('data', 'sub_menus'));
     }
 
     public function diskon()
@@ -58,7 +60,8 @@ class TransaksiController extends Controller
         $products = \App\Models\Product::orderBy('nama_produk', 'asc')->get();
         $outlets = \App\Models\Outlet::orderBy('nama', 'asc')->get();
         
-        return view('transaksi.diskon', compact('diskons', 'products', 'outlets'));
+        $sub_menus = Fitur::where('parent_id', 3)->orderBy('id')->get();
+        return view('transaksi.diskon', compact('diskons', 'products', 'outlets', 'sub_menus'));
     }
 
     public function storeDiskon(Request $request)

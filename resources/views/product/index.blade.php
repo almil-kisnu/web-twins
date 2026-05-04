@@ -5,6 +5,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 <style>
     /* Force SweetAlert2 and Global Loading to be on top of EVERYTHING */
@@ -62,6 +64,87 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+
+    /* Tom Select Custom Styling */
+    .ts-control {
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 14px !important;
+        transition: all 0.2s !important;
+    }
+    .ts-control:focus {
+        border-color: var(--primary-blue) !important;
+        box-shadow: 0 0 0 3px rgba(0, 129, 201, 0.1) !important;
+    }
+    .ts-dropdown {
+        border-radius: 12px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        border: 1px solid #e2e8f0 !important;
+        margin-top: 5px !important;
+        z-index: 99999999 !important;
+    }
+    .ts-dropdown .active {
+        background-color: var(--light-blue) !important;
+        color: var(--primary-blue) !important;
+    }
+    .ts-dropdown .option {
+        padding: 10px 12px !important;
+    }
+    .ts-dropdown-content {
+        max-height: 350px !important;
+    }
+
+    /* Modal Table Optimization */
+    #restokModal .fitur-table td, 
+    #restokModal .fitur-table th {
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+    }
+    #restokModal .form-control {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        height: 34px !important;
+    }
+    #restokModal .ts-control {
+        padding: 4px 10px !important;
+        min-height: 34px !important;
+        font-size: 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        background: white !important;
+    }
+    /* Fix double border / stacking issue */
+    #restokModal .ts-wrapper.form-control {
+        border: none !important;
+        padding: 0 !important;
+        height: auto !important;
+        background: none !important;
+        box-shadow: none !important;
+    }
+    #restokModal .ts-wrapper {
+        background: none !important;
+    }
+
+    /* Premium Scrollbar */
+    #restokModal .modal-body::-webkit-scrollbar,
+    #restokModal .table-scroll-container::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    #restokModal .modal-body::-webkit-scrollbar-track,
+    #restokModal .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    #restokModal .modal-body::-webkit-scrollbar-thumb,
+    #restokModal .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    #restokModal .modal-body::-webkit-scrollbar-thumb:hover,
+    #restokModal .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
 </style>
 <script>
     function showLoading(text = 'Sedang Memproses Data...') {
@@ -108,14 +191,14 @@
 
 <!-- Modal Tambah Produk -->
 <div id="addModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 800px; width: 95%;">
+    <div class="modal-content" style="max-width: 700px; width: 95%; height: 600px; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
         <div class="modal-header">
             <h3><iconify-icon icon="solar:add-circle-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Tambah Produk Baru</h3>
             <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
-        <form action="{{ route('products.store') }}" method="POST" id="addForm" enctype="multipart/form-data" onsubmit="showLoading()">
+        <form action="{{ route('products.store') }}" method="POST" id="addForm" enctype="multipart/form-data" onsubmit="showLoading()" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
                     <!-- Sisi Kiri: Upload Gambar -->
                     <div>
@@ -211,15 +294,15 @@
 
 <!-- Modal Edit Produk -->
 <div id="editModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 800px; width: 95%;">
+    <div class="modal-content" style="max-width: 700px; width: 95%; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
         <div class="modal-header">
             <h3><iconify-icon icon="solar:pen-new-square-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Edit Data Produk</h3>
             <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
-        <form id="editForm" method="POST" enctype="multipart/form-data" onsubmit="showLoading('Sedang Mengunggah & Memperbarui Produk...')">
+        <form id="editForm" method="POST" enctype="multipart/form-data" onsubmit="showLoading('Sedang Mengunggah & Memperbarui Produk...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             @method('PUT')
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
                     <!-- Sisi Kiri: Upload Gambar -->
                     <div>
@@ -392,15 +475,15 @@
 
 <!-- Tambah Transfer Modal -->
 <div id="transferModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 800px; width: 95%;">
+    <div class="modal-content" style="max-width: 750px; width: 95%; height: 600px; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
         <div class="modal-header">
             <h3>Buat Transfer Stok Baru</h3>
             <button class="close-modal" onclick="closeModal('transferModal')">&times;</button>
         </div>
-        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm">
+        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
-            <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
                     <div class="form-group">
                         <label>Toko Asal (Source)</label>
                         @if(Auth::user()->isOwner())
@@ -411,7 +494,7 @@
                                 @endforeach
                             </select>
                         @else
-                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama }}" readonly>
+                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama }}" readonly style="background: #f8fafc;">
                             <input type="hidden" name="store_id" id="sourceStoreSelect" value="{{ Auth::user()->store_id }}">
                         @endif
                     </div>
@@ -424,6 +507,10 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Petugas Pengirim</label>
+                        <input type="text" class="form-control" value="{{ Auth::user()->username }}" readonly style="background: #f8fafc; font-weight: 600; color: var(--primary-blue);">
+                    </div>
                 </div>
 
                 <div style="margin-top: 20px;">
@@ -433,13 +520,13 @@
                             <iconify-icon icon="solar:add-circle-bold-duotone" style="margin-right: 6px;"></iconify-icon> Tambah Produk
                         </button>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="fitur-table" style="font-size: 13px;">
-                            <thead>
+                    <div class="table-scroll-container" style="overflow-x: auto; max-height: 230px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 16px; background: white;">
+                        <table class="fitur-table" style="font-size: 13px; min-width: 500px; border-collapse: separate; border-spacing: 0; margin-bottom: 0;">
+                            <thead style="position: sticky; top: 0; z-index: 11; background: #f8fafc;">
                                 <tr style="background: #f8fafc;">
-                                    <th style="width: 70%;">Nama Produk</th>
-                                    <th style="width: 20%;">Qty</th>
-                                    <th style="width: 50px;"></th>
+                                    <th style="width: 75%; min-width: 250px;">Nama Produk / Barcode</th>
+                                    <th style="width: 20%; min-width: 80px;">Qty</th>
+                                    <th style="width: 40px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="transferItemsTable">
@@ -506,15 +593,15 @@
 
 <!-- Tambah Opname Modal -->
 <div id="addOpnameModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 950px; width: 95%;">
+    <div class="modal-content" style="max-width: 900px; width: 95%; height: 680px; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
         <div class="modal-header">
             <h3>Input Opname Stok</h3>
             <button class="close-modal" onclick="closeModal('addOpnameModal')">&times;</button>
         </div>
-        <form action="{{ route('products.opname.store') }}" method="POST" id="opnameForm" onsubmit="showLoading('Sedang Menyimpan Data Opname...')">
+        <form action="{{ route('products.opname.store') }}" method="POST" id="opnameForm" onsubmit="showLoading('Sedang Menyimpan Data Opname...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div id="opnameMethod"></div>
-            <div class="modal-body" style="padding: 20px;">
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div class="form-group">
                         <label>Pilih Outlet / Toko</label>
@@ -551,15 +638,15 @@
                     </button>
                 </div>
 
-                <div style="overflow-x: auto; max-height: 400px; border: 1px solid #eee; border-radius: 12px;">
-                    <table class="fitur-table" style="font-size: 13px;">
-                        <thead style="position: sticky; top: 0; z-index: 10; background: #f8f9fa;">
-                            <tr>
-                                <th style="width: 35%;">Produk</th>
-                                <th style="width: 12%;">Sistem</th>
-                                <th style="width: 12%;">Fisik</th>
-                                <th>Alasan Selisih / Keterangan</th>
-                                <th style="width: 50px;">#</th>
+                <div class="table-scroll-container" style="overflow-x: auto; max-height: 230px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 16px; background: white;">
+                    <table class="fitur-table" style="font-size: 13px; min-width: 750px; border-collapse: separate; border-spacing: 0; margin-bottom: 0;">
+                        <thead style="position: sticky; top: 0; z-index: 11; background: #f8fafc;">
+                            <tr style="background: #f8fafc;">
+                                <th style="width: 40%; min-width: 260px;">Nama Produk / Barcode</th>
+                                <th style="width: 10%; min-width: 110px; text-align: center;">Sistem</th>
+                                <th style="width: 10%; min-width: 110px; text-align: center;">Fisik</th>
+                                <th style="min-width: 200px;">Alasan Selisih / Keterangan</th>
+                                <th style="width: 50px; text-align: center;">#</th>
                             </tr>
                         </thead>
                         <tbody id="opnameItemsTable">
@@ -582,14 +669,14 @@
 
 <!-- Tambah Restok Modal -->
 <div id="restokModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 950px; width: 95%;">
+    <div class="modal-content" style="max-width: 800px; width: 95%; height: 680px; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
         <div class="modal-header">
             <h3>Tambah Restok Baru</h3>
             <button class="close-modal" onclick="closeModal('restokModal')">&times;</button>
         </div>
-        <form action="{{ route('products.restok.store') }}" method="POST" id="restokForm" onsubmit="showLoading('Sedang Menyimpan Data Restok...')">
+        <form action="{{ route('products.restok.store') }}" method="POST" id="restokForm" onsubmit="showLoading('Sedang Menyimpan Data Restok...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
-            <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 20px;">
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
                     <div class="form-group">
                         <label for="restok_supplier_id">Pilih Supplier</label>
@@ -621,25 +708,25 @@
                             <iconify-icon icon="solar:add-circle-bold-duotone" style="margin-right: 6px;"></iconify-icon> Tambah Baris
                         </button>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="fitur-table" style="font-size: 13px; min-width: 800px;">
-                            <thead>
+                    <div class="table-scroll-container" style="overflow-x: auto; max-height: 230px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 16px; background: white;">
+                        <table class="fitur-table" style="font-size: 13px; min-width: 750px; border-collapse: separate; border-spacing: 0; margin-bottom: 0;">
+                            <thead style="position: sticky; top: 0; z-index: 11; background: #f8fafc;">
                                 <tr style="background: #f8fafc;">
-                                    <th style="width: 30%;">Nama Produk / Barcode</th>
-                                    <th style="width: 10%;">Qty</th>
-                                    <th style="width: 15%;">Harga Beli</th>
-                                    <th style="width: 15%;">Harga Jual Baru</th>
-                                    <th style="width: 20%;">Tgl Expired</th>
+                                    <th style="width: 35%; min-width: 260px;">Nama Produk / Barcode</th>
+                                    <th style="width: 7%; min-width: 70px;">Qty</th>
+                                    <th style="width: 15%; min-width: 120px;">Harga Beli</th>
+                                    <th style="width: 15%; min-width: 120px;">Harga Jual Baru</th>
+                                    <th style="width: 15%; min-width: 120px;">Tgl Expired</th>
                                     <th style="width: 50px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="restokItemsTable">
                                 {{-- Rows injected via JS --}}
                             </tbody>
-                            <tfoot>
+                            <tfoot style="position: sticky; bottom: 0; z-index: 11; background: #f8fafc;">
                                 <tr style="background: #f8fafc; font-weight: 700;">
-                                    <td colspan="2" style="text-align: right; padding: 12px;">TOTAL PEMBELIAN</td>
-                                    <td colspan="4" id="restokGrandTotal" style="padding: 12px; color: var(--primary-blue); font-size: 16px;">Rp 0</td>
+                                    <td colspan="2" style="text-align: right; padding: 12px; border-top: 2px solid #e2e8f0;">TOTAL PEMBELIAN</td>
+                                    <td colspan="4" id="restokGrandTotal" style="padding: 12px; color: var(--primary-blue); font-size: 16px; border-top: 2px solid #e2e8f0;">Rp 0</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -2445,12 +2532,15 @@
         
         // Refresh all existing selects in the table
         const selects = document.querySelectorAll('#opnameItemsTable select');
-        const opts = (window.currentFilteredProducts || productsList).map(p => `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk}</option>`).join('');
+        const opts = (window.currentFilteredProducts || productsList).map(p => `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`).join('');
         
         selects.forEach(select => {
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- Pilih Produk --</option>' + opts;
             select.value = currentVal; // Restore value if possible
+            if (select.classList.contains('product-select')) {
+                initProductSelect(select);
+            }
         });
     }
 
@@ -2461,11 +2551,11 @@
         
         const list = window.currentFilteredProducts || productsList;
         let opts = '<option value="">-- Pilih Produk --</option>';
-        list.forEach(p => opts += `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk}</option>`);
+        list.forEach(p => opts += `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`);
         
         row.innerHTML = `
             <td>
-                <select name="items[${i}][product_id]" class="form-control select2-opname" required onchange="updateSistemStok(this, ${i})">
+                <select name="items[${i}][product_id]" class="product-select" required onchange="updateSistemStok(this, ${i})">
                     ${opts}
                 </select>
             </td>
@@ -2478,6 +2568,7 @@
                 </button>
             </td>`;
         tbody.appendChild(row);
+        initProductSelect(row.querySelector('.product-select'));
     }
 
     function updateSistemStok(select, idx) {
@@ -2671,12 +2762,12 @@
 
         row.innerHTML = `
             <td>
-                <select name="items[${i}][product_id]" class="form-control select2-restok" required onchange="handleRestokProductChange(this, ${i})">
+                <select name="items[${i}][product_id]" class="product-select" required onchange="handleRestokProductChange(this, ${i})">
                     ${productOptions}
                 </select>
             </td>
             <td>
-                <input type="number" name="items[${i}][qty]" class="form-control" value="1" min="1" required oninput="calculateRestokTotal()" style="min-width: 80px;">
+                <input type="number" name="items[${i}][qty]" class="form-control" value="1" min="1" required oninput="calculateRestokTotal()" style="min-width: 70px;">
             </td>
             <td>
                 <input type="number" name="items[${i}][harga_beli]" class="form-control" value="0" required oninput="calculateRestokTotal()" style="min-width: 120px;">
@@ -2685,7 +2776,7 @@
                 <input type="number" name="items[${i}][harga_jual_baru]" class="form-control" value="0" placeholder="Opsional" style="min-width: 120px;">
             </td>
             <td>
-                <input type="date" name="items[${i}][kadaluarsa]" class="form-control" style="min-width: 130px;">
+                <input type="date" name="items[${i}][kadaluarsa]" class="form-control" style="min-width: 120px;">
             </td>
             <td>
                 <button type="button" class="btn-filter" onclick="removeRestokRow(this)" style="color: #D9534F;">
@@ -2694,6 +2785,21 @@
             </td>
         `;
         tbody.appendChild(row);
+        initProductSelect(row.querySelector('.product-select'));
+    }
+
+    function initProductSelect(select) {
+        if (select.tomselect) {
+            select.tomselect.destroy();
+        }
+        new TomSelect(select, {
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+            maxOptions: 100,
+            onDropdownOpen: function() {
+                this.dropdown.style.zIndex = "99999999";
+            }
+        });
     }
 
     function handleRestokProductChange(select, index) {
@@ -2800,7 +2906,7 @@
         let productOptions = '<option value="">-- Pilih Produk --</option>';
         if (currentStoreProducts.length > 0) {
             currentStoreProducts.forEach(p => {
-                productOptions += `<option value="${p.uuid}">${p.nama_produk} (Stok: ${p.stok})</option>`;
+                productOptions += `<option value="${p.uuid}" data-stok="${p.stok}">${p.nama_produk} (${p.barcode || 'N/A'}) (Stok: ${p.stok})</option>`;
             });
         } else {
             productOptions = '<option value="">-- Tidak ada produk tersedia --</option>';
@@ -2808,12 +2914,12 @@
 
         row.innerHTML = `
             <td>
-                <select name="items[${i}][product_id]" class="form-control" required>
+                <select name="items[${i}][product_id]" class="product-select" required onchange="handleTransferProductChange(this, ${i})">
                     ${productOptions}
                 </select>
             </td>
             <td>
-                <input type="number" name="items[${i}][qty]" class="form-control" value="1" min="1" step="0.01" required>
+                <input type="number" name="items[${i}][qty]" id="transfer_qty_${i}" class="form-control" value="1" min="1" step="0.01" required style="min-width: 80px;" oninput="validateTransferQty(this)">
             </td>
             <td>
                 <button type="button" class="btn-filter" onclick="removeTransferRow(this)" style="color: #D9534F;">
@@ -2821,12 +2927,40 @@
                 </button>
             </td>
         `;
+        initProductSelect(row.querySelector('.product-select'));
     }
 
     function removeTransferRow(btn) {
         const row = btn.closest('tr');
         if (document.getElementById('transferItemsTable').rows.length > 1) {
             row.remove();
+        }
+    }
+
+    function handleTransferProductChange(select, index) {
+        const option = select.options[select.selectedIndex];
+        const stok = parseFloat(option.getAttribute('data-stok')) || 0;
+        const qtyInput = document.getElementById(`transfer_qty_${index}`);
+        if (qtyInput) {
+            qtyInput.max = stok;
+            if (parseFloat(qtyInput.value) > stok) {
+                qtyInput.value = stok;
+            }
+        }
+    }
+
+    function validateTransferQty(input) {
+        const max = parseFloat(input.max);
+        if (!isNaN(max) && parseFloat(input.value) > max) {
+            input.value = max;
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stok Tidak Mencukupi',
+                text: `Jumlah transfer telah disesuaikan ke batas maksimal stok yang tersedia (${max}).`,
+                confirmButtonColor: 'var(--primary-blue)',
+                confirmButtonText: 'Oke, Mengerti'
+            });
         }
     }
 
