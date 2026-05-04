@@ -677,7 +677,21 @@
         <form action="{{ route('products.restok.store') }}" method="POST" id="restokForm" onsubmit="showLoading('Sedang Menyimpan Data Restok...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label>Target Outlet / Toko</label>
+                        @if(Auth::user()->isOwner())
+                            <select name="store_id" class="form-control" required>
+                                <option value="">-- Pilih Toko --</option>
+                                @foreach($stores ?? [] as $store)
+                                    <option value="{{ $store->uuid }}" {{ Auth::user()->store_id == $store->uuid ? 'selected' : '' }}>{{ $store->nama }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
+                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa; font-weight: 600;">
+                        @endif
+                    </div>
                     <div class="form-group">
                         <label for="restok_supplier_id">Pilih Supplier</label>
                         <select name="contact_id" id="restok_supplier_id" class="form-control" required>

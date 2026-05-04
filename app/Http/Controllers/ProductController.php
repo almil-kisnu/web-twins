@@ -693,7 +693,7 @@ class ProductController extends Controller
 
         $store_id = $user->store_id; 
         if ($user->isOwner()) {
-            $store_id = $user->store_id ?: Outlet::first()->uuid;
+            $store_id = $request->store_id ?: $user->store_id ?: Outlet::first()->uuid;
         }
 
         DB::beginTransaction();
