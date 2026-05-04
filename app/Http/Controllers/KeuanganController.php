@@ -10,39 +10,21 @@ class KeuanganController extends Controller
 {
     public function index()
     {
-        // Use dummy data since we bypass database
-        $todayIncome = 450000;
-        $todayTransactions = 15;
-        
-        $monthIncome = 12500000;
+        return redirect()->route('keuangan.kas-box');
+    }
 
-        // Data Grafik 7 Hari Terakhir
-        $chartDates = [];
-        $chartData = [];
-        
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
-            $chartDates[] = $date->format('d M');
-            // Random income between 200k and 1m for dummy
-            $chartData[] = rand(200000, 1000000);
-        }
+    public function kasBox()
+    {
+        return view('keuangan.kas-box');
+    }
 
-        // Transaksi Terbaru Dummy
-        $recentTransactions = collect([
-            (object)['idorder' => 1001, 'tanggalorder' => Carbon::now()->subMinutes(10), 'grandtotal' => 150000, 'status' => 'selesai'],
-            (object)['idorder' => 1002, 'tanggalorder' => Carbon::now()->subMinutes(45), 'grandtotal' => 50000, 'status' => 'selesai'],
-            (object)['idorder' => 1003, 'tanggalorder' => Carbon::now()->subHours(2), 'grandtotal' => 200000, 'status' => 'selesai'],
-            (object)['idorder' => 1004, 'tanggalorder' => Carbon::now()->subHours(5), 'grandtotal' => 75000, 'status' => 'selesai'],
-            (object)['idorder' => 1005, 'tanggalorder' => Carbon::now()->subDays(1), 'grandtotal' => 300000, 'status' => 'selesai'],
-        ]);
+    public function arusUang()
+    {
+        return view('keuangan.arus-uang');
+    }
 
-        return view('keuangan.index', compact(
-            'todayIncome', 
-            'todayTransactions', 
-            'monthIncome', 
-            'chartDates', 
-            'chartData',
-            'recentTransactions'
-        ));
+    public function pemindahanSaldo()
+    {
+        return view('keuangan.pemindahan-saldo');
     }
 }

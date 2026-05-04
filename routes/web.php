@@ -10,6 +10,7 @@ use App\Http\Controllers\KontakController;
 use App\Http\Controllers\BukuKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\KeuanganController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
@@ -99,10 +100,12 @@ Route::prefix('transaksi')->middleware(['auth', 'verified', 'role:owner,kepala_t
     Route::delete('/diskon/{id}', [TransaksiController::class, 'destroyDiskon'])->name('transaksi.diskon.destroy');
 });
 
-use App\Http\Controllers\KeuanganController;
-Route::get('/keuangan', [KeuanganController::class, 'index'])
-    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
-    ->name('keuangan.index');
+Route::prefix('keuangan')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
+    Route::get('/', [KeuanganController::class, 'index'])->name('keuangan.index');
+    Route::get('/kas-box', [KeuanganController::class, 'kasBox'])->name('keuangan.kas-box');
+    Route::get('/arus-uang', [KeuanganController::class, 'arusUang'])->name('keuangan.arus-uang');
+    Route::get('/pemindahan-saldo', [KeuanganController::class, 'pemindahanSaldo'])->name('keuangan.pemindahan-saldo');
+});
 
 Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [KontakController::class, 'index'])->name('kontak.index');

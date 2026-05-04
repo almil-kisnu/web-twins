@@ -46,7 +46,7 @@
             @endif
 
             @if(Auth::user()->operator->hasFeature(4))
-                <a href="{{ url('/keuangan') }}" class="menu-item {{ request()->is('keuangan') ? 'active' : '' }}">
+                <a href="{{ route('keuangan.index') }}" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
                     <span>Keuangan</span>
@@ -122,6 +122,15 @@
                 @elseif(request()->is('keuangan'))
                     <i id="topbar-icon" data-lucide="trending-up"></i>
                     <h2 id="topbar-title">Keuangan</h2>
+                @elseif(request()->routeIs('keuangan.kas-box'))
+                    <i id="topbar-icon" data-lucide="wallet"></i>
+                    <h2 id="topbar-title">Kas Box</h2>
+                @elseif(request()->routeIs('keuangan.arus-uang'))
+                    <i id="topbar-icon" data-lucide="arrow-left-right"></i>
+                    <h2 id="topbar-title">Arus Uang</h2>
+                @elseif(request()->routeIs('keuangan.pemindahan-saldo'))
+                    <i id="topbar-icon" data-lucide="move"></i>
+                    <h2 id="topbar-title">Pemindahan Saldo</h2>
                 @elseif(request()->is('outlet*'))
                     <i id="topbar-icon" data-lucide="store"></i>
                     <h2 id="topbar-title">Operasional & Outlet</h2>
