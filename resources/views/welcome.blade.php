@@ -41,6 +41,37 @@
             -webkit-text-fill-color: var(--text-color) !important;
             color: var(--text-color) !important;
         }
+
+        /* --- Walking Cake Background (Black Emojis) --- */
+        .walking-cake {
+            position: absolute;
+            opacity: 0.35;
+            filter: grayscale(100%) brightness(0%);
+            user-select: none;
+            pointer-events: none;
+            z-index: -1;
+            transition: opacity 0.5s ease;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+        }
+
+        .dir-right { animation: walk-right linear infinite; }
+        .dir-left { animation: walk-left linear infinite; }
+
+        @keyframes walk-right {
+            0% { left: -10%; transform: translateX(0) rotate(0deg); }
+            50% { transform: translateX(5vw) rotate(10deg); }
+            100% { left: 110%; transform: translateX(0) rotate(0deg); }
+        }
+
+        @keyframes walk-left {
+            0% { left: 110%; transform: translateX(0) rotate(0deg); }
+            50% { transform: translateX(-5vw) rotate(-10deg); }
+            100% { left: -10%; transform: translateX(0) rotate(0deg); }
+        }
+
+        [data-theme="light"] .walking-cake {
+            opacity: 0.22;
+        }
     </style>
     
 <body class="hide-overflow">
@@ -1424,7 +1455,6 @@
                         navLinks.forEach(l => l.classList.remove('active'));
                         this.classList.add('active');
                         
-                        // Scroll halus ke target
                         const offset = 100;
                         const elementPosition = targetElement.getBoundingClientRect().top;
                         const offsetPosition = elementPosition + window.pageYOffset - offset;
@@ -1444,10 +1474,96 @@
                         const menuToggle = document.querySelector('.menu-toggle');
                         mainNav?.classList.remove('active');
                         menuToggle?.classList.remove('active');
+                    }
+                });
+            });
         });
     </script>
 
     <!-- Animasi premium hero beranda -->
     <script src="{{ asset('js/premium-animations.js') }}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const items = ['🧁', '🥐', '🍰', '🥨', '🎂', '🍪', '🥖', '🥞', '🍩'];
+            const bgContainer = document.getElementById('bakery-bg');
+            let parallaxLayers = [];
+
+            if(bgContainer) {
+                const isMobile = window.innerWidth <= 768;
+                const layerCount = isMobile ? 10 : 20;
+                
+                bgContainer.style.perspective = '1200px';
+                bgContainer.style.transformStyle = 'preserve-3d';
+
+                for(let i = 0; i < layerCount; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
+                    el.innerText = items[Math.floor(Math.random() * items.length)];
+                    el.style.top = (Math.random() * 90) + 'vh';
+                    el.style.animationDuration = (Math.random() * 25 + 20) + 's';
+                    el.style.animationDelay = '-' + (Math.random() * 20) + 's';
+                    el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'absolute';
+                    wrapper.style.width = '100vw';
+                    wrapper.style.height = '100vh';
+                    wrapper.style.top = '0';
+                    wrapper.style.left = '0';
+                    wrapper.style.pointerEvents = 'none';
+                    wrapper.style.transformStyle = 'preserve-3d';
+                    wrapper.style.willChange = 'transform';
+                    
+                    const depth = Math.random() * 200 - 100;
+                    wrapper.dataset.depthZ = depth;
+                    
+                    wrapper.appendChild(el);
+                    bgContainer.appendChild(wrapper);
+                    parallaxLayers.push(wrapper);
+                }
+
+                let targetX = 0, targetY = 0;
+                let currentX = 0, currentY = 0;
+                let rafId = null;
+                let isIdle = true;
+
+                document.addEventListener("mousemove", (e) => {
+                    targetX = (e.clientX - window.innerWidth / 2) * 0.08;
+                    targetY = (e.clientY - window.innerHeight / 2) * 0.08;
+                    if (isIdle) {
+                        isIdle = false;
+                        if (!rafId) rafId = requestAnimationFrame(animate3D);
+                    }
+                });
+
+                function animate3D() {
+                    const dx = targetX - currentX;
+                    const dy = targetY - currentY;
+                    
+                    currentX += dx * 0.05;
+                    currentY += dy * 0.05;
+
+                    bgContainer.style.transform = `scale(1.1) rotateX(${-currentY * 0.2}deg) rotateY(${currentX * 0.2}deg)`;
+
+                    parallaxLayers.forEach((layer) => {
+                        const z = parseFloat(layer.dataset.depthZ);
+                        const moveX = currentX * (z / 80); 
+                        const moveY = currentY * (z / 80);
+                        layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
+                    });
+
+                    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+                        isIdle = true;
+                        rafId = null;
+                        return;
+                    }
+
+                    rafId = requestAnimationFrame(animate3D);
+                }
+                
+                rafId = requestAnimationFrame(animate3D);
+            }
+        });
+    </script>
 </body>
 </html>

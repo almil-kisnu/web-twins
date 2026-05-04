@@ -43,28 +43,44 @@ class RegisteredUserController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
+        // 1. Create User in Supabase Auth
+        $supabase = new \App\Services\SupabaseService();
+        $supabaseUser = $supabase->createUser([
+            'email' => $request->email,
+            'password' => $request->password,
+            'username' => $request->name,
+            'no_hp' => $request->no_hp,
+        ]);
 
-        return DB::transaction(function () use ($request) {
+        if (!$supabaseUser) {
+            return back()->with('error', 'Gagal mendaftarkan akun ke sistem autentikasi. Silakan coba lagi.');
+        }
+
+        $supabaseUid = $supabaseUser['id'];
+
+        // 2. Create User in Local Database (linked by UUID)
+        return DB::transaction(function () use ($request, $supabaseUid) {
             $operator = DB::table('operator')->where('nama', 'User')->first();
             $operatorId = $operator ? $operator->uuid : null;
 
             $user = User::create([
+                'uuid' => $supabaseUid, // Use the UID from Supabase Auth
                 'username' => $request->name, 
                 'no_hp' => $request->no_hp,
                 'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'email_verified_at' => now(), // Mark as verified since Supabase Auth is confirmed
+                'password' => Hash::make($request->password), // Keep hash for local fallback if needed
                 'operator_id' => $operatorId, 
                 'store_id' => null, 
-                'status_aktif' => false,
+                'status_aktif' => true, 
             ]);
 
             event(new Registered($user));
 
             Auth::login($user);
 
-            return redirect()->route('verification.notice')
-                ->with('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi.');
-
+            return redirect()->route('dashboard')
+                ->with('success', 'Registrasi berhasil! Akun Anda telah aktif.');
         });
     }
 
