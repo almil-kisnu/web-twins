@@ -41,6 +41,20 @@
 <div class="fitur-container">
     @include('transaksi.partials.tabs')
 
+    @if($errors->any())
+    <div style="background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+        <iconify-icon icon="solar:danger-bold-duotone" style="font-size: 24px;"></iconify-icon>
+        <div>
+            <div style="font-weight: 700; font-size: 14px;">Gagal Menyimpan Promo!</div>
+            <ul style="margin: 5px 0 0 20px; font-size: 13px; padding: 0;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
     <div class="sub-tab-navigation">
         <button class="sub-tab-pill active" onclick="filterCategory('all', this)">
             <iconify-icon icon="solar:layers-bold-duotone"></iconify-icon>
@@ -300,7 +314,7 @@
 
             <div class="btn-group-footer">
                 <button type="button" class="btn-action" style="background: #ef4444;" onclick="closeModal('addModalDiskon')">Batal</button>
-                <button type="submit" class="btn-action">Simpan Promo</button>
+                <button type="submit" class="btn-action" onclick="this.innerHTML='<iconify-icon icon=\'eos-icons:loading\'></iconify-icon> Menyimpan...'; this.style.opacity='0.7'; this.style.pointerEvents='none';">Simpan Promo</button>
             </div>
         </form>
     </div>
@@ -421,7 +435,7 @@
 
             <div class="btn-group-footer">
                 <button type="button" class="btn-action" style="background: #ef4444;" onclick="closeModal('editModalDiskon')">Batal</button>
-                <button type="submit" class="btn-action">Update Promo</button>
+                <button type="submit" class="btn-action" onclick="this.innerHTML='<iconify-icon icon=\'eos-icons:loading\'></iconify-icon> Memperbarui...'; this.style.opacity='0.7'; this.style.pointerEvents='none';">Update Promo</button>
             </div>
         </form>
     </div>
@@ -613,6 +627,19 @@
             }
         });
     }
+
+    // Auto-reopen add modal if there are errors (likely from storeDiskon)
+    @if($errors->any() && !old('_method'))
+        window.addEventListener('DOMContentLoaded', () => {
+            openModal('addModalDiskon');
+        });
+    @endif
+    
+    // Auto-reopen edit modal if there are errors and it was an update attempt
+    @if($errors->any() && old('_method') == 'PUT')
+        // Note: This would require more logic to know WHICH one was being edited, 
+        // but showing the global error at the top is already a big improvement.
+    @endif
 </script>
 
 <!-- View Detail Modal -->

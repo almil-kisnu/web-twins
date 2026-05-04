@@ -19,13 +19,14 @@
     }
 
     function initLenis() {
-        if (typeof Lenis === 'undefined') return;
+        return; // Disabled for performance troubleshooting
+        if (typeof Lenis === 'undefined' || isMobile()) return;
 
         const lenis = new Lenis({
-            duration: 1.35,
+            duration: 1.1,
             easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
-            wheelMultiplier: 0.9,
+            wheelMultiplier: 1.1,
             touchMultiplier: 1.5,
         });
 
@@ -41,11 +42,11 @@
         grids.forEach(grid => {
             const items = grid.querySelectorAll('[data-stagger-item]');
             if (!items.length) return;
-            gsap.set(items, { opacity: 0, y: 100, scale: 0.85, rotationX: -15, filter: 'blur(10px)' });
+            gsap.set(items, { opacity: 0, y: 100, scale: 0.85, rotationX: -15 });
             ScrollTrigger.create({
                 trigger: grid, start: 'top 85%',
                 onEnter: () => gsap.to(items, {
-                    opacity: 1, y: 0, scale: 1, rotationX: 0, filter: 'blur(0px)',
+                    opacity: 1, y: 0, scale: 1, rotationX: 0,
                     duration: 1.2, stagger: 0.12, ease: 'expo.out', clearProps: 'all',
                 }),
                 once: true,
@@ -54,11 +55,11 @@
 
         const promoCards = document.querySelectorAll('.promo-card');
         if (promoCards.length) {
-            gsap.set(promoCards, { opacity: 0, y: 80, rotation: 5, scale: 0.9, filter: 'blur(10px)' });
+            gsap.set(promoCards, { opacity: 0, y: 80, rotation: 5, scale: 0.9 });
             ScrollTrigger.create({
                 trigger: '.promo-slider-container', start: 'top 85%',
                 onEnter: () => gsap.to(promoCards, {
-                    opacity: 1, y: 0, rotation: 0, scale: 1, filter: 'blur(0px)', duration: 1.1, stagger: 0.15, ease: 'back.out(1.5)', clearProps: 'all',
+                    opacity: 1, y: 0, rotation: 0, scale: 1, duration: 1.1, stagger: 0.15, ease: 'back.out(1.5)', clearProps: 'all',
                 }),
                 once: true,
             });
@@ -67,13 +68,13 @@
         const boxLeft = document.querySelector('[data-reveal-left]');
         const boxRight = document.querySelector('[data-reveal-right]');
         if (boxLeft && boxRight) {
-            gsap.set(boxLeft, { opacity: 0, x: -100, filter: 'blur(15px)', rotationY: 15 });
-            gsap.set(boxRight, { opacity: 0, x: 100, filter: 'blur(15px)', rotationY: -15 });
+            gsap.set(boxLeft, { opacity: 0, x: -100, rotationY: 15 });
+            gsap.set(boxRight, { opacity: 0, x: 100, rotationY: -15 });
             ScrollTrigger.create({
                 trigger: '.highlight-container', start: 'top 80%',
                 onEnter: () => {
-                    gsap.to(boxLeft, { opacity: 1, x: 0, filter: 'blur(0px)', rotationY: 0, duration: 1.4, ease: 'power4.out', clearProps: 'all' });
-                    gsap.to(boxRight, { opacity: 1, x: 0, filter: 'blur(0px)', rotationY: 0, duration: 1.4, delay: 0.15, ease: 'power4.out', clearProps: 'all' });
+                    gsap.to(boxLeft, { opacity: 1, x: 0, rotationY: 0, duration: 1.4, ease: 'power4.out', clearProps: 'all' });
+                    gsap.to(boxRight, { opacity: 1, x: 0, rotationY: 0, duration: 1.4, delay: 0.15, ease: 'power4.out', clearProps: 'all' });
                 },
                 once: true,
             });
@@ -84,31 +85,31 @@
         const featImg = document.querySelector('.product-image-container');
 
         if (featLeft.length) {
-            gsap.set(featLeft, { opacity: 0, x: -80, scale: 0.9, filter: 'blur(8px)' });
+            gsap.set(featLeft, { opacity: 0, x: -80, scale: 0.9 });
             ScrollTrigger.create({
                 trigger: '.grid-container', start: 'top 78%',
                 onEnter: () => gsap.to(featLeft, {
-                    opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.2, ease: 'back.out(1.4)', clearProps: 'all',
+                    opacity: 1, x: 0, scale: 1, duration: 1.2, stagger: 0.2, ease: 'back.out(1.4)', clearProps: 'all',
                 }),
                 once: true,
             });
         }
         if (featRight.length) {
-            gsap.set(featRight, { opacity: 0, x: 80, scale: 0.9, filter: 'blur(8px)' });
+            gsap.set(featRight, { opacity: 0, x: 80, scale: 0.9 });
             ScrollTrigger.create({
                 trigger: '.grid-container', start: 'top 78%',
                 onEnter: () => gsap.to(featRight, {
-                    opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.2, ease: 'back.out(1.4)', clearProps: 'all',
+                    opacity: 1, x: 0, scale: 1, duration: 1.2, stagger: 0.2, ease: 'back.out(1.4)', clearProps: 'all',
                 }),
                 once: true,
             });
         }
         if (featImg) {
-            gsap.set(featImg, { opacity: 0, scale: 0.7, rotation: -8, filter: 'blur(12px)' });
+            gsap.set(featImg, { opacity: 0, scale: 0.7, rotation: -8 });
             ScrollTrigger.create({
                 trigger: '.grid-container', start: 'top 78%',
                 onEnter: () => gsap.to(featImg, {
-                    opacity: 1, scale: 1, rotation: 0, filter: 'blur(0px)', duration: 1.5, ease: 'expo.out', clearProps: 'all',
+                    opacity: 1, scale: 1, rotation: 0, duration: 1.5, ease: 'expo.out', clearProps: 'all',
                 }),
                 once: true,
             });
@@ -116,11 +117,11 @@
 
         const testiHeader = document.querySelectorAll('[data-reveal-up]');
         testiHeader.forEach(el => {
-            gsap.set(el, { opacity: 0, y: 50, scale: 0.9, filter: 'blur(5px)' });
+            gsap.set(el, { opacity: 0, y: 50, scale: 0.9 });
             ScrollTrigger.create({
                 trigger: el, start: 'top 88%',
                 onEnter: () => gsap.to(el, {
-                    opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, ease: 'back.out(1.5)', clearProps: 'all',
+                    opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'back.out(1.5)', clearProps: 'all',
                 }),
                 once: true,
             });
@@ -129,11 +130,11 @@
         // Footer Animations
         const footerCols = document.querySelectorAll('.footer-col');
         if (footerCols.length) {
-            gsap.set(footerCols, { opacity: 0, y: 60, filter: 'blur(5px)' });
+            gsap.set(footerCols, { opacity: 0, y: 60 });
             ScrollTrigger.create({
                 trigger: '.main-footer', start: 'top 90%',
                 onEnter: () => gsap.to(footerCols, {
-                    opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.2, stagger: 0.2, ease: 'power3.out', clearProps: 'all'
+                    opacity: 1, y: 0, duration: 1.2, stagger: 0.2, ease: 'power3.out', clearProps: 'all'
                 }),
                 once: true
             });
@@ -244,7 +245,7 @@
                     trigger: wrap || img,
                     start: 'top bottom',
                     end: 'bottom top',
-                    scrub: 1.2,
+                    scrub: 0.8,
                 },
             });
         });
@@ -259,6 +260,7 @@
                 .sw  { display:inline-block; overflow:hidden; vertical-align:bottom; }
                 .swi { display:inline-block; will-change:transform; }
                 [data-parallax-wrap] { overflow:hidden; }
+                [data-parallax] { will-change: transform; }
             `;
             document.head.appendChild(style);
 

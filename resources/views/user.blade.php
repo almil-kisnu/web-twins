@@ -308,14 +308,14 @@
             </div>
 
             @if (count($discounts) > 0)
-                <div class="discounts-container anim-fade-up" style="margin-top: 30px;">
+                <div class="discounts-container anim-fade-up" style="margin-top: 30px; max-width: 100%; min-width: 0;">
                     <h3 style="margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
                         <iconify-icon icon="solar:ticket-sale-bold-duotone"
                             style="color: #f59e0b; font-size: 28px;"></iconify-icon>
                         Penawaran Diskon Hari Ini
                     </h3>
                     <div
-                        style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
+                        style="display: flex; gap: 15px; overflow-x: auto; overflow-y: visible; padding-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none; align-items: stretch; max-width: 100%; min-width: 0;">
                         @php $shownProducts = []; @endphp
                         @foreach ($discounts as $discount)
                             @foreach ($discount->products as $p)

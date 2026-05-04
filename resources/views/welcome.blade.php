@@ -7,7 +7,7 @@
     <meta name="session-error" content="{{ session('error') ?? '' }}">
     <title>TWINS - ahlinya belanja sembako</title>
 
-    <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/home.css') }}?v={{ time() }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -34,7 +34,7 @@
             margin-left: 0 !important;
         }
         
-        #hero-paragraph { opacity: 0; filter: blur(8px); }
+        #hero-paragraph { opacity: 0; }
 
         #hero-word-left {
             background: none !important;
@@ -78,10 +78,10 @@
         </div>
 
         <nav class="main-nav" id="mainNav">
-            <a href="#beranda" class="nav-link active" id="nav-home">Beranda</a>
-            <a href="#promo-outlet" class="nav-link" id="nav-promo">Promo</a>
-            <a href="#outlet" class="nav-link" id="nav-outlet">Outlet</a>
-            <a href="#keunggulan" class="nav-link" id="nav-features">Keunggulan</a>
+            <a href="#heroBadge" class="nav-link" id="nav-home">Beranda</a>
+            <a href="#promoTitle" class="nav-link" id="nav-promo">Promo</a>
+            <a href="#outletTitle" class="nav-link" id="nav-outlet">Outlet</a>
+            <a href="#featuresTitle" class="nav-link" id="nav-features">Keunggulan</a>
         </nav>
 
         <div class="nav-btns">
@@ -134,7 +134,7 @@
 
     <section id="beranda">
         <main class="hero anim-fade-up">
-            <div class="badge" id="hero-badge">TWINS by Kelompok 4</div>
+            <div class="badge" id="heroBadge">TWINS by Kelompok 4</div>
             <h1 id="hero-title">
                 <span class="hero-text-clip"><span id="hero-word-left">Belanja Mudah</span></span><span class="hero-text-clip"><span id="hero-word-right"><span>Dimana Saja</span></span></span>
             </h1>
@@ -161,36 +161,175 @@
         </main>
     </section>
 
-    <section id="promo-outlet" class="promo-section">
-        <div class="promo-header" style="margin-bottom: 5px;">
-            <h2 data-split-text style="font-size: 18px; letter-spacing: 1px;">PROMO <span>PRODUK</span></h2>
+    <section id="promo-outlet" class="promo-section" style="width: 100vw !important; position: relative !important; left: 50% !important; right: 50% !important; margin-left: -50vw !important; margin-right: -50vw !important; padding: 20px 0 !important; overflow: hidden !important; background: transparent !important;">
+        <div class="promo-header" style="margin-bottom: 12px !important; text-align: center !important; width: 100% !important;">
+            <h2 id="promoTitle" style="font-size: 18px !important; letter-spacing: 2px !important; color: var(--text-color) !important; margin: 0 !important; text-transform: uppercase !important; font-weight: 800 !important;">
+                PROMO <span style="color: var(--primary-color, #0081C9) !important;">PRODUK</span>
+            </h2>
         </div>
 
-        <div class="promo-slider-container" id="promoSlider" style="max-width: 550px; margin: 0 auto; padding: 5px 0;">
-            @forelse($promoProducts as $index => $promo)
-            <div class="promo-banner-card" data-index="{{ $index }}" style="width: 100%; min-width: 100%; aspect-ratio: 4 / 2; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1); cursor: pointer; position: relative;">
-                <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s ease;">
-                <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); color: white; opacity: 0; transform: translateY(10px); transition: all 0.4s ease;" class="banner-info">
-                    <h3 style="margin: 0; font-size: 16px;">{{ $promo->nama_promo }}</h3>
-                    <p style="margin: 3px 0 0; font-size: 11px; opacity: 0.8;">📍 {{ $promo->outlet_name }} - {{ $promo->outlet_address }}</p>
+        <div class="promo-scroll-wrapper" style="position: relative !important; width: 100% !important; cursor: grab;">
+            <div class="promo-slider-container" id="promoSliderNew" style="display: flex !important; gap: 15px !important; overflow-x: auto !important; padding: 20px 10% !important; scroll-snap-type: x mandatory !important; scrollbar-width: none !important; -ms-overflow-style: none !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; height: auto !important; transition: transform 0.2s ease;">
+                @php
+                    // Gandakan produk untuk efek infinite scroll
+                    $infinitePromos = collect($promoProducts)->concat($promoProducts)->concat($promoProducts);
+                @endphp
+                
+                @forelse($infinitePromos as $index => $promo)
+                <div class="promo-banner-card" data-index="{{ $index }}" style="flex: 0 0 80% !important; width: 80% !important; aspect-ratio: 4 / 2 !important; border-radius: 30px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important; cursor: pointer; position: relative; scroll-snap-align: center; background: rgba(0,0,0,0.1) !important; transition: transform 0.3s ease;">
+                    <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}" style="width: 100% !important; height: 100% !important; object-fit: contain !important; background: #000;">
                 </div>
+                @empty
+                <div style="text-align: center; width: 100%; padding: 40px 20px; color: var(--sub-text); font-size: 14px;">
+                    Belum ada promo aktif saat ini.
+                </div>
+                @endforelse
             </div>
-            <style>
-                .promo-banner-card:hover { transform: scale(1.02); box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
-                .promo-banner-card:hover img { transform: scale(1.08); }
-                .promo-banner-card:hover .banner-info { opacity: 1; transform: translateY(0); }
-            </style>
-            @empty
-            <div style="text-align: center; width: 100%; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 24px; border: 2px dashed rgba(255,255,255,0.1);">
-                <p style="color: #888; font-size: 14px;">Belum ada promo aktif saat ini.</p>
-            </div>
-            @endforelse
         </div>
-        <div class="promo-dots" id="promoDots"></div>
+
+        <style>
+            #promoSliderNew::-webkit-scrollbar { display: none !important; }
+            #promoSliderNew.active { cursor: grabbing; scroll-snap-type: none !important; }
+            @media (min-width: 1024px) {
+                .promo-slider-container { padding: 30px 15% !important; }
+                .promo-banner-card { flex: 0 0 70% !important; width: 70% !important; max-width: 900px !important; }
+                
+                /* Tetap jaga media di kanan untuk desktop */
+                .highlight-text-box { order: 1 !important; }
+                .highlight-media-box { order: 2 !important; }
+            }
+
+            @media (max-width: 1024px) {
+                /* Tentang Toko Mobile Fix */
+                .highlight-header { text-align: center !important; margin-bottom: 30px !important; }
+                .highlight-header h2 { font-size: 2.2rem !important; }
+                .highlight-container { display: flex !important; flex-direction: column !important; gap: 30px !important; }
+                .highlight-text-box { text-align: center !important; padding: 30px 20px !important; }
+                .highlight-text-box * { text-align: center !important; }
+                .owner-profile { justify-content: center !important; }
+                
+                /* Media Box tetap horizontal (kanan-kiri) */
+                .highlight-media-box { flex-direction: row !important; gap: 10px !important; align-items: flex-start !important; }
+                .image-item { flex: 1.2 !important; width: auto !important; aspect-ratio: 3 / 4 !important; }
+                .media-group-right { flex: 1 !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }
+                .video-item { width: 100% !important; aspect-ratio: 1/1 !important; }
+                .video-meta { text-align: left !important; }
+                .video-meta p { font-size: 0.7rem !important; margin-bottom: 5px !important; line-height: 1.2 !important; }
+                .btn-highlights-sm { padding: 5px 10px !important; font-size: 0.65rem !important; }
+
+                /* Kenapa Belanja di Twins Mobile Fix */
+                .product-features-section .grid-container { 
+                    display: grid !important; 
+                    grid-template-columns: 1fr 100px 1fr !important; 
+                    gap: 15px !important; 
+                    align-items: center !important;
+                }
+                .product-features-section .feature-list { gap: 25px !important; }
+                .product-features-section .feature-title { font-size: 11px !important; margin-bottom: 3px !important; }
+                .product-features-section .feature-description { font-size: 9px !important; line-height: 1.3 !important; }
+                .product-features-section .feature-icon { 
+                    width: 32px !important; 
+                    height: 32px !important; 
+                    margin-bottom: 5px !important; 
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0 !important;
+                    overflow: visible !important;
+                }
+                .product-features-section .feature-icon svg { 
+                    width: 16px !important; 
+                    height: 16px !important; 
+                    display: block !important;
+                }
+                .product-image-container { order: 0 !important; width: 100px !important; display: flex !important; justify-content: center !important; }
+                .featured-product-image { height: auto !important; max-height: 150px !important; width: 100px !important; }
+                .product-features-section .left-side { text-align: right !important; }
+                .product-features-section .right-side { text-align: left !important; }
+            }
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const slider = document.getElementById('promoSliderNew');
+                if (!slider) return;
+
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+                const cardCount = {{ count($promoProducts) }};
+                
+                if (cardCount === 0) return;
+
+                // Inisialisasi posisi di tengah (copy kedua)
+                const centerScroll = () => {
+                    const card = slider.querySelector('.promo-banner-card');
+                    if (card) {
+                        const cardWidth = card.offsetWidth + 15; // Width + gap
+                        // Set posisi ke awal copy kedua
+                        slider.scrollLeft = cardWidth * cardCount;
+                    }
+                };
+                
+                setTimeout(centerScroll, 150);
+
+                // Efek Infinite Loop
+                slider.addEventListener('scroll', () => {
+                    if (isDown) return;
+                    
+                    const card = slider.querySelector('.promo-banner-card');
+                    if (!card) return;
+                    const cardWidth = card.offsetWidth + 15;
+                    const totalWidth = cardWidth * cardCount;
+
+                    // Jika hampir sampai ke copy pertama (kiri)
+                    if (slider.scrollLeft < (cardWidth / 2)) {
+                        slider.style.scrollBehavior = 'auto';
+                        slider.scrollLeft += totalWidth;
+                    } 
+                    // Jika hampir sampai ke copy ketiga (kanan)
+                    else if (slider.scrollLeft > (totalWidth * 2)) {
+                        slider.style.scrollBehavior = 'auto';
+                        slider.scrollLeft -= totalWidth;
+                    }
+                });
+
+                slider.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    slider.classList.add('active');
+                    startX = e.clientX;
+                    scrollLeft = slider.scrollLeft;
+                    slider.style.scrollSnapType = 'none';
+                    slider.style.scrollBehavior = 'auto';
+                });
+
+                slider.addEventListener('mouseleave', () => {
+                    if (!isDown) return;
+                    isDown = false;
+                    slider.classList.remove('active');
+                    slider.style.scrollSnapType = 'x mandatory';
+                });
+
+                slider.addEventListener('mouseup', () => {
+                    if (!isDown) return;
+                    isDown = false;
+                    slider.classList.remove('active');
+                    slider.style.scrollSnapType = 'x mandatory';
+                });
+
+                slider.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.clientX;
+                    const walk = (x - startX) * 1.5;
+                    slider.scrollLeft = scrollLeft - walk;
+                });
+            });
+        </script>
     </section>
 
     <section id="outlet" class="explore-section">
-        <h2 data-split-text>Pilih Cabang<span>Terdekatmu</span></h2>
+        <h2 id="outletTitle" data-split-text>Pilih Cabang<span>Terdekatmu</span></h2>
 
         <div class="nft-grid" data-stagger-grid>
             @foreach($outlets as $index => $outlet)
@@ -227,29 +366,7 @@
         </div>
 
         <div class="highlight-container">
-            <!-- BOX 1: TEXT BOX -->
-            <div class="highlight-text-box" data-reveal-left>
-                <div class="owner-profile">
-                    <div class="owner-avatar">
-                        <img src="{{ asset('images/logo.png') }}" alt="Twins Owner">
-                    </div>
-                    <div class="owner-meta">
-                        <h4>Twins Bakery Team</h4>
-                        <p>Kualitas & Kepercayaan</p>
-                    </div>
-                </div>
-
-                <div class="star-rating">
-                    <span class="stars">★★★★★</span>
-                </div>
-
-                <div class="story-content">
-                    <h3 class="highlight-title">Perjalanan Menghadirkan Bahan Kue Terbaik</h3>
-                    <p class="highlight-desc">Berawal dari semangat untuk mendukung setiap kreator kue di Indonesia, Twins menghadirkan bahan-bahan berkualitas pilihan. Kami percaya bahwa setiap adonan punya cerita, dan setiap cerita layak mendapatkan hasil terbaik. Tekstur sempurna dan rasa yang autentik dimulai dari sini, membawa kebahagian dari setiap panggangan kami ke meja Anda.</p>
-                </div>
-            </div>
-
-            <!-- BOX 2: MEDIA BOX -->
+            <!-- BOX 1: MEDIA BOX (Sekarang di atas untuk mobile) -->
             <div class="highlight-media-box" data-reveal-right>
                 <div class="media-item image-item" data-parallax-wrap>
                     <img src="{{ asset('images/toko5.jpg') }}" alt="Store Gallery" class="main-media" data-parallax>
@@ -273,11 +390,33 @@
                     </div>
                 </div>
             </div>
+
+            <!-- BOX 2: TEXT BOX -->
+            <div class="highlight-text-box" data-reveal-left>
+                <div class="owner-profile">
+                    <div class="owner-avatar">
+                        <img src="{{ asset('images/logo.png') }}" alt="Twins Owner">
+                    </div>
+                    <div class="owner-meta">
+                        <h4>Twins Bakery Team</h4>
+                        <p>Kualitas & Kepercayaan</p>
+                    </div>
+                </div>
+
+                <div class="star-rating">
+                    <span class="stars">★★★★★</span>
+                </div>
+
+                <div class="story-content">
+                    <h3 class="highlight-title">Perjalanan Menghadirkan Bahan Kue Terbaik</h3>
+                    <p class="highlight-desc">Berawal dari semangat untuk mendukung setiap kreator kue di Indonesia, Twins menghadirkan bahan-bahan berkualitas pilihan. Kami percaya bahwa setiap adonan punya cerita, dan setiap cerita layak mendapatkan hasil terbaik. Tekstur sempurna dan rasa yang autentik dimulai dari sini, membawa kebahagian dari setiap panggangan kami ke meja Anda.</p>
+                </div>
+            </div>
         </div>
     </section>
 
     <section id="keunggulan" class="product-features-section">
-        <h2 class="heading" data-split-text>
+        <h2 id="featuresTitle" class="heading" data-split-text>
             Kenapa Belanja di Twins<br>Lebih Mudah &amp; Menyenangkan?
         </h2>
 
@@ -285,7 +424,7 @@
             <div class="feature-list left-side">
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 3h18v18H3z"></path>
                             <path d="M7 12h10"></path>
                         </svg>
@@ -298,7 +437,7 @@
 
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 2v20"></path>
                             <path d="M5 12h14"></path>
                         </svg>
@@ -319,7 +458,7 @@
             <div class="feature-list right-side">
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M12 6v6l4 2"></path>
                         </svg>
@@ -332,7 +471,7 @@
 
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 1l3 5h6l-4.5 4 2 6-6-3.5L6.5 16l2-6L4 6h6z"></path>
                         </svg>
                     </div>
@@ -619,22 +758,22 @@
     </footer>
 
     <nav class="mobile-nav">
-        <div class="mob-nav-item active" onclick="switchPage('beranda')">
+        <div id="mob-home" class="mob-nav-item active" onclick="switchPage('beranda')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             <span>Beranda</span>
         </div>
 
-        <div class="mob-nav-item" onclick="switchPage('promo-outlet')">
+        <div id="mob-promo" class="mob-nav-item" onclick="switchPage('promo-outlet')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
             <span>Promo</span>
         </div>
 
-        <div class="mob-nav-item" onclick="scrollToCategory('outlet')">
+        <div id="mob-outlet" class="mob-nav-item" onclick="scrollToCategory('outlet')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l18 0l-1 10l-16 0z"></path><path d="M3 11l18 0"></path><path d="M2 3l20 0l-1 6l-18 0z"></path></svg>
             <span>Outlet</span>
         </div>
 
-        <div class="mob-nav-item" onclick="switchPage('keunggulan')">
+        <div id="mob-features" class="mob-nav-item" onclick="switchPage('keunggulan')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
             <span>Keunggulan</span>
         </div>
@@ -704,7 +843,7 @@
                     if (badge) gsap.set(badge, { y: -120 });
                     if (wordLeft) gsap.set(wordLeft, { x: -150 });
                     if (wordRight) gsap.set(wordRight, { x: 150 });
-                    if (paragraph) gsap.set(paragraph, { filter: 'blur(20px)', y: 40 });
+                    if (paragraph) gsap.set(paragraph, { y: 40 });
 
                     const htl = gsap.timeline({ defaults: { ease: 'power4.out' } });
 
@@ -715,7 +854,7 @@
                     if (badge) htl.to(badge, { y: 0, autoAlpha: 1, duration: 1.2, ease: 'elastic.out(1, 0.6)' }, 0.1);
                     if (wordLeft) htl.to(wordLeft, { x: 0, autoAlpha: 1, duration: 1.4 }, 0.2);
                     if (wordRight) htl.to(wordRight, { x: 0, autoAlpha: 1, duration: 1.4 }, 0.3);
-                    if (paragraph) htl.to(paragraph, { autoAlpha: 1, filter: 'blur(0px)', y: 0, duration: 1.6 }, 0.5);
+                    if (paragraph) htl.to(paragraph, { autoAlpha: 1, y: 0, duration: 1.6 }, 0.5);
 
                     // Opening Arc (Dramatic Sweep)
                     cards.forEach((card, i) => {
@@ -753,11 +892,11 @@
 
             stl.to("#splashLogo", { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out", filter: "brightness(2) contrast(1.5)" })
                .to("#splashLogo", { filter: "brightness(1) contrast(1)", duration: 0.4 }, "-=0.2")
-               .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, filter: "blur(0px)", duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
+               .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
                .set("#energyRing", { opacity: 1 })
                .to("#energyRing", { rotate: 270, scale: 1.3, opacity: 0.6, duration: 1.2, ease: "power2.out" }, "-=0.5")
-               .to("#splashText", { opacity: 0, scale: 0.8, filter: "blur(15px)", duration: 0.4, ease: "power2.in" }, "+=0.3")
-               .to("#splashLogo", { scale: 0, opacity: 0, filter: "brightness(4) blur(10px)", duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
+               .to("#splashText", { opacity: 0, scale: 0.8, duration: 0.4, ease: "power2.in" }, "+=0.3")
+               .to("#splashLogo", { scale: 0, opacity: 0, duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
                .to("#energyRing", { scale: 2.5, opacity: 0, duration: 0.6, ease: "expo.out" }, "<")
                .to(".splash-panel.top", { yPercent: -100, duration: 1.4, ease: "expo.inOut" }, "+=0.1")
                .to(".splash-panel.bottom", { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, "<")
@@ -792,54 +931,6 @@
         const cards = Array.from(document.querySelectorAll('.nft-card'));
         const menuToggle = document.getElementById('menuToggle');
         const mainNav = document.getElementById('mainNav');
-        const promoCards = Array.from(document.querySelectorAll('#promoSlider .promo-card'));
-        const promoDotsContainer = document.getElementById('promoDots');
-        let currentPromoIndex = 1; 
-
-        promoCards.forEach((_, i) => {
-            const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if(i === currentPromoIndex) dot.classList.add('active');
-            dot.addEventListener('click', () => {
-                currentPromoIndex = i;
-                updatePromoSlider();
-            });
-            promoDotsContainer.appendChild(dot);
-        });
-
-        function updatePromoSlider() {
-            const total = promoCards.length;
-            
-            promoCards.forEach((card, i) => {
-                card.classList.remove('active', 'prev', 'next', 'prev2', 'next2');
-                
-                if (i === currentPromoIndex) {
-                    card.classList.add('active');
-                } else if (i === (currentPromoIndex - 1 + total) % total) {
-                    card.classList.add('prev');
-                } else if (i === (currentPromoIndex + 1) % total) {
-                    card.classList.add('next');
-                } else if (i === (currentPromoIndex - 2 + total) % total) {
-                    card.classList.add('prev2');
-                } else if (i === (currentPromoIndex + 2) % total) {
-                    card.classList.add('next2');
-                }
-            });
-
-            document.querySelectorAll('.dot').forEach((dot, i) => {
-                dot.classList.toggle('active', i === currentPromoIndex);
-            });
-        }
-
-        // Klik pada kartu untuk pindah
-        promoCards.forEach((card, i) => {
-            card.addEventListener('click', () => {
-                currentPromoIndex = i;
-                updatePromoSlider();
-            });
-        });
-
-        window.onload = updatePromoSlider;
 
         let activeIndex = Math.floor(cards.length / 2);
 
@@ -898,16 +989,26 @@
                 element.scrollIntoView({ behavior: 'smooth' });
             }
             
-            document.querySelectorAll('.mob-nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.currentTarget.classList.add('active');
+            // Manual active for mobile bottom nav
+            const mobItems = document.querySelectorAll('.mob-nav-item');
+            mobItems.forEach(item => item.classList.remove('active'));
+            
+            // Find which one was clicked based on pageId
+            if(pageId === 'beranda') document.getElementById('mob-home')?.classList.add('active');
+            else if(pageId === 'promo-outlet') document.getElementById('mob-promo')?.classList.add('active');
+            else if(pageId === 'keunggulan') document.getElementById('mob-features')?.classList.add('active');
         }
 
         function scrollToCategory(id) {
             const element = document.getElementById(id);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            // Manual active for Outlet in bottom nav
+            if(id === 'outlet') {
+                document.querySelectorAll('.mob-nav-item').forEach(item => item.classList.remove('active'));
+                document.getElementById('mob-outlet')?.classList.add('active');
             }
         }
 
@@ -1014,11 +1115,14 @@
             let parallaxLayers = [];
 
             if(bgContainer) {
+                const isMobile = window.innerWidth <= 768;
+                const layerCount = isMobile ? 10 : 20;
+                
                 // Initialize 3D Engine for Background
                 bgContainer.style.perspective = '1200px';
                 bgContainer.style.transformStyle = 'preserve-3d';
 
-                for(let i = 0; i < 20; i++) {
+                for(let i = 0; i < layerCount; i++) {
                     const el = document.createElement('div');
                     el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
                     el.innerText = items[Math.floor(Math.random() * items.length)];
@@ -1035,8 +1139,9 @@
                     wrapper.style.left = '0';
                     wrapper.style.pointerEvents = 'none';
                     wrapper.style.transformStyle = 'preserve-3d';
+                    wrapper.style.willChange = 'transform';
                     
-                    const depth = Math.random() * 200 - 100; // Between -100px and +100px Z depth
+                    const depth = Math.random() * 200 - 100;
                     wrapper.dataset.depthZ = depth;
                     
                     wrapper.appendChild(el);
@@ -1044,23 +1149,29 @@
                     parallaxLayers.push(wrapper);
                 }
 
-                // Smooth Animation Variables
                 let targetX = 0, targetY = 0;
                 let currentX = 0, currentY = 0;
+                let rafId = null;
+                let isIdle = true;
 
                 document.addEventListener("mousemove", (e) => {
                     targetX = (e.clientX - window.innerWidth / 2) * 0.08;
                     targetY = (e.clientY - window.innerHeight / 2) * 0.08;
+                    if (isIdle) {
+                        isIdle = false;
+                        if (!rafId) rafId = requestAnimationFrame(animate3D);
+                    }
                 });
 
                 function animate3D() {
-                    currentX += (targetX - currentX) * 0.05;
-                    currentY += (targetY - currentY) * 0.05;
+                    const dx = targetX - currentX;
+                    const dy = targetY - currentY;
+                    
+                    currentX += dx * 0.05;
+                    currentY += dy * 0.05;
 
-                    // Tilt the entire bakery container & scale slightly to prevent edge cutoff
                     bgContainer.style.transform = `scale(1.1) rotateX(${-currentY * 0.4}deg) rotateY(${currentX * 0.4}deg)`;
 
-                    // Shift individual cakes based on their 3D depth to create parallax distance
                     parallaxLayers.forEach((layer) => {
                         const z = parseFloat(layer.dataset.depthZ);
                         const moveX = currentX * (z / 50); 
@@ -1068,9 +1179,18 @@
                         layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
                     });
 
-                    requestAnimationFrame(animate3D);
+                    // Stop loop if motion is negligible
+                    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+                        isIdle = true;
+                        rafId = null;
+                        return;
+                    }
+
+                    rafId = requestAnimationFrame(animate3D);
                 }
-                animate3D();
+                
+                // Initial run
+                rafId = requestAnimationFrame(animate3D);
             }
 
             const savedTheme = localStorage.getItem('twins_theme') || 'dark';
@@ -1122,10 +1242,9 @@
             }
 
             animate() {
-                if (!this.isPaused && !this.isDragging) {
+                if (!this.isPaused && !this.isDragging && this.isVisible) {
                     this.row.scrollLeft += this.speed;
 
-                    // Infinite Loop Logic (Based on 3 sets of items)
                     const loopPoint = this.row.scrollWidth / 3;
                     
                     if (this.speed > 0 && this.row.scrollLeft >= loopPoint) {
@@ -1136,7 +1255,24 @@
                 }
                 requestAnimationFrame(() => this.animate());
             }
+
+            initObserver() {
+                this.isVisible = false;
+                const obs = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        this.isVisible = entry.isIntersecting;
+                    });
+                }, { threshold: 0.01 });
+                obs.observe(this.row);
+            }
         }
+
+        // Modified init to include observer
+        const originalInit = TestimonialMarquee.prototype.init;
+        TestimonialMarquee.prototype.init = function() {
+            this.initObserver();
+            originalInit.call(this);
+        };
 
         // Initialize Rows: ATAS KE KANAN (speed negatif), BAWAH KE KIRI (speed positif)
         window.onload = () => {
@@ -1194,8 +1330,7 @@
                 element.scrollIntoView({ behavior: 'smooth' });
             }
         }
-        // Auto slide every 5 seconds
-        setInterval(nextTesti, 5000);
+        // Testimonials are handled by TestimonialMarquee class automatically.
 
         // SweetAlert2 Session Messages
         const _sessionSuccess = document.querySelector('meta[name="session-success"]')?.content || null;
@@ -1227,39 +1362,88 @@
             }
 
             // --- Scroll Spy & Nav Active Logic ---
-            const sections = document.querySelectorAll('section[id]');
             const navLinks = document.querySelectorAll('.nav-link');
+            const mobLinks = document.querySelectorAll('.mob-nav-item');
+            const spyTargets = [
+                { section: 'beranda', linkId: 'nav-home', mobId: 'mob-home' },
+                { section: 'promo-outlet', linkId: 'nav-promo', mobId: 'mob-promo' },
+                { section: 'outlet', linkId: 'nav-outlet', mobId: 'mob-outlet' },
+                { section: 'keunggulan', linkId: 'nav-features', mobId: 'mob-features' }
+            ];
 
-            function updateActiveLink() {
-                let scrollY = window.pageYOffset;
-                sections.forEach(section => {
-                    const sectionHeight = section.offsetHeight;
-                    const sectionTop = section.offsetTop - 100;
-                    const sectionId = section.getAttribute('id');
-                    
-                    if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-                        document.querySelector('.main-nav a[href*=' + sectionId + ']')?.classList.add('active');
-                    } else {
-                        document.querySelector('.main-nav a[href*=' + sectionId + ']')?.classList.remove('active');
+            let isScrolling = false;
+
+            // --- High Performance Scroll Spy ---
+            const observerOptions = {
+                root: null,
+                rootMargin: '-20% 0px -70% 0px', // Sweet spot for detection
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                if (isScrolling) return;
+
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const sectionId = entry.target.id;
+                        const target = spyTargets.find(t => t.section === sectionId);
+                        
+                        if (target) {
+                            navLinks.forEach(link => {
+                                link.classList.toggle('active', link.id === target.linkId);
+                            });
+                            mobLinks.forEach(link => {
+                                link.classList.toggle('active', link.id === target.mobId);
+                            });
+                        }
                     }
                 });
-            }
+            }, observerOptions);
 
-            window.addEventListener('scroll', updateActiveLink);
+            spyTargets.forEach(target => {
+                const section = document.getElementById(target.section);
+                if (section) observer.observe(section);
+            });
+
+            // Special case for very top
+            window.addEventListener('scroll', () => {
+                if (window.scrollY < 100 && !isScrolling) {
+                    navLinks.forEach(l => l.classList.toggle('active', l.id === spyTargets[0].linkId));
+                    mobLinks.forEach(l => l.classList.toggle('active', l.id === spyTargets[0].mobId));
+                }
+            }, { passive: true });
 
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
-                    // Manual override for instant feedback
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    this.classList.add('active');
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
                     
-                    // Close mobile menu if open
-                    if (window.innerWidth <= 768) {
-                        mainNav.classList.remove('active');
-                        menuToggle.classList.remove('active');
+                    if (targetElement) {
+                        isScrolling = true;
+                        navLinks.forEach(l => l.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        // Scroll halus ke target
+                        const offset = 100;
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: "smooth"
+                        });
+                        
+                        setTimeout(() => {
+                            isScrolling = false;
+                        }, 1000);
                     }
-                });
-            });
+
+                    if (window.innerWidth <= 768) {
+                        const mainNav = document.getElementById('mainNav');
+                        const menuToggle = document.querySelector('.menu-toggle');
+                        mainNav?.classList.remove('active');
+                        menuToggle?.classList.remove('active');
         });
     </script>
 

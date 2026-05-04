@@ -63,26 +63,38 @@ class TransaksiController extends Controller
 
     public function storeDiskon(Request $request)
     {
-        $request->validate([
-            'nama_promo' => 'required|string|max:255',
-            'kode_promo' => 'nullable|string|max:50|unique:promo,kode_promo',
-            'tipe' => 'required|string',
-            'nilai' => 'required|numeric',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date',
-            'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'product_ids' => 'nullable|array',
-            'store_ids' => 'nullable|array'
-        ]);
+        \Illuminate\Support\Facades\Log::info('Memulai penyimpanan promo:', $request->except(['image_banner']));
+
+        try {
+            $request->validate([
+                'nama_promo' => 'required|string|max:255',
+                'kode_promo' => 'nullable|string|max:50|unique:promo,kode_promo',
+                'tipe' => 'required|string',
+                'nilai' => 'required|numeric',
+                'tanggal_mulai' => 'required|date',
+                'tanggal_selesai' => 'required|date',
+                'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+                'product_ids' => 'nullable|array',
+                'store_ids' => 'nullable|array'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Validasi promo gagal:', $e->errors());
+            throw $e;
+        }
 
         $data = $request->except(['product_ids', 'store_ids']);
         $data['status'] = $request->status == 'Aktif' ? true : false;
 
         if ($request->hasFile('image_banner')) {
-            $cloudinaryUrl = LandingController::uploadToCloudinary($request->file('image_banner'), 'promos');
-            if ($cloudinaryUrl) {
-                $data['image_banner'] = $cloudinaryUrl;
-            } else {
+            try {
+                $cloudinaryUrl = LandingController::uploadToCloudinary($request->file('image_banner'), 'promos');
+                if ($cloudinaryUrl) {
+                    $data['image_banner'] = $cloudinaryUrl;
+                } else {
+                    throw new \Exception('Cloudinary return null');
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Cloudinary upload failed, falling back to local: ' . $e->getMessage());
                 $file = $request->file('image_banner');
                 $filename = time() . '_' . Str::slug($request->nama_promo) . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('promos', $filename, 'public');
@@ -91,6 +103,7 @@ class TransaksiController extends Controller
         }
 
         $promo = Promo::create($data);
+        \Illuminate\Support\Facades\Log::info('Promo created successfully with UUID: ' . $promo->uuid);
 
         // Simpan Relasi Produk
         if ($request->has('product_ids')) {
@@ -141,7 +154,7 @@ class TransaksiController extends Controller
             'nilai' => 'required|numeric',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date',
-            'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
             'product_ids' => 'nullable|array'
         ]);
 
