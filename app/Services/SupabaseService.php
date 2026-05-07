@@ -29,6 +29,9 @@ class SupabaseService
                 'user_metadata' => [
                     'username' => $data['username'],
                     'no_hp' => $data['no_hp'] ?? '',
+                    'operator_id' => $data['operator_id'] ?? null,
+                    'store_id' => $data['store_id'] ?? null,
+                    'role' => $data['role'] ?? 'user',
                 ]
             ];
 
@@ -54,6 +57,7 @@ class SupabaseService
             return null;
         }
     }
+
     /**
      * Update a user in Supabase Authentication.
      */
@@ -69,6 +73,9 @@ class SupabaseService
             $metadata = [];
             if (isset($data['username'])) $metadata['username'] = $data['username'];
             if (isset($data['no_hp'])) $metadata['no_hp'] = $data['no_hp'];
+            if (isset($data['operator_id'])) $metadata['operator_id'] = $data['operator_id'];
+            if (isset($data['store_id'])) $metadata['store_id'] = $data['store_id'];
+            if (isset($data['role'])) $metadata['role'] = $data['role'];
             
             if (!empty($metadata)) {
                 $payload['user_metadata'] = $metadata;
@@ -91,6 +98,56 @@ class SupabaseService
             return null;
         } catch (\Exception $e) {
             Log::error('Supabase Auth Update Exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Authenticate a user with Supabase Authentication.
+     */
+    public function login($email, $password)
+    {
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->serviceKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->url . '/auth/v1/token?grant_type=password', [
+                'email' => $email,
+                'password' => $password,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Supabase Login Error: ' . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Supabase Login Exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Delete a user from Supabase Authentication.
+     */
+    public function deleteUser($uuid)
+    {
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->serviceKey,
+                'Authorization' => 'Bearer ' . $this->serviceKey,
+                'Content-Type' => 'application/json',
+            ])->delete($this->url . '/auth/v1/admin/users/' . $uuid);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Supabase Auth Delete Error: ' . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Supabase Auth Delete Exception: ' . $e->getMessage());
             return null;
         }
     }

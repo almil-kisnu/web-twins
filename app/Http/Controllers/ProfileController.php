@@ -34,6 +34,14 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        // Sync to Supabase
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->updateUser($request->user()->uuid, [
+            'email' => $request->user()->email,
+            'username' => $request->user()->username,
+            'no_hp' => $request->user()->no_hp,
+        ]);
+
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
@@ -48,9 +56,14 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
-
+        $supabaseUid = $user->uuid;
         $user->delete();
+
+        // Sync deletion to Supabase
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->deleteUser($supabaseUid);
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

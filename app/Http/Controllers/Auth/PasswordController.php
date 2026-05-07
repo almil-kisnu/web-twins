@@ -24,6 +24,11 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->updateUser($request->user()->uuid, [
+            'password' => $validated['password'],
+        ]);
+
         return back()->with('status', 'password-updated');
     }
 }

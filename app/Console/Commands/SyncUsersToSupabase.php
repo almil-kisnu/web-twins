@@ -52,13 +52,30 @@ class SyncUsersToSupabase extends Command
                 'password' => $defaultPassword,
                 'username' => $user->username,
                 'no_hp' => $user->no_hp,
+                'operator_id' => $user->operator_id,
+                'store_id' => $user->store_id,
+                'role' => $user->role,
             ]);
 
             if ($result) {
-                $this->info("\nSynced: {$user->email}");
+                $this->info("\nCreated & Synced: {$user->email}");
             } else {
-                // Check if user already exists
-                $this->error("\nFailed to sync: {$user->email} (Maybe already exists?)");
+                // If create fails, try to update metadata & password for existing users
+                $updateResult = $supabase->updateUser($user->uuid, [
+                    'email' => $user->email,
+                    'password' => $defaultPassword,
+                    'username' => $user->username,
+                    'no_hp' => $user->no_hp,
+                    'operator_id' => $user->operator_id,
+                    'store_id' => $user->store_id,
+                    'role' => $user->role,
+                ]);
+
+                if ($updateResult) {
+                    $this->info("\nUpdated metadata for existing user: {$user->email}");
+                } else {
+                    $this->error("\nFailed to sync: {$user->email}");
+                }
             }
 
             $bar->advance();

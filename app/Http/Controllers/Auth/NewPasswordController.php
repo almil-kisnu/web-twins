@@ -48,6 +48,12 @@ class NewPasswordController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
+                // Sync to Supabase
+                $supabase = new \App\Services\SupabaseService();
+                $supabase->updateUser($user->uuid, [
+                    'password' => $request->password,
+                ]);
+
                 event(new PasswordReset($user));
             }
         );

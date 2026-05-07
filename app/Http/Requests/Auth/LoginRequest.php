@@ -55,13 +55,33 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $email = $this->input('email');
+        $password = $this->input('password');
+
+        $supabaseService = app(\App\Services\SupabaseService::class);
+        $supabaseUser = $supabaseService->login($email, $password);
+
+        if (!$supabaseUser) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
         }
+
+        // Authentication successful in Supabase. Now log the user in locally.
+        // Match user by email
+        $user = \App\Models\User::where('email', $email)->first();
+
+        if (!$user) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'User found in Supabase but not in local database.',
+            ]);
+        }
+
+        Auth::login($user, $this->boolean('remember'));
 
         RateLimiter::clear($this->throttleKey());
     }

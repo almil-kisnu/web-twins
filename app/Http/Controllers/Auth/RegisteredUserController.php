@@ -43,13 +43,19 @@ class RegisteredUserController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        // 1. Create User in Supabase Auth
+        // 1. Get default operator ID
+        $operator = DB::table('operator')->where('nama', 'User')->first();
+        $operatorId = $operator ? $operator->uuid : null;
+
+        // 2. Create User in Supabase Auth
         $supabase = new \App\Services\SupabaseService();
         $supabaseUser = $supabase->createUser([
             'email' => $request->email,
             'password' => $request->password,
             'username' => $request->name,
             'no_hp' => $request->no_hp,
+            'operator_id' => $operatorId,
+            'role' => 'user',
         ]);
 
         if (!$supabaseUser) {
@@ -58,11 +64,8 @@ class RegisteredUserController extends Controller
 
         $supabaseUid = $supabaseUser['id'];
 
-        // 2. Create User in Local Database (linked by UUID)
-        return DB::transaction(function () use ($request, $supabaseUid) {
-            $operator = DB::table('operator')->where('nama', 'User')->first();
-            $operatorId = $operator ? $operator->uuid : null;
-
+        // 3. Create User in Local Database (linked by UUID)
+        return DB::transaction(function () use ($request, $supabaseUid, $operatorId) {
             $user = User::create([
                 'uuid' => $supabaseUid, // Use the UID from Supabase Auth
                 'username' => $request->name, 

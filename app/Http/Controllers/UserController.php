@@ -47,6 +47,19 @@ class UserController extends Controller
 
         $user->save();
 
+        // Sync to Supabase
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->createUser([
+            'id' => $user->uuid,
+            'email' => $user->email,
+            'password' => $request->password,
+            'username' => $user->name,
+            'no_hp' => $user->no_hp,
+            'operator_id' => $user->operator_id,
+            'store_id' => $user->store_id,
+            'role' => $user->role,
+        ]);
+
         if ($request->has('fitur')) {
             $operator = \App\Models\Operator::find($request->role);
             if ($operator) {
@@ -88,6 +101,28 @@ class UserController extends Controller
         if ($request->filled('password')) {
             $request->validate(['password' => [Rules\Password::defaults()]]);
             $user->password = Hash::make($request->password);
+
+            $supabase = new \App\Services\SupabaseService();
+            $supabase->updateUser($user->uuid, [
+                'password' => $request->password,
+                'email' => $user->email,
+                'username' => $user->name,
+                'no_hp' => $user->no_hp,
+                'operator_id' => $user->operator_id,
+                'store_id' => $user->store_id,
+                'role' => $user->role,
+            ]);
+        } else {
+            // Update Supabase metadata even if password is not changed
+            $supabase = new \App\Services\SupabaseService();
+            $supabase->updateUser($user->uuid, [
+                'email' => $user->email,
+                'username' => $user->name,
+                'no_hp' => $user->no_hp,
+                'operator_id' => $user->operator_id,
+                'store_id' => $user->store_id,
+                'role' => $user->role,
+            ]);
         }
 
         $user->save();
@@ -101,7 +136,13 @@ class UserController extends Controller
         if(Auth::user()->uuid == $user->uuid) {
             return redirect()->route('users.index')->with('error', 'Tidak dapat menghapus akun sendiri!');
         }
+        $supabaseUid = $user->uuid;
         $user->delete();
+
+        // Sync deletion to Supabase
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->deleteUser($supabaseUid);
+
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus');
     }
 
@@ -127,6 +168,12 @@ class UserController extends Controller
         
         $user->password = Hash::make($request->password);
         $user->save();
+
+        // Sync password reset to Supabase
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->updateUser($user->uuid, [
+            'password' => $request->password,
+        ]);
         
         return redirect()->route('users.index')->with('success', 'Password user berhasil direset');
     }
