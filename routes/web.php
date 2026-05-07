@@ -92,7 +92,7 @@ Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(f
 });
 
 Route::prefix('transaksi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
-    Route::get('/', [TransaksiController::class, 'riwayat'])->name('transaksi.index');
+    Route::get('/', [TransaksiController::class, 'index'])->name('transaksi.index');
     Route::get('/riwayat', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat');
     Route::get('/diskon', [TransaksiController::class, 'diskon'])->name('transaksi.diskon');
     Route::post('/diskon', [TransaksiController::class, 'storeDiskon'])->name('transaksi.diskon.store');

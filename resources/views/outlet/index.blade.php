@@ -136,21 +136,21 @@
 <div class="fitur-container">
     {{-- PILL TABS --}}
     <div class="tab-navigation">
-        <a href="{{ route('outlet.index') }}" class="tab-pill {{ $active_tab == 'data' ? 'active' : '' }}">
+        <a href="javascript:void(0)" onclick="switchTab('data')" id="pill-data" class="tab-pill {{ $active_tab == 'data' ? 'active' : '' }}">
             <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
             <span>Data Outlet</span>
         </a>
-        <a href="{{ route('outlet.kinerja') }}" class="tab-pill {{ $active_tab == 'kinerja' ? 'active' : '' }}">
+        <a href="javascript:void(0)" onclick="switchTab('kinerja')" id="pill-kinerja" class="tab-pill {{ $active_tab == 'kinerja' ? 'active' : '' }}">
             <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
             <span>Kinerja Outlet</span>
         </a>
-        <a href="{{ route('outlet.riwayat') }}" class="tab-pill {{ $active_tab == 'riwayat' ? 'active' : '' }}">
+        <a href="javascript:void(0)" onclick="switchTab('riwayat')" id="pill-riwayat" class="tab-pill {{ $active_tab == 'riwayat' ? 'active' : '' }}">
             <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
             <span>Riwayat Stok</span>
         </a>
     </div>
 
-    @if($active_tab == 'data')
+    <div id="view-data" class="tab-view" style="{{ $active_tab == 'data' ? '' : 'display: none;' }}">
         {{-- ACTION BAR --}}
         <div class="action-bar">
             <div class="left-actions-group">
@@ -316,24 +316,37 @@
                 </div>
             </div>
         </div>
-    @else
-        {{-- PLACEHOLDER FOR OTHER TABS --}}
+    </div>
+
+    {{-- VIEW KINERJA --}}
+    <div id="view-kinerja" class="tab-view" style="{{ $active_tab == 'kinerja' ? '' : 'display: none;' }}">
         <div class="main-content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
             <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
-                @if($active_tab == 'kinerja')
-                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
-                @elseif($active_tab == 'riwayat')
-                    <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
-                @endif
+                <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
             </div>
-            <h3 style="color: #334155; margin-bottom: 8px;">Fitur {{ ucfirst($active_tab) }} Sedang Disiapkan</h3>
-            <p style="color: #64748b; text-align: center; max-width: 400px;">Halaman untuk {{ $active_tab == 'kinerja' ? 'analisis omzet dan performa cabang' : 'histori aktivitas stok outlet' }} akan segera hadir.</p>
-            <a href="{{ route('outlet.index') }}" class="btn-action" style="margin-top: 24px;">
+            <h3 style="color: #334155; margin-bottom: 8px;">Fitur Kinerja Outlet Sedang Disiapkan</h3>
+            <p style="color: #64748b; text-align: center; max-width: 400px;">Halaman untuk analisis omzet dan performa cabang akan segera hadir.</p>
+            <button onclick="switchTab('data')" class="btn-action" style="margin-top: 24px;">
                 <iconify-icon icon="solar:arrow-left-bold-duotone"></iconify-icon>
                 Kembali ke Data Outlet
-            </a>
+            </button>
         </div>
-    @endif
+    </div>
+
+    {{-- VIEW RIWAYAT --}}
+    <div id="view-riwayat" class="tab-view" style="{{ $active_tab == 'riwayat' ? '' : 'display: none;' }}">
+        <div class="main-content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
+            <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
+                <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
+            </div>
+            <h3 style="color: #334155; margin-bottom: 8px;">Fitur Riwayat Stok Sedang Disiapkan</h3>
+            <p style="color: #64748b; text-align: center; max-width: 400px;">Halaman untuk histori aktivitas stok outlet akan segera hadir.</p>
+            <button onclick="switchTab('data')" class="btn-action" style="margin-top: 24px;">
+                <iconify-icon icon="solar:arrow-left-bold-duotone"></iconify-icon>
+                Kembali ke Data Outlet
+            </button>
+        </div>
+    </div>
 </div>
 </div>
 
@@ -457,6 +470,29 @@
 <script>
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    let currentTab = '{{ $active_tab }}';
+
+    function switchTab(tabId) {
+        currentTab = tabId;
+        
+        // Reset pills
+        document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+        let activePill = document.getElementById('pill-' + tabId);
+        if(activePill) activePill.classList.add('active');
+        
+        // Hide all views
+        document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+        
+        // Show active view
+        let viewObj = document.getElementById('view-' + tabId);
+        if(viewObj) viewObj.style.display = 'block';
+
+        // Update URL without reload (Optional, for better UX)
+        const url = new URL(window.location);
+        url.searchParams.set('active_tab', tabId);
+        window.history.pushState({}, '', url);
+    }
 
     function selectOutlet(row, data) {
         // Remove active class from all rows

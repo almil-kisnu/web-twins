@@ -126,24 +126,51 @@
     }
 
     /* Premium Scrollbar */
-    #restokModal .modal-body::-webkit-scrollbar,
-    #restokModal .table-scroll-container::-webkit-scrollbar {
+    .modal-body::-webkit-scrollbar,
+    .table-scroll-container::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
-    #restokModal .modal-body::-webkit-scrollbar-track,
-    #restokModal .table-scroll-container::-webkit-scrollbar-track {
+    .modal-body::-webkit-scrollbar-track,
+    .table-scroll-container::-webkit-scrollbar-track {
         background: #f1f5f9;
         border-radius: 10px;
     }
-    #restokModal .modal-body::-webkit-scrollbar-thumb,
-    #restokModal .table-scroll-container::-webkit-scrollbar-thumb {
+    .modal-body::-webkit-scrollbar-thumb,
+    .table-scroll-container::-webkit-scrollbar-thumb {
         background: #cbd5e1;
         border-radius: 10px;
     }
-    #restokModal .modal-body::-webkit-scrollbar-thumb:hover,
-    #restokModal .table-scroll-container::-webkit-scrollbar-thumb:hover {
+    .modal-body::-webkit-scrollbar-thumb:hover,
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
+    }
+    /* Validation Error Styles */
+    .form-control.is-invalid,
+    .ts-wrapper.is-invalid .ts-control,
+    #restokModal .ts-wrapper.is-invalid .ts-control,
+    #transferModal .ts-wrapper.is-invalid .ts-control,
+    #addOpnameModal .ts-wrapper.is-invalid .ts-control {
+        border-color: #ef4444 !important;
+        background-color: #fffafb !important;
+    }
+    .form-control.is-invalid:focus,
+    .ts-wrapper.is-invalid.focus .ts-control,
+    #restokModal .ts-wrapper.is-invalid.focus .ts-control,
+    #transferModal .ts-wrapper.is-invalid.focus .ts-control,
+    #addOpnameModal .ts-wrapper.is-invalid.focus .ts-control {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    }
+    .invalid-feedback {
+        color: #ef4444;
+        font-size: 12px;
+        margin-top: 4px;
+        font-weight: 500;
+        display: none;
+    }
+    .is-invalid + .invalid-feedback {
+        display: block;
     }
 </style>
 <script>
@@ -182,6 +209,30 @@
         const modal = document.getElementById(id);
         if (modal) {
             modal.style.setProperty('display', 'none', 'important');
+            
+            // Reset form and UI if closing add modal
+            if (id === 'addModal') {
+                const form = document.getElementById('addForm');
+                if (form) {
+                    form.reset();
+                    const preview = document.getElementById('imagePreviewContainer');
+                    if (preview) {
+                        preview.innerHTML = `
+                            <div style="text-align: center;">
+                                <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 40px; color: #94a3b8;"></iconify-icon>
+                                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">Klik untuk Pilih/Foto</p>
+                            </div>`;
+                        preview.style.border = '2px dashed #cbd5e1';
+                        preview.style.background = '#f8fafc';
+                    }
+                    const result = document.getElementById('croppedImageResult');
+                    if (result) result.value = '';
+                    
+                    // CRITICAL: Clear wholesale price levels
+                    const levelBody = document.getElementById('priceLevelBody');
+                    if (levelBody) levelBody.innerHTML = '';
+                }
+            }
         }
     }
 </script>
@@ -196,7 +247,7 @@
             <h3><iconify-icon icon="solar:add-circle-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Tambah Produk Baru</h3>
             <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
-        <form action="{{ route('products.store') }}" method="POST" id="addForm" enctype="multipart/form-data" onsubmit="showLoading()" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <form action="{{ route('products.store') }}" method="POST" id="addForm" enctype="multipart/form-data" onsubmit="return validateProductForm('addForm')" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
@@ -211,6 +262,7 @@
                         </div>
                         <input type="file" id="productImageInput" name="image" accept="image/*" style="display: none;">
                         <input type="hidden" name="cropped_image" id="croppedImageResult">
+                        <div id="imageErrorAdd" class="invalid-feedback" style="text-align: center;">Foto produk wajib diisi</div>
                         <p style="font-size: 11px; color: #64748b; margin-top: 8px; text-align: center;">Rasio 1:1 direkomendasikan</p>
                     </div>
 
@@ -219,6 +271,7 @@
                         <div class="form-group">
                             <label for="nama_produk">Nama Produk</label>
                             <input type="text" name="nama_produk" id="addNamaProduk" class="form-control" placeholder="Masukkan nama produk..." required>
+                            <div class="invalid-feedback">Nama produk wajib diisi</div>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div class="form-group">
@@ -240,6 +293,7 @@
                                             <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="invalid-feedback">Silakan pilih kategori</div>
                                     <button type="button" class="btn-filter" style="width: 44px; flex-shrink: 0;" onclick="openAddCategoryModal()">
                                         <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
                                     </button>
@@ -253,10 +307,12 @@
                     <div class="form-group">
                         <label for="harga_modal">Harga Modal (Rp)</label>
                         <input type="number" name="harga_modal" class="form-control" placeholder="0" required>
+                        <div class="invalid-feedback">Harga modal wajib diisi</div>
                     </div>
                     <div class="form-group">
                         <label for="harga_jual">Harga Jual Satuan (Rp)</label>
                         <input type="number" name="harga_jual" class="form-control" placeholder="0" required>
+                        <div class="invalid-feedback">Harga jual wajib diisi</div>
                     </div>
                 </div>
 
@@ -294,12 +350,12 @@
 
 <!-- Modal Edit Produk -->
 <div id="editModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 700px; width: 95%; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
+    <div class="modal-content" style="max-width: 700px; width: 95%; height: 600px; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
         <div class="modal-header">
             <h3><iconify-icon icon="solar:pen-new-square-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Edit Data Produk</h3>
             <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
-        <form id="editForm" method="POST" enctype="multipart/form-data" onsubmit="showLoading('Sedang Mengunggah & Memperbarui Produk...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <form id="editForm" method="POST" enctype="multipart/form-data" onsubmit="return validateProductForm('editForm')" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             @method('PUT')
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
@@ -312,6 +368,7 @@
                         </div>
                         <input type="file" id="editProductImageInput" name="image" accept="image/*" style="display: none;">
                         <input type="hidden" name="cropped_image" id="editCroppedImageResult">
+                        <div id="imageErrorEdit" class="invalid-feedback" style="text-align: center;">Foto produk wajib diisi</div>
                     </div>
 
                     <!-- Sisi Kanan: Data Utama -->
@@ -319,6 +376,7 @@
                         <div class="form-group">
                             <label for="edit_nama">Nama Produk</label>
                             <input type="text" name="nama_produk" id="edit_nama" class="form-control" required>
+                            <div class="invalid-feedback">Nama produk wajib diisi</div>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div class="form-group">
@@ -339,6 +397,7 @@
                                             <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="invalid-feedback">Silakan pilih kategori</div>
                                     <button type="button" class="btn-filter" style="width: 44px; flex-shrink: 0;" onclick="openAddCategoryModal()">
                                         <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
                                     </button>
@@ -352,10 +411,12 @@
                     <div class="form-group">
                         <label for="edit_modal">Harga Modal (Rp)</label>
                         <input type="number" name="harga_modal" id="edit_modal" class="form-control" required>
+                        <div class="invalid-feedback">Harga modal wajib diisi</div>
                     </div>
                     <div class="form-group">
                         <label for="edit_jual">Harga Jual Satuan (Rp)</label>
                         <input type="number" name="harga_jual" id="edit_jual" class="form-control" required>
+                        <div class="invalid-feedback">Harga jual wajib diisi</div>
                     </div>
                 </div>
 
@@ -480,7 +541,7 @@
             <h3>Buat Transfer Stok Baru</h3>
             <button class="close-modal" onclick="closeModal('transferModal')">&times;</button>
         </div>
-        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm" onsubmit="return validateProductForm('transferForm')" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
@@ -493,6 +554,7 @@
                                     <option value="{{ $s->uuid }}" {{ Auth::user()->store_id == $s->uuid ? 'selected' : '' }}>{{ $s->nama }}</option>
                                 @endforeach
                             </select>
+                            <div class="invalid-feedback">Outlet asal wajib dipilih</div>
                         @else
                             <input type="text" class="form-control" value="{{ Auth::user()->store->nama }}" readonly style="background: #f8fafc;">
                             <input type="hidden" name="store_id" id="sourceStoreSelect" value="{{ Auth::user()->store_id }}">
@@ -506,6 +568,7 @@
                                 <option value="{{ $s->uuid }}">{{ $s->nama }}</option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback">Outlet tujuan wajib dipilih</div>
                     </div>
                     <div class="form-group">
                         <label>Petugas Pengirim</label>
@@ -598,7 +661,7 @@
             <h3>Input Opname Stok</h3>
             <button class="close-modal" onclick="closeModal('addOpnameModal')">&times;</button>
         </div>
-        <form action="{{ route('products.opname.store') }}" method="POST" id="opnameForm" onsubmit="showLoading('Sedang Menyimpan Data Opname...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <form action="{{ route('products.opname.store') }}" method="POST" id="opnameForm" onsubmit="return validateProductForm('opnameForm')" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div id="opnameMethod"></div>
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
@@ -612,19 +675,21 @@
                                     <option value="{{ $store->uuid }}" {{ Auth::user()->store_id == $store->uuid ? 'selected' : '' }}>{{ $store->nama }}</option>
                                 @endforeach
                             </select>
+                            <div class="invalid-feedback">Outlet wajib dipilih</div>
                         @else
                             <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
                             <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa;">
                         @endif
                     </div>
                     <div class="form-group">
-                        <label>Filter Kategori (Opsional)</label>
-                        <select name="kategori_id" id="opnameKategoriFilter" class="form-control" onchange="filterOpnameProducts(this.value)">
-                            <option value="">-- Semua Kategori --</option>
+                        <label>Pilih Kategori</label>
+                        <select name="kategori_id" id="opnameKategoriFilter" class="form-control" required onchange="filterOpnameProducts(this.value)">
+                            <option value="">-- Pilih Kategori --</option>
                             @foreach($categories ?? [] as $cat)
                                 <option value="{{ $cat->uuid }}">{{ $cat->nama_category }}</option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback">Kategori wajib dipilih</div>
                     </div>
                 </div>
                 
@@ -674,7 +739,7 @@
             <h3>Tambah Restok Baru</h3>
             <button class="close-modal" onclick="closeModal('restokModal')">&times;</button>
         </div>
-        <form action="{{ route('products.restok.store') }}" method="POST" id="restokForm" onsubmit="showLoading('Sedang Menyimpan Data Restok...')" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <form action="{{ route('products.restok.store') }}" method="POST" id="restokForm" onsubmit="return validateProductForm('restokForm')" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
@@ -687,6 +752,7 @@
                                     <option value="{{ $store->uuid }}" {{ Auth::user()->store_id == $store->uuid ? 'selected' : '' }}>{{ $store->nama }}</option>
                                 @endforeach
                             </select>
+                            <div class="invalid-feedback">Outlet wajib dipilih</div>
                         @else
                             <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
                             <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa; font-weight: 600;">
@@ -694,12 +760,13 @@
                     </div>
                     <div class="form-group">
                         <label for="restok_supplier_id">Pilih Supplier</label>
-                        <select name="contact_id" id="restok_supplier_id" class="form-control" required>
+                        <select name="contact_id" id="restok_supplier_id" class="form-control supplier-select" required>
                             <option value="">-- Pilih Supplier --</option>
                             @foreach($suppliers ?? [] as $supplier)
                                 <option value="{{ $supplier->uuid }}">{{ $supplier->nama }} ({{ $supplier->no_hp }})</option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback">Supplier wajib dipilih</div>
                     </div>
                     <div class="form-group">
                         <label>Metode Pembayaran</label>
@@ -848,31 +915,37 @@
 <div class="fitur-container">
     {{-- PILL TABS --}}
     <div class="tab-navigation">
-        <a href="{{ route('products.index') }}" class="tab-pill {{ $active_tab == 'produk' ? 'active' : '' }}">
+        <a href="{{ route('products.index') }}" class="tab-pill {{ $active_tab == 'produk' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
             <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
             <span>Produk</span>
         </a>
-        <a href="{{ route('products.stok') }}" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}">
+        <a href="{{ route('products.stok') }}" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
             <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
             <span>Katalog & Stok</span>
         </a>
-        <a href="{{ route('products.restok') }}" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}">
+        <a href="{{ route('products.restok') }}" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
             <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
             <span>Restok</span>
         </a>
-        <a href="{{ route('products.transfer') }}" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}">
+        <a href="{{ route('products.transfer') }}" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
             <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
             <span>Transfer Stok</span>
         </a>
-        <a href="{{ route('products.opname') }}" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}">
+        <a href="{{ route('products.opname') }}" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
             <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
             <span>Stok Opname</span>
         </a>
     </div>
 
+    <div id="ajax-content-area">
+    @fragment('dashboard-content')
+
     {{-- ACTION BAR --}}
     <div class="action-bar">
         <form action="{{ url()->current() }}" method="GET" style="display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 12px;" id="filterForm">
+            @if(isset($sub_tab))
+                <input type="hidden" name="sub_tab" value="{{ $sub_tab }}">
+            @endif
             <div class="left-actions-group">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
@@ -1113,7 +1186,6 @@
     {{-- MAIN BOX --}}
     <div class="main-content-box">
         <div class="table-container">
-            @fragment('dashboard-content')
             @if($active_tab == 'produk')
                 <table class="fitur-table">
                     <thead>
@@ -1201,12 +1273,24 @@
                         @endforelse
                     </tbody>
                 </table>
-                @if(isset($products))
+                @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
                     <div class="pagination-container">
                         {{ $products->appends(request()->query())->links() }}
                     </div>
                 @endif
             @elseif($active_tab == 'opname')
+                {{-- Sub-tab Navigation --}}
+                <div class="sub-tab-navigation" style="margin-bottom: 20px;">
+                    <a href="{{ route('products.opname', ['sub_tab' => 'semua']) }}" class="sub-tab-pill {{ ($sub_tab ?? 'semua') == 'semua' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+                        <iconify-icon icon="solar:layers-bold-duotone"></iconify-icon>
+                        Semua Sesi
+                    </a>
+                    <a href="{{ route('products.opname', ['sub_tab' => 'produk_rugi']) }}" class="sub-tab-pill {{ ($sub_tab ?? '') == 'produk_rugi' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+                        <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
+                        Produk Rugi
+                    </a>
+                </div>
+
                 @if(Auth::user()->isOwner())
                     <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                         <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
@@ -1240,77 +1324,124 @@
                         </div>
                     </div>
                 @endif
-                <table class="fitur-table">
-                    <thead>
-                        <tr>
-                            <th>TANGGAL</th>
-                            <th>OUTLET</th>
-                            <th>PETUGAS</th>
-                            <th>SUMMARY</th>
-                            @if(Auth::user()->isOwner())
-                                <th>KERUGIAN (RP)</th>
-                            @endif
-                            <th>STATUS</th>
-                            <th>AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($opnames as $opname)
+
+                @if(($sub_tab ?? 'semua') == 'semua')
+                    <table class="fitur-table">
+                        <thead>
                             <tr>
-                                <td>{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}</td>
-                                <td>{{ $opname->store->nama ?? '-' }}</td>
-                                <td><strong>{{ $opname->user->name ?? $opname->user->username ?? '-' }}</strong></td>
-                                <td>
-                                    <div style="font-weight: 600;">{{ $opname->total_items }} item</div>
-                                    <div style="font-size: 12px;" class="{{ $opname->total_selisih != 0 ? 'bg-selisih' : '' }}">
-                                        {{ $opname->total_selisih > 0 ? '+' : '' }}{{ $opname->total_selisih }}
-                                        @if($opname->total_selisih != 0)
-                                            <iconify-icon icon="solar:danger-bold" style="font-size: 14px; vertical-align: middle;"></iconify-icon>
-                                        @endif
-                                    </div>
-                                </td>
+                                <th>TANGGAL</th>
+                                <th>OUTLET</th>
+                                <th>PETUGAS</th>
+                                <th>SUMMARY</th>
                                 @if(Auth::user()->isOwner())
-                                    <td style="font-weight: 700; color: {{ $opname->total_kerugian < 0 ? '#C62828' : ($opname->total_kerugian > 0 ? '#2E7D32' : '#666') }}">
-                                        Rp {{ number_format(abs($opname->total_kerugian), 0, ',', '.') }}
-                                        <div style="font-size: 10px; opacity: 0.7;">{{ $opname->total_kerugian < 0 ? '(Kurang)' : ($opname->total_kerugian > 0 ? '(Lebih)' : '-') }}</div>
-                                    </td>
+                                    <th>KERUGIAN (RP)</th>
                                 @endif
-                                <td>
-                                    @php $lowStatus = strtolower($opname->status); @endphp
-                                    <span class="status-badge stat-{{ $lowStatus }}">
-                                        {{ $opname->status }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
-                                            data-uuid="{{ $opname->uuid }}" onclick="openOpnameDetailModal(this.dataset.uuid)" title="Lihat Detail">
-                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                        </button>
-                                        @if(Auth::user()->isOwner() && $opname->status == 'Pending')
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #2E7D32; border-color: #E8F5E9;" 
-                                                onclick="confirmFinalizeOpname('{{ $opname->uuid }}')" title="Finalisasi Stok">
-                                                <iconify-icon icon="solar:check-read-bold-duotone"></iconify-icon>
+                                <th>STATUS</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($opnames as $opname)
+                                <tr>
+                                    <td>{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}</td>
+                                    <td>{{ $opname->store->nama ?? '-' }}</td>
+                                    <td><strong>{{ $opname->user->name ?? $opname->user->username ?? '-' }}</strong></td>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ $opname->total_items }} item</div>
+                                        <div style="font-size: 12px;" class="{{ $opname->total_selisih != 0 ? 'bg-selisih' : '' }}">
+                                            {{ $opname->total_selisih > 0 ? '+' : '' }}{{ $opname->total_selisih }}
+                                            @if($opname->total_selisih != 0)
+                                                <iconify-icon icon="solar:danger-bold" style="font-size: 14px; vertical-align: middle;"></iconify-icon>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    @if(Auth::user()->isOwner())
+                                        <td style="font-weight: 700; color: {{ $opname->total_kerugian < 0 ? '#C62828' : ($opname->total_kerugian > 0 ? '#2E7D32' : '#666') }}">
+                                            Rp {{ number_format(abs($opname->total_kerugian), 0, ',', '.') }}
+                                            <div style="font-size: 10px; opacity: 0.7;">{{ $opname->total_kerugian < 0 ? '(Kurang)' : ($opname->total_kerugian > 0 ? '(Lebih)' : '-') }}</div>
+                                        </td>
+                                    @endif
+                                    <td>
+                                        @php $lowStatus = strtolower($opname->status); @endphp
+                                        <span class="status-badge stat-{{ $lowStatus }}">
+                                            {{ $opname->status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
+                                                data-uuid="{{ $opname->uuid }}" onclick="openOpnameDetailModal(this.dataset.uuid)" title="Lihat Detail">
+                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                             </button>
-                                        @endif
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" 
-                                            data-uuid="{{ $opname->uuid }}" data-date="{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}"
-                                            onclick="confirmDeleteOpname(this.dataset.uuid, this.dataset.date)" title="Hapus">
-                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
+                                            @if(Auth::user()->isOwner() && $opname->status == 'Pending')
+                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #2E7D32; border-color: #E8F5E9;" 
+                                                    onclick="confirmFinalizeOpname('{{ $opname->uuid }}')" title="Finalisasi Stok">
+                                                    <iconify-icon icon="solar:check-read-bold-duotone"></iconify-icon>
+                                                </button>
+                                            @endif
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" 
+                                                data-uuid="{{ $opname->uuid }}" data-date="{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}"
+                                                onclick="confirmDeleteOpname(this.dataset.uuid, this.dataset.date)" title="Hapus">
+                                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">Belum ada riwayat opname.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        {{ $opnames->links() }}
+                    </div>
+                @else
+                    {{-- Produk Rugi Table --}}
+                    <table class="fitur-table">
+                        <thead>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">Belum ada riwayat opname.</td>
+                                <th>PRODUK</th>
+                                <th>OUTLET</th>
+                                <th>TANGGAL</th>
+                                <th style="text-align: center;">SISTEM</th>
+                                <th style="text-align: center;">FISIK</th>
+                                <th style="text-align: center;">SELISIH</th>
+                                <th style="text-align: right;">KERUGIAN (RP)</th>
                             </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                <div class="pagination-container">
-                    {{ $opnames->links() }}
-                </div>
+                        </thead>
+                        <tbody>
+                            @forelse($opname_details as $detail)
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ $detail->product->nama_produk ?? '-' }}</div>
+                                        <div style="font-size: 11px; color: #888;">{{ $detail->product->barcode ?? '-' }}</div>
+                                    </td>
+                                    <td>{{ $detail->opname->store->nama ?? '-' }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($detail->opname->tanggal)->format('d/m/Y') }}</td>
+                                    <td style="text-align: center;">{{ (float)$detail->stok_sistem }}</td>
+                                    <td style="text-align: center;">{{ (float)$detail->stok_fisik }}</td>
+                                    <td style="text-align: center; color: #C62828; font-weight: 700;">{{ (float)$detail->selisih }}</td>
+                                    <td style="text-align: right; color: #C62828; font-weight: 700;">
+                                        @php
+                                            $modal = $detail->product->harga_modal ?? 0;
+                                            $kerugian = abs($detail->selisih * $modal);
+                                        @endphp
+                                        Rp {{ number_format($kerugian, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">Tidak ada produk rugi ditemukan.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        {{ $opname_details->links() }}
+                    </div>
+                @endif
             @elseif($active_tab == 'stok' || $active_tab == 'request')
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
@@ -1562,22 +1693,21 @@
                  data-alerts="{{ json_encode(isset($alerts) ? $alerts->items() : []) }}">
             </div>
             @endfragment
-        </div>
-    
-                </div>
+    </div>
 </div>
 
 
 
 
 <script>
-    // --- Global Data Maps ---
+    // --- Global Data Maps & State ---
     const allProductsMap = {};
     const stockAlertsMap = {};
+    const productsList = {!! json_encode(($active_tab == 'produk' || $active_tab == 'stok') && isset($products) ? $products->items() : ($all_products ?? []), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
 
     function syncDataMaps() {
         // Method 1: From productsList (Blade initial load)
-        if (typeof productsList !== 'undefined' && Array.isArray(productsList)) {
+        if (Array.isArray(productsList)) {
             productsList.forEach(p => { if (p && p.uuid) allProductsMap[p.uuid] = p; });
         }
         
@@ -1598,11 +1728,9 @@
     // Initialize maps on load
     document.addEventListener('DOMContentLoaded', () => {
         syncDataMaps();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 
     // --- Global Helpers ---
-    // Specialized opener for USB Scanner focus
     function openAddProductModal() {
         openModal('addModal');
         setTimeout(() => {
@@ -1613,12 +1741,6 @@
             }
         }, 400);
     }
-</script>
-<script>
-    const productsList = {!! json_encode(($active_tab == 'produk' || $active_tab == 'stok') && isset($products) ? $products->items() : ($all_products ?? []), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
-    // No need to redeclare maps here
-
-    // Initialize is now handled in the first script block
 
     // --- Price Level Helpers (Grosir) ---
     function addPriceLevelRow(containerId, data = null) {
@@ -1729,64 +1851,57 @@
     // --- Filter logic (AJAX based) ---
     function setCategory(id) {
         const input = document.getElementById('hiddenCategoryId');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = id;
-            form.submit();
+            updateTableContent();
         }
     }
 
     function setStore(id) {
         const input = document.getElementById('hiddenStoreId');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = id;
-            form.submit();
+            updateTableContent();
         }
     }
 
     function setTransferStore(id) {
         const input = document.getElementById('hiddenTransferStoreId');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = id;
-            form.submit();
+            updateTableContent();
         }
     }
 
     function setTransferStatus(status) {
         const input = document.getElementById('hiddenTransferStatus');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = status;
-            form.submit();
+            updateTableContent();
         }
     }
 
     function setTimeFilter(val) {
         const input = document.getElementById('hiddenTimeFilter');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = val;
-            form.submit();
+            updateTableContent();
         }
     }
 
     function setPaymentFilter(val) {
         const input = document.getElementById('hiddenPaymentFilter');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = val;
-            form.submit();
+            updateTableContent();
         }
     }
 
     function setSupplierFilter(id) {
         const input = document.getElementById('hiddenSupplierId');
-        const form = document.getElementById('filterForm');
-        if (input && form) {
+        if (input) {
             input.value = id;
-            form.submit();
+            updateTableContent();
         }
     }
 
@@ -2021,9 +2136,17 @@
         const previewContainer = document.getElementById('editImagePreviewContainer');
         if (previewContainer) {
             if (product.resolved_image_url) {
-                previewContainer.innerHTML = `<img src="${product.resolved_image_url}" style="width:100%; height:100%; object-fit:cover;">`;
+                previewContainer.innerHTML = `<img src="${product.resolved_image_url}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+                previewContainer.style.border = 'none';
+                previewContainer.style.background = 'white';
             } else {
-                previewContainer.innerHTML = `<span style="color: #999; font-size: 12px;">+ Pilih/Foto</span>`;
+                previewContainer.innerHTML = `
+                    <div style="text-align: center;">
+                        <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 40px; color: #94a3b8;"></iconify-icon>
+                        <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">Klik untuk Pilih/Foto</p>
+                    </div>`;
+                previewContainer.style.border = '2px dashed #cbd5e1';
+                previewContainer.style.background = '#f8fafc';
             }
         }
 
@@ -2036,6 +2159,7 @@
             showCancelButton: true, confirmButtonColor: '#D9534F', confirmButtonText: 'Ya, Hapus!'
         }).then(r => {
             if (r.isConfirmed) {
+                showLoading('Sedang Menghapus Produk...');
                 const form = document.createElement('form');
                 form.method = 'POST'; form.action = `/products/${uuid}`;
                 form.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE">`;
@@ -2346,17 +2470,50 @@
     let currentActiveInput = null;
 
     function initCropper(inputElement, previewContainer, resultInput) {
-        if (!inputElement || !previewContainer || !resultInput) return; // Prevent errors if elements missing
+        if (!inputElement || !previewContainer || !resultInput) return;
+        
         inputElement.addEventListener('change', e => {
-            const f = e.target.files[0]; if (!f) return;
+            const f = e.target.files[0]; 
+            if (!f) return;
+            
+            // Validate file type
+            if (!f.type.startsWith('image/')) {
+                Swal.fire('Error', 'File yang dipilih bukan gambar.', 'error');
+                return;
+            }
+
             currentActiveInput = { preview: previewContainer, result: resultInput };
             const reader = new FileReader();
+            
+            showLoading('Menyiapkan Pemotong Foto...');
+            
             reader.onload = ev => {
                 const cropImg = document.getElementById('cropperImage');
                 cropImg.src = ev.target.result; 
-                document.getElementById('cropperModal').style.display = 'flex';
-                if (cropper) cropper.destroy();
-                cropper = new Cropper(cropImg, { aspectRatio: 1, viewMode: 1 });
+                
+                // Wait for image to load before initializing cropper
+                cropImg.onload = () => {
+                    hideLoading();
+                    openModal('cropperModal', 999999);
+                    
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    
+                    cropper = new Cropper(cropImg, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
             };
             reader.readAsDataURL(f);
         });
@@ -2389,13 +2546,34 @@
             return;
         }
         
-        const canvas = cropper.getCroppedCanvas({ width: 500, height: 500 });
-        const b64 = canvas.toDataURL('image/jpeg', 0.8);
+        showLoading('Menerapkan Potongan Foto...');
+        
+        // Use higher quality for premium feel
+        const canvas = cropper.getCroppedCanvas({ 
+            width: 800, 
+            height: 800,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+        
+        const b64 = canvas.toDataURL('image/jpeg', 0.9);
         
         currentActiveInput.result.value = b64;
-        currentActiveInput.preview.innerHTML = `<img src="${b64}" style="width:100%; height:100%; object-fit:cover;">`;
+        currentActiveInput.preview.innerHTML = `<img src="${b64}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
         
-        closeCropperModal();
+        // Remove dashed border and background for a cleaner look when image is present
+        currentActiveInput.preview.style.border = 'none';
+        currentActiveInput.preview.style.background = 'white';
+        
+        // Clear photo error state
+        const errorId = currentActiveInput.preview.id === 'imagePreviewContainer' ? 'imageErrorAdd' : 'imageErrorEdit';
+        const errorEl = document.getElementById(errorId);
+        if (errorEl) errorEl.style.display = 'none';
+        
+        setTimeout(() => {
+            hideLoading();
+            closeCropperModal();
+        }, 300);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -2430,7 +2608,7 @@
 
     async function updateTableContent(url = null) {
         const form = document.getElementById('filterForm');
-        const tableContainer = document.querySelector('.table-container');
+        const contentArea = document.getElementById('ajax-content-area');
 
         if (abortController) {
             abortController.abort();
@@ -2438,14 +2616,19 @@
         abortController = new AbortController();
 
         if (!url) {
-            const formData = new FormData(form);
-            const params = new URLSearchParams(formData);
-            url = form.action + '?' + params.toString();
+            if (form) {
+                const formData = new FormData(form);
+                const params = new URLSearchParams(formData);
+                url = form.action + '?' + params.toString();
+            } else {
+                url = window.location.href;
+            }
         }
 
-        if (tableContainer) {
-            tableContainer.style.opacity = '0.5'; 
-            showLoading(); // Show loading animation
+
+
+        if (contentArea) {
+            contentArea.style.opacity = '0.7';
         }
 
         try {
@@ -2455,27 +2638,41 @@
             });
             const html = await response.text();
             
+
+
             if (html.includes('menu-nav') || html.includes('sidebar')) {
                 window.location.reload();
                 return;
             }
 
-            if (tableContainer) {
-                tableContainer.innerHTML = html;
+            if (contentArea) {
+                contentArea.innerHTML = html;
                 syncDataMaps();
                 if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                // Update status aktif pada pill navigation
+                const currentPath = new URL(url, window.location.origin).pathname;
+                document.querySelectorAll('.tab-pill').forEach(pill => {
+                    const pillPath = new URL(pill.href, window.location.origin).pathname;
+                    if (currentPath === pillPath) {
+                        pill.classList.add('active');
+                    } else {
+                        pill.classList.remove('active');
+                    }
+                });
             }
 
             window.history.pushState({ path: url }, '', url);
             
         } catch (error) {
             if (error.name === 'AbortError') return;
-            console.error('Search failed:', error);
+            console.error('Navigasi gagal:', error);
+            if (!url.includes('search=')) window.location.href = url;
         } finally {
-            hideLoading(); // Hide loading animation
-            if (tableContainer) {
-                tableContainer.style.opacity = '1';
-                tableContainer.style.pointerEvents = 'auto';
+
+            if (contentArea) {
+                contentArea.style.opacity = '1';
+                contentArea.style.pointerEvents = 'auto';
             }
         }
     }
@@ -2572,9 +2769,16 @@
                 <select name="items[${i}][product_id]" class="product-select" required onchange="updateSistemStok(this, ${i})">
                     ${opts}
                 </select>
+                <div class="invalid-feedback">Pilih produk yang akan diopname</div>
             </td>
-            <td><input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" value="0" readonly style="background: #f8f9fa;"></td>
-            <td><input type="number" name="items[${i}][stok_fisik]" class="form-control" value="0" required></td>
+            <td>
+                <input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" placeholder="0" required readonly style="background: #f8f9fa;">
+                <div class="invalid-feedback">Stok sistem wajib diisi</div>
+            </td>
+            <td>
+                <input type="number" name="items[${i}][stok_fisik]" class="form-control" placeholder="0" required>
+                <div class="invalid-feedback">Stok fisik wajib diisi</div>
+            </td>
             <td><input type="text" name="items[${i}][alasan_selisih]" id="alasan_${i}" class="form-control" placeholder="Wajib jika selisih"></td>
             <td style="text-align: center;">
                 <button type="button" class="btn-filter" style="color: #D9534F;" onclick="this.closest('tr').remove()">
@@ -2675,6 +2879,23 @@
     function openRestokModal() {
         document.getElementById('restokItemsTable').innerHTML = '';
         addRestokRow();
+        
+        // Initialize Supplier Select with TomSelect for a better experience
+        const supplierSelect = document.getElementById('restok_supplier_id');
+        if (supplierSelect) {
+            if (!supplierSelect.tomselect) {
+                new TomSelect(supplierSelect, {
+                    create: false,
+                    placeholder: "-- Pilih Supplier --",
+                    onDropdownOpen: function() {
+                        this.dropdown.style.zIndex = "99999999";
+                    }
+                });
+            } else {
+                supplierSelect.tomselect.clear();
+            }
+        }
+
         document.getElementById('restokModal').style.display = 'flex';
         calculateRestokTotal();
     }
@@ -2779,18 +3000,23 @@
                 <select name="items[${i}][product_id]" class="product-select" required onchange="handleRestokProductChange(this, ${i})">
                     ${productOptions}
                 </select>
+                <div class="invalid-feedback">Nama produk wajib diisi</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][qty]" class="form-control" value="1" min="1" required oninput="calculateRestokTotal()" style="min-width: 70px;">
+                <input type="number" name="items[${i}][qty]" class="form-control" placeholder="Qty" min="1" required oninput="calculateRestokTotal()" style="min-width: 70px;">
+                <div class="invalid-feedback">Qty wajib diisi</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][harga_beli]" class="form-control" value="0" required oninput="calculateRestokTotal()" style="min-width: 120px;">
+                <input type="number" name="items[${i}][harga_beli]" class="form-control" placeholder="Harga Beli" required oninput="calculateRestokTotal()" style="min-width: 120px;">
+                <div class="invalid-feedback">Harga beli wajib diisi</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][harga_jual_baru]" class="form-control" value="0" placeholder="Opsional" style="min-width: 120px;">
+                <input type="number" name="items[${i}][harga_jual_baru]" class="form-control" placeholder="Harga Jual" required style="min-width: 120px;">
+                <div class="invalid-feedback">Harga jual wajib diisi</div>
             </td>
             <td>
-                <input type="date" name="items[${i}][kadaluarsa]" class="form-control" style="min-width: 120px;">
+                <input type="date" name="items[${i}][kadaluarsa]" class="form-control" required style="min-width: 120px;">
+                <div class="invalid-feedback">Tanggal kadaluarsa wajib diisi</div>
             </td>
             <td>
                 <button type="button" class="btn-filter" onclick="removeRestokRow(this)" style="color: #D9534F;">
@@ -2812,6 +3038,14 @@
             maxOptions: 100,
             onDropdownOpen: function() {
                 this.dropdown.style.zIndex = "99999999";
+            },
+            onChange: function() {
+                // Hapus status tidak valid saat nilai dipilih
+                this.wrapper.classList.remove('is-invalid');
+                const next = this.wrapper.nextElementSibling;
+                if (next && next.classList.contains('invalid-feedback')) {
+                    next.style.display = 'none';
+                }
             }
         });
     }
@@ -2931,9 +3165,11 @@
                 <select name="items[${i}][product_id]" class="product-select" required onchange="handleTransferProductChange(this, ${i})">
                     ${productOptions}
                 </select>
+                <div class="invalid-feedback">Pilih produk yang akan dipindah</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][qty]" id="transfer_qty_${i}" class="form-control" value="1" min="1" step="0.01" required style="min-width: 80px;" oninput="validateTransferQty(this)">
+                <input type="number" name="items[${i}][qty]" id="transfer_qty_${i}" class="form-control" placeholder="Qty" min="1" step="0.01" required style="min-width: 80px;" oninput="validateTransferQty(this)">
+                <div class="invalid-feedback">Qty wajib diisi</div>
             </td>
             <td>
                 <button type="button" class="btn-filter" onclick="removeTransferRow(this)" style="color: #D9534F;">
@@ -2985,6 +3221,9 @@
             transferForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Integrasi validasi ke AJAX
+                if (!validateProductForm('transferForm')) return;
+                
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalContent = submitBtn.innerHTML;
                 
@@ -3030,15 +3269,7 @@
                 .catch(error => {
                     hideLoading();
                     console.error('Transfer Error:', error);
-                    let errorMsg = error.message || 'Gagal mengirim transfer stok.';
-                    if (error.errors) {
-                        errorMsg = Object.values(error.errors).flat().join('<br>');
-                    }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        html: errorMsg
-                    });
+                    // Tidak menampilkan popup gagal sesuai permintaan, feedback sudah ada di box merah
                 })
                 .finally(() => {
                     submitBtn.disabled = false;
@@ -3222,8 +3453,98 @@
         });
     }
 
+    function validateProductForm(formId) {
+        const form = document.getElementById(formId);
+        const requiredInputs = form.querySelectorAll('[required]');
+        let isValid = true;
+
+        requiredInputs.forEach(input => {
+            let val = input.value;
+            let targetEl = input;
+            
+            // Tangani TomSelect
+            if (input.tomselect) {
+                targetEl = input.tomselect.wrapper;
+            }
+
+            if (!val || !val.trim()) {
+                targetEl.classList.add('is-invalid');
+                const feedback = targetEl.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.style.display = 'block';
+                }
+                isValid = false;
+            } else {
+                targetEl.classList.remove('is-invalid');
+                const feedback = targetEl.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.style.display = 'none';
+                }
+            }
+        });
+
+        // Validasi Foto (Khusus form produk)
+        if (formId === 'addForm' || formId === 'editForm') {
+            const isEdit = formId === 'editForm';
+            const photoInputId = isEdit ? 'editCroppedImageResult' : 'croppedImageResult';
+            const previewId = isEdit ? 'editImagePreviewContainer' : 'imagePreviewContainer';
+            const errorId = isEdit ? 'imageErrorEdit' : 'imageErrorAdd';
+            
+            const photoInput = document.getElementById(photoInputId);
+            const photoContainer = document.getElementById(previewId);
+            const hasExistingImage = photoContainer ? photoContainer.querySelector('img') : false;
+            
+            if (photoInput && photoContainer) {
+                if (!photoInput.value && !hasExistingImage) {
+                    photoContainer.style.borderColor = '#dc3545';
+                    const errEl = document.getElementById(errorId);
+                    if (errEl) errEl.style.display = 'block';
+                    isValid = false;
+                } else {
+                    photoContainer.style.borderColor = '#cbd5e1';
+                    const errEl = document.getElementById(errorId);
+                    if (errEl) errEl.style.display = 'none';
+                }
+            }
+        }
+
+        if (isValid) {
+            let msg = 'Sedang Memproses Data...';
+            if (formId === 'editForm') msg = 'Sedang Memperbarui Produk...';
+            if (formId === 'restokForm') msg = 'Sedang Menyimpan Data Restok...';
+            if (formId === 'transferForm') msg = 'Sedang Memproses Transfer Stok...';
+            if (formId === 'opnameForm') msg = 'Sedang Menyimpan Data Opname...';
+            showLoading(msg);
+            return true;
+        } else {
+
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                if (firstInvalid.classList.contains('ts-wrapper')) {
+                    // TomSelect focus handle
+                } else {
+                    firstInvalid.focus();
+                }
+            }
+            return false;
+        }
+    }
+
     // --- Global Notifications (SweetAlert2) ---
     document.addEventListener('DOMContentLoaded', function() {
+        // Clear error state on input
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    this.classList.remove('is-invalid');
+                }
+            });
+            input.addEventListener('change', function() {
+                if (this.value.trim()) {
+                    this.classList.remove('is-invalid');
+                }
+            });
+        });
         @if(session('success'))
             Swal.fire({
                 icon: 'success',
@@ -3252,6 +3573,59 @@
     });
 </script>
 {{-- Duplicate modal removed --}}
+
+<!-- Modal Cropper -->
+<div id="cropperModal" class="modal-overlay" style="display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.85); z-index: 999999 !important; backdrop-filter: blur(8px);">
+    <div class="modal-content" style="max-width: 600px; width: 95%; background: white; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div class="modal-header" style="background: #ffffff; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: var(--light-blue); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary-blue);">
+                    <iconify-icon icon="solar:crop-minimalistic-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">Sesuaikan Foto</h3>
+                    <p style="margin: 0; font-size: 12px; color: #64748b;">Geser dan atur posisi foto produk (1:1)</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeCropperModal()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: all 0.2s;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 0; background: #0f172a; display: flex; justify-content: center; align-items: center; height: 400px; position: relative;">
+            <img id="cropperImage" src="" style="max-width: 100%; display: block;">
+            
+            <!-- Floating Controls -->
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 50px; backdrop-filter: blur(4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); z-index: 10;">
+                <button type="button" class="btn-cropper-tool" onclick="cropper.zoom(0.1)" title="Zoom In" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:magnifer-zoom-in-bold" style="font-size: 20px;"></iconify-icon>
+                </button>
+                <button type="button" class="btn-cropper-tool" onclick="cropper.zoom(-0.1)" title="Zoom Out" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:magnifer-zoom-out-bold" style="font-size: 20px;"></iconify-icon>
+                </button>
+                <div style="width: 1px; background: #e2e8f0; height: 24px; margin: 6px 4px;"></div>
+                <button type="button" class="btn-cropper-tool" onclick="cropper.rotate(-90)" title="Rotate Left" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:restart-bold" style="font-size: 20px; transform: scaleX(-1);"></iconify-icon>
+                </button>
+                <button type="button" class="btn-cropper-tool" onclick="cropper.rotate(90)" title="Rotate Right" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:restart-bold" style="font-size: 20px;"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 16px; background: #ffffff;">
+            <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center; height: 48px; border-radius: 12px; font-weight: 600;" onclick="closeCropperModal()">Batal</button>
+            <button type="button" class="btn-action" style="flex: 2; background: var(--primary-blue); color: white; justify-content: center; height: 48px; border-radius: 12px; font-weight: 700; box-shadow: 0 10px 15px -3px rgba(0, 129, 201, 0.3);" onclick="applyCrop()">
+                <iconify-icon icon="solar:check-circle-bold" style="margin-right: 8px; font-size: 20px;"></iconify-icon> Gunakan Foto Ini
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-cropper-tool:hover {
+        background: #f8fafc !important;
+        color: var(--primary-blue) !important;
+        transform: translateY(-2px);
+        transition: all 0.2s;
+    }
+</style>
 
 {{-- GLOBAL LOADING OVERLAY --}}
 <div id="globalLoading" class="global-loader-overlay" style="display: none !important;">

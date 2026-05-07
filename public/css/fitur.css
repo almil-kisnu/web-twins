@@ -16,11 +16,13 @@
 /* Tabs Section */
 .tab-navigation {
     position: sticky;
-    top: -35px; /* Offset for .main-content padding */
+    top: -35px;
+    /* Offset for .main-content padding */
     background: white;
     z-index: 100;
     padding: 20px 0;
-    margin: -35px -35px 20px -35px; /* Negative margin to span full width of main-content padding */
+    margin: -35px -35px 20px -35px;
+    /* Negative margin to span full width of main-content padding */
     display: flex;
     justify-content: center;
     gap: 16px;
@@ -442,11 +444,11 @@
 
 /* Hide "Showing X to Y" text for cleaner look */
 .pagination-container .small.text-muted,
-.pagination-container nav > div:first-child {
+.pagination-container nav>div:first-child {
     display: none !important;
 }
 
-.pagination-container nav > div:last-child {
+.pagination-container nav>div:last-child {
     display: flex !important;
     justify-content: center !important;
     width: 100%;
@@ -932,7 +934,7 @@
     height: 24px;
 }
 
-.switch input { 
+.switch input {
     opacity: 0;
     width: 0;
     height: 0;
@@ -941,7 +943,10 @@
 .slider {
     position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: #cbd5e1;
     transition: .4s;
     border-radius: 34px;
@@ -959,11 +964,11 @@
     border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--primary-blue);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(22px);
 }
 
@@ -1026,8 +1031,15 @@ input:checked + .slider:before {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .dropdown-checkbox-content {
@@ -1048,11 +1060,20 @@ input:checked + .slider:before {
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px) scaleY(0.95); }
-    to { opacity: 1; transform: translateY(0) scaleY(1); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scaleY(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+    }
 }
 
-.dropdown-checkbox-content.show { display: block; }
+.dropdown-checkbox-content.show {
+    display: block;
+}
 
 .dropdown-search {
     padding: 12px;
@@ -1070,7 +1091,10 @@ input:checked + .slider:before {
     transition: 0.3s;
 }
 
-.dropdown-search input:focus { border-color: var(--primary-blue); background: white; }
+.dropdown-search input:focus {
+    border-color: var(--primary-blue);
+    background: white;
+}
 
 .dropdown-list {
     max-height: 250px;
@@ -1078,12 +1102,19 @@ input:checked + .slider:before {
     padding: 8px;
 }
 
-.dropdown-list::-webkit-scrollbar { width: 5px; }
-.dropdown-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.dropdown-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
 
 .dropdown-item {
     display: flex !important;
-    flex-direction: row !important; /* Pastikan bersandingan */
+    flex-direction: row !important;
+    /* Pastikan bersandingan */
     align-items: center !important;
     gap: 12px;
     padding: 10px 12px;
@@ -1093,7 +1124,9 @@ input:checked + .slider:before {
     margin-bottom: 2px;
 }
 
-.dropdown-item:hover { background: var(--light-blue); }
+.dropdown-item:hover {
+    background: var(--light-blue);
+}
 
 /* Custom Checkbox Design */
 .dropdown-item input[type="checkbox"] {
@@ -1140,7 +1173,7 @@ input:checked + .slider:before {
     color: #94a3b8;
 }
 
-.dropdown-checkbox-content.show ~ .dropdown-checkbox-btn .arrow-icon {
+.dropdown-checkbox-content.show~.dropdown-checkbox-btn .arrow-icon {
     transform: rotate(180deg);
 }
 
@@ -1180,58 +1213,58 @@ input:checked + .slider:before {
 
 /* --- Switch Toggle --- */
 .switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
 }
 
-.switch input { 
-  opacity: 0;
-  width: 0;
-  height: 0;
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
 .slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #cbd5e1;
-  transition: .4s;
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
 }
 
 .slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .4s;
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
 }
 
-input:checked + .slider {
-  background-color: var(--primary-blue);
+input:checked+.slider {
+    background-color: var(--primary-blue);
 }
 
-input:focus + .slider {
-  box-shadow: 0 0 1px var(--primary-blue);
+input:focus+.slider {
+    box-shadow: 0 0 1px var(--primary-blue);
 }
 
-input:checked + .slider:before {
-  transform: translateX(20px);
+input:checked+.slider:before {
+    transform: translateX(20px);
 }
 
 .slider.round {
-  border-radius: 34px;
+    border-radius: 34px;
 }
 
 .slider.round:before {
-  border-radius: 50%;
+    border-radius: 50%;
 }
 
 .status-active {

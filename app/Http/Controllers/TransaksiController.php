@@ -14,11 +14,12 @@ class TransaksiController extends Controller
 {
     public function index()
     {
-        return $this->riwayat();
+        return $this->manage();
     }
 
-    public function riwayat()
+    public function manage()
     {
+        // Data Riwayat
         $data = \App\Models\PaymentOrder::orderBy('created_at', 'desc')->get()->map(function($trx) {
             $meta = $trx->meta ?: [];
             $itemDiscount = (int)($meta['item_discount_total'] ?? 0);
@@ -33,35 +34,29 @@ class TransaksiController extends Controller
                 'qty' => $trx->items_count,
                 'total' => 'Rp ' . number_format($trx->total_amount, 0, ',', '.'),
                 'diskon' => $totalDiscount > 0 ? '-Rp ' . number_format($totalDiscount, 0, ',', '.') : '-',
-                'status' => ucfirst($trx->payment_status)
+                'status' => ucfirst($trx->payment_status),
+                'uuid' => $trx->uuid
             ];
         });
 
-        $sub_menus = Fitur::where('parent_id', 3)->orderBy('id')->get();
-        return view('transaksi.riwayat', compact('data', 'sub_menus'));
-    }
-
-    public function diskon()
-    {
-        // Auto-fix & Debug columns
-        try {
-            $columns = \Illuminate\Support\Facades\Schema::getColumnListing('promo');
-            \Illuminate\Support\Facades\Log::info('Kolom Tabel Promo: ' . implode(', ', $columns));
-            
-            if (!in_array('kode_promo', $columns)) {
-                \Illuminate\Support\Facades\DB::statement("ALTER TABLE promo ADD COLUMN kode_promo VARCHAR(255) DEFAULT NULL");
-                \Illuminate\Support\Facades\Log::info('Berhasil menambah kolom kode_promo secara paksa.');
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal akses/ubah tabel promo: ' . $e->getMessage());
-        }
-
+        // Data Diskon
         $diskons = Promo::orderBy('tanggal_mulai', 'desc')->get();
         $products = \App\Models\Product::orderBy('nama_produk', 'asc')->get();
         $outlets = \App\Models\Outlet::orderBy('nama', 'asc')->get();
         
         $sub_menus = Fitur::where('parent_id', 3)->orderBy('id')->get();
-        return view('transaksi.diskon', compact('diskons', 'products', 'outlets', 'sub_menus'));
+        
+        return view('transaksi.manage', compact('data', 'diskons', 'products', 'outlets', 'sub_menus'));
+    }
+
+    public function riwayat()
+    {
+        return redirect()->route('transaksi.index');
+    }
+
+    public function diskon()
+    {
+        return redirect()->route('transaksi.index', ['tab' => 'diskon']);
     }
 
     public function storeDiskon(Request $request)

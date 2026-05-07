@@ -10,21 +10,21 @@ class KeuanganController extends Controller
 {
     public function index()
     {
-        return redirect()->route('keuangan.kas-box');
+        return view('keuangan.manage');
     }
 
     public function kasBox()
     {
-        return view('keuangan.kas-box');
+        return view('keuangan.manage');
     }
 
     public function arusUang()
     {
-        return view('keuangan.arus-uang');
+        return view('keuangan.manage');
     }
 
     public function pemindahanSaldo()
     {
-        return view('keuangan.pemindahan-saldo');
+        return view('keuangan.manage');
     }
 }

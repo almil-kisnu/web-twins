@@ -84,7 +84,7 @@ class ProductController extends Controller
         $categories = Category::all();
         $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
-        return view('product.index', [
+        $data = [
             'active_tab' => 'produk',
             'products' => $products,
             'categories' => $categories,
@@ -92,7 +92,13 @@ class ProductController extends Controller
             'selected_store_id' => $selectedStoreId,
             'all_products' => $this->mapProductsForJs(Product::all(), $user, $selectedStoreId),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
-        ]);
+        ];
+
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+
+        return view('product.index', $data);
     }
 
     /**
@@ -102,47 +108,76 @@ class ProductController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
+        $sub_tab = $request->get('sub_tab', 'semua');
 
+        // Calculate totals for cards (always needed)
+        $summaryQuery = Opname::query();
         if (!$user->isOwner()) {
-            $query->where('store_id', $user->store_id);
-        } elseif ($request->has('store_id') && $request->store_id != '') {
-            $query->where('store_id', $request->store_id);
+            $summaryQuery->where('store_id', $user->store_id);
         }
-
-        if ($request->has('category_id') && $request->category_id != '') {
-            $query->where('kategori_id', $request->category_id);
-        }
-
-        if ($request->has('status') && $request->status != '') {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->has('search') && $request->search != '') {
-            $search = strtolower($request->search);
-            $query->where(function($q) use ($search) {
-                $q->whereHas('details.product', function($sq) use ($search) {
-                    $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
-                })->orWhereHas('store', function($sq) use ($search) {
-                    $sq->whereRaw('LOWER(nama) LIKE ?', ["%{$search}%"]);
-                });
-            });
-        }
-
-        // Calculate totals for cards before pagination
-        $summaryQuery = clone $query;
         $all_opnames = $summaryQuery->get();
         $pending_count = $all_opnames->where('status', 'Pending')->count();
         $selesai_count = $all_opnames->where('status', 'Selesai')->count();
         $total_loss = $all_opnames->sum('total_kerugian');
 
-        $opnames = $query->paginate(10);
+        if ($sub_tab == 'produk_rugi') {
+            $query = OpnameDetail::with(['product', 'opname.store'])
+                ->where('selisih', '<', 0);
+            
+            if (!$user->isOwner()) {
+                $query->whereHas('opname', function($q) use ($user) {
+                    $q->where('store_id', $user->store_id);
+                });
+            }
+
+            if ($request->has('search') && $request->search != '') {
+                $search = strtolower($request->search);
+                $query->whereHas('product', function($q) use ($search) {
+                    $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
+                });
+            }
+            
+            $opname_details = $query->orderBy('uuid', 'desc')->paginate(10)->withQueryString();
+            $opnames = collect();
+        } else {
+            $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
+
+            if (!$user->isOwner()) {
+                $query->where('store_id', $user->store_id);
+            } elseif ($request->has('store_id') && $request->store_id != '') {
+                $query->where('store_id', $request->store_id);
+            }
+
+            if ($request->has('category_id') && $request->category_id != '') {
+                $query->where('kategori_id', $request->category_id);
+            }
+
+            if ($request->has('status') && $request->status != '') {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('search') && $request->search != '') {
+                $search = strtolower($request->search);
+                $query->where(function($q) use ($search) {
+                    $q->whereHas('details.product', function($sq) use ($search) {
+                        $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
+                    })->orWhereHas('store', function($sq) use ($search) {
+                        $sq->whereRaw('LOWER(nama) LIKE ?', ["%{$search}%"]);
+                    });
+                });
+            }
+            $opnames = $query->paginate(10)->withQueryString();
+            $opname_details = collect();
+        }
+
         $categories = Category::all();
         $outlets = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
-        return view('product.index', [
+        $data = [
             'active_tab' => 'opname',
+            'sub_tab' => $sub_tab,
             'opnames' => $opnames,
+            'opname_details' => $opname_details,
             'pending_count' => $pending_count,
             'selesai_count' => $selesai_count,
             'total_loss' => $total_loss,
@@ -160,7 +195,13 @@ class ProductController extends Controller
                 $request->store_id
             ),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
-        ]);
+        ];
+
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+
+        return view('product.index', $data);
     }
 
     /**
@@ -951,9 +992,46 @@ class ProductController extends Controller
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
-        $product->delete();
+        
+        DB::beginTransaction();
+        try {
+            // Delete related price levels
+            PriceLevel::where('product_id', $product->uuid)->delete();
+            
+            // Delete related product store links
+            ProductStore::where('product_id', $product->uuid)->delete();
 
-        return redirect()->back()->with('success', 'Produk berhasil dihapus secara permanen!');
+            // Delete related stock cards
+            StockCard::where('product_id', $product->uuid)->delete();
+
+            // Delete related opname details
+            OpnameDetail::where('product_id', $product->uuid)->delete();
+
+            // Delete related transaction details (sales history)
+            TransactionDetail::where('product_id', $product->uuid)->delete();
+
+            // Detach from promos if relationship exists
+            if (method_exists($product, 'promos')) {
+                $product->promos()->detach();
+            }
+
+            // Delete image if local
+            if ($product->image_url && !str_starts_with($product->image_url, 'http')) {
+                $oldPath = ltrim(str_replace(['storage/', '/storage/'], '', $product->image_url), '/');
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            $product->delete();
+            
+            DB::commit();
+            return redirect()->back()->with('success', 'Produk berhasil dihapus secara permanen!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Product Deletion Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus produk: ' . $e->getMessage());
+        }
     }
 
     public function massDestroy(Request $request)
@@ -1278,6 +1356,25 @@ class ProductController extends Controller
         } 
         
         if ($tab == 'opname') {
+            if ($request->sub_tab == 'produk_rugi') {
+                $query = OpnameDetail::with(['product', 'opname.store'])
+                    ->where('selisih', '<', 0);
+                
+                if (!$user->isOwner()) {
+                    $query->whereHas('opname', function($q) use ($user) {
+                        $q->where('store_id', $user->store_id);
+                    });
+                }
+
+                if ($request->search) {
+                    $search = strtolower($request->search);
+                    $query->whereHas('product', function($q) use ($search) {
+                        $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
+                    });
+                }
+                return $query->get();
+            }
+
             $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
             if (!$user->isOwner()) $query->where('store_id', $user->store_id);
             if ($request->search) {
@@ -1313,7 +1410,12 @@ class ProductController extends Controller
     private function getExportColumns($tab)
     {
         if ($tab == 'produk') return ['Nama Produk', 'Barcode', 'Kategori', 'Harga Modal', 'Harga Jual', 'Stok'];
-        if ($tab == 'opname') return ['No Ref', 'Tanggal', 'Petugas', 'Outlet', 'Total Item', 'Total Selisih', 'Potensi Kerugian (Rp)', 'Status'];
+        if ($tab == 'opname') {
+            if (request('sub_tab') == 'produk_rugi') {
+                return ['Nama Produk', 'Barcode', 'Outlet', 'Tanggal Opname', 'Stok Sistem', 'Stok Fisik', 'Selisih', 'Kerugian (Rp)'];
+            }
+            return ['No Ref', 'Tanggal', 'Petugas', 'Outlet', 'Total Item', 'Total Selisih', 'Potensi Kerugian (Rp)', 'Status'];
+        }
         if ($tab == 'request') return ['Produk', 'Outlet', 'Stok', 'Kadaluarsa', 'Kategori'];
         return [];
     }
@@ -1400,6 +1502,20 @@ class ProductController extends Controller
             ];
         }
         if ($tab == 'opname') {
+            if (request('sub_tab') == 'produk_rugi') {
+                $modal = $item->product->harga_modal ?? 0;
+                $kerugian = abs($item->selisih * $modal);
+                return [
+                    $item->product->nama_produk ?? '-',
+                    $item->product->barcode ?? '-',
+                    $item->opname->store->nama ?? '-',
+                    \Carbon\Carbon::parse($item->opname->tanggal)->format('d-m-Y'),
+                    $item->stok_sistem,
+                    $item->stok_fisik,
+                    $item->selisih,
+                    $kerugian
+                ];
+            }
             return [
                 $item->uuid,
                 ' ' . \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y'),

@@ -7,31 +7,29 @@ use App\Models\Outlet;
 
 class OutletController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $outlets = Outlet::with(['users.operator'])->get();
+        
+        // Data for Kinerja (can be added here or kept as mock for now as requested)
+        // Data for Riwayat Stok (can be added here)
+        
+        $activeTab = $request->query('active_tab', 'data');
+
         return view('outlet.index', [
             'outlets' => $outlets,
-            'active_tab' => 'data'
+            'active_tab' => $activeTab
         ]);
     }
 
     public function kinerja()
     {
-        $outlets = Outlet::with(['users.operator'])->get();
-        return view('outlet.index', [
-            'active_tab' => 'kinerja',
-            'outlets' => $outlets
-        ]);
+        return redirect()->route('outlet.index', ['active_tab' => 'kinerja']);
     }
 
     public function riwayat()
     {
-        $outlets = Outlet::with(['users.operator'])->get();
-        return view('outlet.index', [
-            'active_tab' => 'riwayat',
-            'outlets' => $outlets
-        ]);
+        return redirect()->route('outlet.index', ['active_tab' => 'riwayat']);
     }
 
     public function store(Request $request)

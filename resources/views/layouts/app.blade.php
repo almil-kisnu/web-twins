@@ -113,12 +113,9 @@
                 @elseif(request()->is('products*'))
                     <i id="topbar-icon" data-lucide="package"></i>
                     <h2 id="topbar-title">Manajemen Produk</h2>
-                @elseif(request()->is('transaksi'))
+                @elseif(request()->is('transaksi*'))
                     <i id="topbar-icon" data-lucide="receipt"></i>
-                    <h2 id="topbar-title">Riwayat Transaksi</h2>
-                @elseif(request()->is('transaksi/diskon'))
-                    <i id="topbar-icon" data-lucide="percent"></i>
-                    <h2 id="topbar-title">Manajemen Diskon</h2>
+                    <h2 id="topbar-title">Transaksi & Diskon</h2>
                 @elseif(request()->is('keuangan'))
                     <i id="topbar-icon" data-lucide="trending-up"></i>
                     <h2 id="topbar-title">Keuangan</h2>
