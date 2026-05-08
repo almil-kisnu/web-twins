@@ -128,23 +128,6 @@
             </div>
         </div>
 
-        @if(session('success'))
-            <div id="alertSuccess"
-                style="background: #E8F5E9; color: #2E7D32; padding: 10px 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; border-left: 4px solid #4CAF50; transition: opacity 0.5s ease;">
-                <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size: 18px;"></iconify-icon>
-                {{ session('success') }}
-            </div>
-        @endif
-        @if($errors->any())
-            <div
-                style="background: #FFEBEE; color: #C62828; padding: 10px 15px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; border-left: 4px solid #F44336;">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
 
         <form id="formGlobalDeleteShift" method="POST" style="display: none;">
             @csrf
@@ -768,5 +751,23 @@
         if (absensiMenu && typeof setActive === 'function') {
             setActive(absensiMenu, 'Sistem Absensi', 'calendar-days');
         }
+
+        @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: '{{ session("success") }}',
+            showConfirmButton: false,
+            timer: 2000
+        });
+        @endif
+
+        @if($errors->any())
+        Swal.fire({
+            icon: 'error',
+            title: 'Terjadi Kesalahan!',
+            html: '<ul style="text-align: left;">@foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach</ul>',
+        });
+        @endif
     </script>
 @endsection

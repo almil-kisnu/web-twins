@@ -16,7 +16,7 @@ class DetailDebt extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'debts_id', 'sebelum', 'bayar', 'sisa'
+        'debts_id', 'sebelum', 'bayar', 'sisa', 'metode_pembayaran', 'tanggal', 'user_id'
     ];
 
     protected static function boot()
@@ -27,5 +27,15 @@ class DetailDebt extends Model
                 $model->{$model->getKeyName()} = (string) Str::uuid();
             }
         });
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'uuid');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'metode_pembayaran', 'uuid');
     }
 }

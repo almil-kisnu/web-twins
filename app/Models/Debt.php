@@ -13,10 +13,10 @@ class Debt extends Model
     protected $primaryKey = 'uuid';
     public $incrementing = false;
     protected $keyType = 'string';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
-        'store_id', 'kontak_id', 'tipe', 'nominal', 'sisa', 'jatuh_tempo'
+        'store_id', 'kontak_id', 'tipe', 'nominal', 'sisa', 'jatuh_tempo', 'reference_id', 'reference_type'
     ];
 
     protected static function boot()
@@ -37,5 +37,15 @@ class Debt extends Model
     public function detailDebts()
     {
         return $this->hasMany(DetailDebt::class, 'debts_id', 'uuid');
+    }
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'reference_id', 'uuid');
+    }
+
+    public function paymentOrder()
+    {
+        return $this->belongsTo(PaymentOrder::class, 'reference_id', 'uuid');
     }
 }

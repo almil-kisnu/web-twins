@@ -800,7 +800,8 @@ class ProductController extends Controller
                 ]);
             }
 
-            // 6. Keuangan
+            // 6. Keuangan (Dibuat Manual oleh User sesuai permintaan)
+            /*
             if ($request->metode_pembayaran == 'Tunai') {
                 CashFlow::create([
                     'store_id' => $store_id,
@@ -810,7 +811,9 @@ class ProductController extends Controller
                     'keterangan' => "Pembelian stok / Restok (Trx: {$transaction->uuid})",
                     'tanggal' => now(),
                 ]);
-            } else {
+            }
+            */
+            if ($request->metode_pembayaran != 'Tunai') {
                 Debt::create([
                     'store_id' => $store_id,
                     'kontak_id' => $request->contact_id,
