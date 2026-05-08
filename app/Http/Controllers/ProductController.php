@@ -483,21 +483,26 @@ class ProductController extends Controller
 
     public function getProductsByStore($store_id)
     {
-        $products = ProductStore::where('store_id', $store_id)
-            ->where('stok', '>', 0)
-            ->where('status_aktif', true)
-            ->with('product')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'uuid' => $item->product->uuid,
-                    'nama_produk' => $item->product->nama_produk,
-                    'barcode' => $item->product->barcode,
-                    'stok' => $item->stok
-                ];
-            });
+        $products = Product::whereHas('stores', function($q) use ($store_id) {
+            $q->where('store_id', $store_id);
+        })->with(['stores' => function($q) use ($store_id) {
+            $q->where('store_id', $store_id);
+        }, 'category'])->get();
 
-        return response()->json($products);
+        $mapped = $products->map(function($p) {
+            $storeData = $p->stores->first();
+            return [
+                'uuid' => $p->uuid,
+                'nama_produk' => $p->nama_produk,
+                'barcode' => $p->barcode,
+                'category_name' => $p->category->nama_category ?? '-',
+                'current_stok' => $storeData ? (float)$storeData->stok : 0,
+                'harga_modal' => (float)($p->harga_modal ?? 0),
+                'harga_jual' => (float)($p->harga_jual ?? 0)
+            ];
+        });
+
+        return response()->json($mapped);
     }
 
     public function storeTransfer(Request $request)
@@ -1069,7 +1074,6 @@ class ProductController extends Controller
             'items.*.stok_sistem' => 'required|numeric',
             'items.*.stok_fisik' => 'nullable|numeric',
             'items.*.alasan_selisih' => 'nullable|string',
-            'items.*.keterangan' => 'nullable|string',
         ]);
 
         $storeId = $user->isOwner() ? $request->store_id : $user->store_id;
@@ -1086,11 +1090,9 @@ class ProductController extends Controller
             ]);
 
             foreach ($request->items as $item) {
-                $fisik = $item['stok_fisik'] ?? 0;
+                $fisik = (isset($item['stok_fisik']) && $item['stok_fisik'] !== '') ? $item['stok_fisik'] : null;
                 $sistem = $item['stok_sistem'];
-                $selisih = $fisik - $sistem;
-                
-                
+                $selisih = ($fisik !== null) ? ($fisik - $sistem) : 0;
 
                 OpnameDetail::create([
                     'uuid' => (string) \Illuminate\Support\Str::uuid(),
@@ -1104,6 +1106,11 @@ class ProductController extends Controller
             }
 
             DB::commit();
+
+            if ($request->action == 'finalize') {
+                return $this->finalizeOpname($opname->uuid);
+            }
+
             return redirect()->back()->with('success', 'Sesi Opname berhasil dibuat (Status: Pending)!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1112,12 +1119,70 @@ class ProductController extends Controller
         }
     }
 
+    public function updateOpname(Request $request, $id)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $opname = Opname::findOrFail($id);
+        if ($opname->status == 'Selesai') {
+            return redirect()->back()->with('error', 'Opname yang sudah difinalisasi tidak dapat diubah.');
+        }
+
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,uuid',
+            'items.*.stok_sistem' => 'required|numeric',
+            'items.*.stok_fisik' => 'nullable|numeric',
+            'items.*.alasan_selisih' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Sync category if changed (though usually fixed once created)
+            if ($request->has('kategori_id')) {
+                $opname->update(['kategori_id' => $request->kategori_id]);
+            }
+
+            // Remove old details and insert new ones (simpler than syncing)
+            OpnameDetail::where('opname_id', $opname->uuid)->delete();
+
+            foreach ($request->items as $item) {
+                $fisik = (isset($item['stok_fisik']) && $item['stok_fisik'] !== '') ? $item['stok_fisik'] : null;
+                $sistem = $item['stok_sistem'];
+                $selisih = ($fisik !== null) ? ($fisik - $sistem) : 0;
+
+                OpnameDetail::create([
+                    'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'opname_id' => $opname->uuid,
+                    'product_id' => $item['product_id'],
+                    'stok_sistem' => $sistem,
+                    'stok_fisik' => $fisik,
+                    'selisih' => $selisih,
+                    'keterangan' => $item['alasan_selisih'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            if ($request->action == 'finalize') {
+                return $this->finalizeOpname($opname->uuid);
+            }
+
+            return redirect()->back()->with('success', 'Sesi Opname berhasil diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Opname Update Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memperbarui opname: ' . $e->getMessage());
+        }
+    }
+
     public function finalizeOpname($id)
     {
         /** @var User $user */
         $user = Auth::user();
-        if (!$user->isOwner()) {
-            return redirect()->back()->with('error', 'Hanya Owner yang bisa melakukan finalisasi opname.');
+        if (!$user->isOwner() && !$user->isKepalaToko()) {
+            return redirect()->back()->with('error', 'Hanya Owner atau Kepala Toko yang bisa melakukan finalisasi opname.');
         }
 
         $opname = Opname::with('details')->findOrFail($id);
@@ -1128,50 +1193,100 @@ class ProductController extends Controller
         DB::beginTransaction();
         try {
             foreach ($opname->details as $detail) {
-                if ($detail->selisih != 0) {
-                    $ps = ProductStore::where('product_id', $detail->product_id)
-                        ->where('store_id', $opname->store_id)
-                        ->first();
-                    
-                    if ($ps) {
-                        $ps->update(['stok' => $detail->stok_fisik]);
-                    }
+                $ps = ProductStore::where('product_id', $detail->product_id)
+                    ->where('store_id', $opname->store_id)
+                    ->first();
+                
+                if ($ps) {
+                    $ps->update(['stok' => $detail->stok_fisik]);
 
-                    StockCard::create([
-                        'product_id' => $detail->product_id,
-                        'store_id' => $opname->store_id,
-                        'jmlh' => $detail->selisih,
-                        'keterangan' => "Opname: {$opname->uuid}",
-                        'created_at' => now()
-                    ]);
+                    if ($detail->selisih != 0) {
+                        StockCard::create([
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'product_id' => $detail->product_id,
+                            'store_id' => $opname->store_id,
+                            'jmlh' => $detail->selisih,
+                            'keterangan' => "Opname: {$opname->uuid}",
+                            'created_at' => now()
+                        ]);
+                    }
                 }
             }
 
             $opname->update(['status' => 'Selesai']);
 
             DB::commit();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Opname berhasil difinalisasi!']);
+            }
+
             return redirect()->back()->with('success', 'Opname berhasil difinalisasi dan stok telah diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Opname Finalize Error: ' . $e->getMessage());
+            
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+
             return redirect()->back()->with('error', 'Gagal finalisasi opname: ' . $e->getMessage());
         }
     }
 
+    public function destroyOpname($id)
+    {
+        $opname = Opname::with('details')->findOrFail($id);
+        
+        DB::beginTransaction();
+        try {
+            if ($opname->status == 'Selesai') {
+                // Rollback stock changes
+                foreach ($opname->details as $detail) {
+                    $ps = ProductStore::where('product_id', $detail->product_id)
+                        ->where('store_id', $opname->store_id)
+                        ->first();
+                    
+                    if ($ps && $detail->selisih != 0) {
+                        // Reverse the adjustment: NewStock = CurrentStock - Selisih
+                        $ps->decrement('stok', $detail->selisih);
+                        
+                        // Remove audit trail entry if exists
+                        StockCard::where('product_id', $detail->product_id)
+                            ->where('store_id', $opname->store_id)
+                            ->where('keterangan', "Opname: {$opname->uuid}")
+                            ->delete();
+                    }
+                }
+            }
+            
+            $opname->details()->delete();
+            $opname->delete();
+            
+            DB::commit();
+            return redirect()->back()->with('success', 'Riwayat opname berhasil dihapus dan stok dikembalikan (jika sudah difinalisasi).');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menghapus opname: ' . $e->getMessage());
+        }
+    }
+
+
 
     public function show($id)
     {
-        $opname = Opname::with(['details.product', 'store', 'user'])->findOrFail($id);
+        $opname = Opname::with(['details.product.stores', 'store', 'user'])->findOrFail($id);
+        
+        foreach ($opname->details as $detail) {
+            if ($detail->product && $detail->product->stores) {
+                $currentStore = $detail->product->stores->where('store_id', $opname->store_id)->first();
+                $detail->current_system_stock = $currentStore ? $currentStore->stok : 0;
+            } else {
+                $detail->current_system_stock = 0;
+            }
+        }
+        
         return response()->json($opname);
-    }
-
-    public function destroyOpname($id)
-    {
-        $opname = Opname::findOrFail($id);
-        OpnameDetail::where('opname_id', $opname->uuid)->delete();
-        $opname->delete();
-
-        return redirect()->back()->with('success', 'Riwayat opname berhasil dihapus!');
     }
 
     public function storeRequest(Request $request)

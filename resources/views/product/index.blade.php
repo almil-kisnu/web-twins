@@ -665,11 +665,11 @@
             @csrf
             <div id="opnameMethod"></div>
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="margin-bottom: 20px;">
                     <div class="form-group">
                         <label>Pilih Outlet / Toko</label>
                         @if(Auth::user()->isOwner())
-                            <select name="store_id" id="opname_store_id" class="form-control" required>
+                            <select name="store_id" id="opname_store_id" class="form-control" required onchange="loadProductsByStore(this.value)" data-user-store="{{ Auth::user()->store_id }}">
                                 <option value="">-- Pilih Toko --</option>
                                 @foreach($stores ?? [] as $store)
                                     <option value="{{ $store->uuid }}" {{ Auth::user()->store_id == $store->uuid ? 'selected' : '' }}>{{ $store->nama }}</option>
@@ -677,19 +677,9 @@
                             </select>
                             <div class="invalid-feedback">Outlet wajib dipilih</div>
                         @else
-                            <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
+                            <input type="hidden" name="store_id" id="opname_store_id" value="{{ Auth::user()->store_id }}">
                             <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa;">
                         @endif
-                    </div>
-                    <div class="form-group">
-                        <label>Pilih Kategori</label>
-                        <select name="kategori_id" id="opnameKategoriFilter" class="form-control" required onchange="filterOpnameProducts(this.value)">
-                            <option value="">-- Pilih Kategori --</option>
-                            @foreach($categories ?? [] as $cat)
-                                <option value="{{ $cat->uuid }}">{{ $cat->nama_category }}</option>
-                            @endforeach
-                        </select>
-                        <div class="invalid-feedback">Kategori wajib dipilih</div>
                     </div>
                 </div>
                 
@@ -707,10 +697,11 @@
                     <table class="fitur-table" style="font-size: 13px; min-width: 750px; border-collapse: separate; border-spacing: 0; margin-bottom: 0;">
                         <thead style="position: sticky; top: 0; z-index: 11; background: #f8fafc;">
                             <tr style="background: #f8fafc;">
-                                <th style="width: 40%; min-width: 260px;">Nama Produk / Barcode</th>
-                                <th style="width: 10%; min-width: 110px; text-align: center;">Sistem</th>
-                                <th style="width: 10%; min-width: 110px; text-align: center;">Fisik</th>
-                                <th style="min-width: 200px;">Alasan Selisih / Keterangan</th>
+                                <th style="width: 35%; min-width: 240px;">Nama Produk / Barcode</th>
+                                <th style="width: 12%; min-width: 110px; text-align: center;">Sistem</th>
+                                <th style="width: 12%; min-width: 110px; text-align: center;">Fisik</th>
+                                <th style="width: 12%; min-width: 110px; text-align: center;">Selisih</th>
+                                <th style="min-width: 180px;">Alasan Selisih / Keterangan</th>
                                 <th style="width: 50px; text-align: center;">#</th>
                             </tr>
                         </thead>
@@ -723,9 +714,13 @@
 
             <div style="margin-top: 24px; display: flex; gap: 12px; padding: 20px;">
                 <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b;" onclick="closeModal('addOpnameModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">
+                <button type="submit" name="action" value="save" class="btn-action" style="flex: 1; justify-content: center; background: #64748b; color: white;" onclick="this.form.dataset.submitAction = 'save'">
                     <iconify-icon icon="solar:diskette-bold-duotone" style="margin-right: 8px;"></iconify-icon>
                     Simpan Sesi Opname
+                </button>
+                <button type="submit" name="action" value="finalize" class="btn-action" style="flex: 1.5; justify-content: center; background: #2E7D32; color: white;" onclick="this.form.dataset.submitAction = 'finalize'">
+                    <iconify-icon icon="solar:check-read-bold-duotone" style="margin-right: 8px;"></iconify-icon>
+                    Finalisasi Opname
                 </button>
             </div>
         </form>
@@ -1291,7 +1286,7 @@
                     </a>
                 </div>
 
-                @if(Auth::user()->isOwner())
+                @if(Auth::user()->isOwner() || Auth::user()->isKepalaToko())
                     <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                         <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                             <div style="background: #FFEBEE; color: #C62828; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
@@ -1348,10 +1343,12 @@
                                     <td><strong>{{ $opname->user->name ?? $opname->user->username ?? '-' }}</strong></td>
                                     <td>
                                         <div style="font-weight: 600;">{{ $opname->total_items }} item</div>
-                                        <div style="font-size: 12px;" class="{{ $opname->total_selisih != 0 ? 'bg-selisih' : '' }}">
-                                            {{ $opname->total_selisih > 0 ? '+' : '' }}{{ $opname->total_selisih }}
+                                        <div style="font-size: 12px; display: flex; align-items: center; gap: 4px; color: {{ $opname->total_selisih != 0 ? '#ef4444' : '#22c55e' }}; font-weight: 600;">
+                                            <span>{{ $opname->total_selisih > 0 ? '+' : '' }}{{ $opname->total_selisih }}</span>
                                             @if($opname->total_selisih != 0)
-                                                <iconify-icon icon="solar:danger-bold" style="font-size: 14px; vertical-align: middle;"></iconify-icon>
+                                                <iconify-icon icon="solar:danger-bold" style="font-size: 14px; color: #ef4444;"></iconify-icon>
+                                            @else
+                                                <iconify-icon icon="solar:check-circle-bold" style="font-size: 14px; color: #22c55e;"></iconify-icon>
                                             @endif
                                         </div>
                                     </td>
@@ -1369,17 +1366,17 @@
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 8px;">
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #60a5fa; border: 1.5px solid #60a5fa; background: white;" 
                                                 data-uuid="{{ $opname->uuid }}" onclick="openOpnameDetailModal(this.dataset.uuid)" title="Lihat Detail">
                                                 <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                             </button>
-                                            @if(Auth::user()->isOwner() && $opname->status == 'Pending')
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #2E7D32; border-color: #E8F5E9;" 
-                                                    onclick="confirmFinalizeOpname('{{ $opname->uuid }}')" title="Finalisasi Stok">
-                                                    <iconify-icon icon="solar:check-read-bold-duotone"></iconify-icon>
+                                            @if($opname->status == 'Pending')
+                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #0284c7; border: 1.5px solid #0284c7; background: white;" 
+                                                    onclick="openEditOpnameModal('{{ $opname->uuid }}')" title="Edit Draft">
+                                                    <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                                 </button>
                                             @endif
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" 
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #ef4444; border: 1.5px solid #fecaca; background: white;" 
                                                 data-uuid="{{ $opname->uuid }}" data-date="{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}"
                                                 onclick="confirmDeleteOpname(this.dataset.uuid, this.dataset.date)" title="Hapus">
                                                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
@@ -2038,10 +2035,10 @@
                 
                 d.details.forEach(it => {
                     let diffColor = '#2E7D32'; 
-                    if (it.selisih < 0) {
+                    let diffIcon = 'solar:check-circle-bold';
+                    if (it.selisih != 0) {
                         diffColor = '#D9534F'; 
-                    } else if (it.selisih > 0) {
-                        diffColor = '#FBC02D'; 
+                        diffIcon = 'solar:danger-bold';
                     }
                     
                     const diffText = it.selisih > 0 ? `+${it.selisih}` : it.selisih;
@@ -2049,15 +2046,21 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>
-                            <div style="font-weight: 600;">${it.product ? it.product.nama_produk : 'Produk Terhapus'}</div>
-                            <div style="font-size: 11px; color: #888;">${it.product ? (it.product.barcode || '-') : '-'}</div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div>
+                                    <div style="font-weight: 600;">${it.product ? it.product.nama_produk : 'Produk Terhapus'}</div>
+                                    <div style="font-size: 11px; color: #888;">${it.product ? (it.product.barcode || '-') : '-'}</div>
+                                </div>
+                                <iconify-icon icon="${diffIcon}" style="font-size: 18px; color: ${diffColor};"></iconify-icon>
+                            </div>
                         </td>
                         <td style="text-align: center; font-weight: 600;">${it.stok_sistem}</td>
                         <td style="text-align: center; font-weight: 600;">${it.stok_fisik}</td>
-                        <td style="text-align: center; font-weight: 800; color: ${diffColor}; background: ${diffColor}10;">${diffText}</td>
+                        <td style="text-align: center;">
+                             <span style="font-weight: 800; color: ${diffColor}; background: ${diffColor}10; padding: 2px 8px; border-radius: 4px;">${diffText}</span>
+                        </td>
                         <td>
-                            <div style="font-weight: 500;">${it.alasan_selisih || '-'}</div>
-                            <div style="font-size: 11px; color: #888;">${it.keterangan || ''}</div>
+                            <div style="font-weight: 500;">${it.keterangan || '-'}</div>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -2730,56 +2733,218 @@
         document.getElementById('opnameMethod').innerHTML = '';
         document.querySelector('#addOpnameModal h3').innerText = 'Input Opname Stok';
         document.getElementById('opnameItemsTable').innerHTML = '';
-        if (document.getElementById('opnameKategoriFilter')) document.getElementById('opnameKategoriFilter').value = '';
-        window.currentFilteredProducts = productsList; // Reset to full list
-        addOpnameRow(); 
+        
+        const storeSelect = document.getElementById('opname_store_id');
+        if (storeSelect) {
+            storeSelect.value = storeSelect.dataset.userStore || storeSelect.value;
+            if (storeSelect.disabled) storeSelect.disabled = false;
+        }
+
+        const storeId = storeSelect ? storeSelect.value : null;
+        if (storeId) {
+            loadProductsByStore(storeId);
+        } else {
+            addOpnameRow(); 
+        }
         openModal('addOpnameModal');
     }
 
-    function filterOpnameProducts(kategoriId) {
-        window.currentFilteredProducts = kategoriId 
-            ? productsList.filter(p => p.kategori_id === kategoriId)
-            : productsList;
-        
-        // Refresh all existing selects in the table
-        const selects = document.querySelectorAll('#opnameItemsTable select');
-        const opts = (window.currentFilteredProducts || productsList).map(p => `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`).join('');
-        
-        selects.forEach(select => {
-            const currentVal = select.value;
-            select.innerHTML = '<option value="">-- Pilih Produk --</option>' + opts;
-            select.value = currentVal; // Restore value if possible
-            if (select.classList.contains('product-select')) {
-                initProductSelect(select);
+    async function loadProductsByStore(storeId) {
+        if (!storeId) {
+            document.getElementById('opnameItemsTable').innerHTML = '';
+            addOpnameRow();
+            return;
+        }
+
+        showLoading('Memuat Produk Outlet...');
+        try {
+            const res = await fetch(`/products/by-store/${storeId}`);
+            const products = await res.json();
+            hideLoading();
+
+            const tbody = document.getElementById('opnameItemsTable');
+            tbody.innerHTML = '';
+            
+            if (products.length === 0) {
+                addOpnameRow();
+                return;
             }
-        });
+
+            products.forEach((p, i) => {
+                const row = document.createElement('tr');
+                row.id = `opname_row_${i}`;
+                row.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div>
+                                <div style="font-weight: 600;">${p.nama_produk}</div>
+                                <div style="font-size: 11px; color: #888;">${p.barcode || '-'}</div>
+                            </div>
+                            <span id="status_icon_${i}"></span>
+                        </div>
+                        <input type="hidden" name="items[${i}][product_id]" value="${p.uuid}">
+                    </td>
+                    <td>
+                        <input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" value="${p.current_stok}" readonly style="background: #f8f9fa; text-align: center; padding: 8px 4px;">
+                    </td>
+                    <td>
+                        <input type="number" name="items[${i}][stok_fisik]" class="form-control" placeholder="0" required style="text-align: center; padding: 8px 4px;" oninput="updateOpnameRowStatus(this, ${i})">
+                    </td>
+                    <td style="text-align: center; font-weight: 700;" id="selisih_cell_${i}">-</td>
+                    <td><input type="text" name="items[${i}][alasan_selisih]" class="form-control" placeholder="Keterangan..."></td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn-filter" style="color: #D9534F;" onclick="this.closest('tr').remove()">
+                            <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
+                        </button>
+                    </td>`;
+                tbody.appendChild(row);
+            });
+        } catch (e) {
+            hideLoading();
+            console.error(e);
+            Swal.fire('Error', 'Gagal memuat produk outlet.', 'error');
+        }
+    }
+
+    async function openEditOpnameModal(uuid) {
+        showLoading('Memuat Draft...');
+        try {
+            const res = await fetch(`/products/opname-detail/${uuid}`);
+            const d = await res.json();
+            hideLoading();
+
+            const form = document.getElementById('opnameForm');
+            form.action = `/products/opname/${uuid}`;
+            document.getElementById('opnameMethod').innerHTML = '<input type="hidden" name="_method" value="PUT">';
+            document.querySelector('#addOpnameModal h3').innerText = 'Edit Draft Opname';
+            
+            const storeSelect = document.getElementById('opname_store_id');
+            storeSelect.value = d.store_id;
+            if (storeSelect.disabled !== undefined) storeSelect.disabled = true; // Disable store change on edit
+
+            const tbody = document.getElementById('opnameItemsTable');
+            tbody.innerHTML = '';
+            
+            d.details.forEach((it, i) => {
+                const row = document.createElement('tr');
+                row.id = `opname_row_${i}`;
+                
+                // Logic: Handle sales since draft saved
+                const originalSystemStock = parseFloat(it.stok_sistem) || 0;
+                const currentSystemStock = parseFloat(it.current_system_stock) || 0;
+                const usedSystemStock = currentSystemStock; // Use latest reality
+                
+                const isMatch = usedSystemStock == it.stok_fisik;
+                const iconHtml = `<iconify-icon icon="${isMatch ? 'solar:check-circle-bold' : 'solar:danger-bold'}" style="font-size: 18px; color: ${isMatch ? '#2E7D32' : '#D9534F'};"></iconify-icon>`;
+                const selisihValue = it.stok_fisik !== null ? it.stok_fisik - usedSystemStock : 0;
+                
+                // Set initial background
+                if (it.stok_fisik !== null) {
+                    row.style.setProperty('background-color', isMatch ? '#f0fdf4' : '#fff1f2', 'important');
+                }
+
+                const stockChanged = originalSystemStock !== currentSystemStock;
+
+                row.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div>
+                                <div style="font-weight: 600;">${it.product ? it.product.nama_produk : 'Produk Terhapus'}</div>
+                                <div style="font-size: 11px; color: #888; display: flex; align-items: center; gap: 5px;">
+                                    ${it.product ? (it.product.barcode || '-') : '-'}
+                                    ${stockChanged ? `<span title="Stok sistem berubah sejak disimpan (Tadinya: ${originalSystemStock})" style="background: #FFF3E0; color: #E65100; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; cursor: help;">SYSTEM UPDATED</span>` : ''}
+                                </div>
+                            </div>
+                            <span id="status_icon_${i}">${it.stok_fisik !== null ? iconHtml : ''}</span>
+                        </div>
+                        <input type="hidden" name="items[${i}][product_id]" value="${it.product_id}">
+                    </td>
+                    <td>
+                        <input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" value="${usedSystemStock}" readonly style="background: #f8f9fa; text-align: center; padding: 8px 4px;">
+                    </td>
+                    <td>
+                        <input type="number" name="items[${i}][stok_fisik]" class="form-control" value="${it.stok_fisik !== null ? it.stok_fisik : ''}" ${it.stok_fisik === null ? '' : 'required'} style="text-align: center; padding: 8px 4px;" oninput="updateOpnameRowStatus(this, ${i})">
+                    </td>
+                    <td style="text-align: center; font-weight: 700; color: ${it.stok_fisik !== null ? (selisihValue != 0 ? '#D9534F' : '#2E7D32') : 'inherit'}" id="selisih_cell_${i}">
+                        ${it.stok_fisik !== null ? (selisihValue > 0 ? '+' : '') + selisihValue : '-'}
+                    </td>
+                    <td><input type="text" name="items[${i}][alasan_selisih]" class="form-control" value="${it.keterangan || ''}" placeholder="Keterangan..."></td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn-filter" style="color: #D9534F;" onclick="this.closest('tr').remove()">
+                            <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
+                        </button>
+                    </td>`;
+                tbody.appendChild(row);
+            });
+            
+            openModal('addOpnameModal');
+        } catch (e) {
+            hideLoading();
+            Swal.fire('Error', 'Gagal memuat detail draft.', 'error');
+        }
+    }
+
+    function updateOpnameRowStatus(input, index) {
+        input.classList.remove('is-invalid');
+        const statusIcon = document.getElementById(`status_icon_${index}`);
+        const selisihCell = document.getElementById(`selisih_cell_${index}`);
+        const row = document.getElementById(`opname_row_${index}`);
+        
+        if (input.value === '') {
+            statusIcon.innerHTML = '';
+            selisihCell.innerText = '-';
+            selisihCell.style.color = 'inherit';
+            if (row) row.style.setProperty('background-color', 'transparent', 'important');
+            return;
+        }
+
+        const fisik = parseFloat(input.value) || 0;
+        const sistem = parseFloat(document.getElementById(`sistem_${index}`).value) || 0;
+        const selisih = fisik - sistem;
+        
+        selisihCell.innerText = (selisih > 0 ? '+' : '') + selisih;
+        
+        if (fisik === sistem) {
+            statusIcon.innerHTML = '<iconify-icon icon="solar:check-circle-bold" style="font-size: 18px; color: #2E7D32;"></iconify-icon>';
+            selisihCell.style.color = '#2E7D32';
+            if (row) row.style.setProperty('background-color', '#f0fdf4', 'important'); // Light green
+        } else {
+            statusIcon.innerHTML = '<iconify-icon icon="solar:danger-bold" style="font-size: 18px; color: #D9534F;"></iconify-icon>';
+            selisihCell.style.color = '#D9534F';
+            if (row) row.style.setProperty('background-color', '#fff1f2', 'important'); // Light red
+        }
     }
 
     function addOpnameRow() {
         const tbody = document.getElementById('opnameItemsTable');
         const i = tbody.children.length; 
         const row = document.createElement('tr');
+        row.id = `opname_row_${i}`;
         
-        const list = window.currentFilteredProducts || productsList;
+        const list = productsList;
         let opts = '<option value="">-- Pilih Produk --</option>';
         list.forEach(p => opts += `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`);
         
         row.innerHTML = `
             <td>
-                <select name="items[${i}][product_id]" class="product-select" required onchange="updateSistemStok(this, ${i})">
-                    ${opts}
-                </select>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1;">
+                        <select name="items[${i}][product_id]" class="product-select" required onchange="updateSistemStok(this, ${i})">
+                            ${opts}
+                        </select>
+                    </div>
+                    <span id="status_icon_${i}"></span>
+                </div>
                 <div class="invalid-feedback">Pilih produk yang akan diopname</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" placeholder="0" required readonly style="background: #f8f9fa;">
-                <div class="invalid-feedback">Stok sistem wajib diisi</div>
+                <input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" placeholder="0" required readonly style="background: #f8f9fa; text-align: center; padding: 8px 4px;">
             </td>
             <td>
-                <input type="number" name="items[${i}][stok_fisik]" class="form-control" placeholder="0" required>
-                <div class="invalid-feedback">Stok fisik wajib diisi</div>
+                <input type="number" name="items[${i}][stok_fisik]" class="form-control" placeholder="0" required style="text-align: center; padding: 8px 4px;" oninput="updateOpnameRowStatus(this, ${i})">
             </td>
-            <td><input type="text" name="items[${i}][alasan_selisih]" id="alasan_${i}" class="form-control" placeholder="Wajib jika selisih"></td>
+            <td style="text-align: center; font-weight: 700;" id="selisih_cell_${i}">-</td>
+            <td><input type="text" name="items[${i}][alasan_selisih]" id="alasan_${i}" class="form-control" placeholder="Keterangan..."></td>
             <td style="text-align: center;">
                 <button type="button" class="btn-filter" style="color: #D9534F;" onclick="this.closest('tr').remove()">
                     <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
@@ -3465,6 +3630,15 @@
             // Tangani TomSelect
             if (input.tomselect) {
                 targetEl = input.tomselect.wrapper;
+            }
+
+            // Opname Logic: Allow null physical stock for drafts
+            if (formId === 'opnameForm') {
+                const isDraft = form.dataset.submitAction === 'save';
+                if (isDraft && input.name.includes('[stok_fisik]')) {
+                    // Skip validation for physical stock if saving as draft
+                    return;
+                }
             }
 
             if (!val || !val.trim()) {
