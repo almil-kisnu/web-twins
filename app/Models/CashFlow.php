@@ -16,7 +16,7 @@ class CashFlow extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'store_id', 'user_id', 'jenis', 'nominal', 'keterangan', 'tanggal'
+        'store_id', 'user_id', 'jenis', 'nominal', 'keterangan', 'tanggal', 'metode_pembayaran'
     ];
 
     protected static function boot()
@@ -37,5 +37,20 @@ class CashFlow extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'uuid');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'metode_pembayaran', 'uuid');
+    }
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'reference_id', 'uuid');
+    }
+
+    public function paymentOrder()
+    {
+        return $this->belongsTo(PaymentOrder::class, 'reference_id', 'uuid');
     }
 }

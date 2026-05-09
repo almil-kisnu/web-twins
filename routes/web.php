@@ -123,13 +123,16 @@ Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_to
     Route::get('/', [BukuKasController::class, 'index'])->name('keuangan.transaksi');
     Route::get('/export', [BukuKasController::class, 'export'])->name('keuangan.export');
     Route::post('/cashflow', [BukuKasController::class, 'storeCashFlow'])->name('keuangan.cashflow.store');
+    Route::get('/cashflow', function() { return redirect()->route('keuangan.transaksi', ['active_tab' => 'pengeluaran']); });
     Route::put('/cashflow/{id}', [BukuKasController::class, 'updateCashFlow'])->name('keuangan.cashflow.update');
     Route::delete('/cashflow/{id}', [BukuKasController::class, 'deleteCashFlow'])->name('keuangan.cashflow.destroy');
 
     Route::post('/debt', [BukuKasController::class, 'storeDebt'])->name('keuangan.debt.store');
+    Route::get('/debt', function() { return redirect()->route('keuangan.transaksi', ['active_tab' => 'hutang']); });
     Route::put('/debt/{id}', [BukuKasController::class, 'updateDebt'])->name('keuangan.debt.update');
     Route::post('/debt/{id}/pay', [BukuKasController::class, 'payDebt'])->name('keuangan.debt.pay');
     Route::delete('/debt/{id}', [BukuKasController::class, 'deleteDebt'])->name('keuangan.debt.destroy');
+    Route::get('/reference-detail/{id}', [BukuKasController::class, 'getReferenceDetail'])->name('keuangan.reference-detail');
 });
 
 Route::get('/laporan', [LaporanController::class, 'index'])

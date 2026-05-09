@@ -815,6 +815,7 @@ class ProductController extends Controller
                     'user_id' => $user->uuid,
                     'jenis' => 'pengeluaran',
                     'nominal' => $dp_paid,
+                    'metode_pembayaran' => $request->metode_pembayaran,
                     'keterangan' => $request->payment_type == 'Tunai' ? "Pembelian stok / Restok (Trx: {$transaction->uuid})" : "DP Pembelian stok / Restok (Trx: {$transaction->uuid})",
                     'tanggal' => now(),
                 ]);
@@ -824,7 +825,6 @@ class ProductController extends Controller
                 $debt_amount = $total - $dp_paid;
                 if ($debt_amount > 0) {
                     Debt::create([
-                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
                         'store_id' => $store_id,
                         'kontak_id' => $request->contact_id,
                         'tipe' => 'utang',
@@ -832,6 +832,8 @@ class ProductController extends Controller
                         'sisa' => $debt_amount,
                         'jatuh_tempo' => now()->addDays(30), 
                         'keterangan' => "Sisa pembayaran restok (Trx: {$transaction->uuid})",
+                        'reference_id' => $transaction->uuid,
+                        'reference_type' => 'transaction'
                     ]);
                 }
             }

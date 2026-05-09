@@ -7,6 +7,7 @@ use App\Models\CashFlow;
 use App\Models\Debt;
 use App\Models\DetailDebt;
 use App\Models\Contact;
+use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -25,11 +26,44 @@ class BukuKasController extends Controller
         
         $defaultStore = $user->role === 'owner' ? 'all' : ($user->outlet_id ?? ($outlets->first()->uuid ?? null));
         $store_id = $request->input('store_id', $defaultStore);
+        
+        $active_tab = session('active_tab') ?? $request->input('active_tab', 'pengeluaran');
 
-        $pengeluaranQuery = CashFlow::with(['outlet', 'user'])->where('jenis', 'pengeluaran');
-        $pemasukanQuery = CashFlow::with(['outlet', 'user'])->where('jenis', 'pemasukan');
-        $hutangQuery = Debt::with(['contact', 'detailDebts'])->whereRaw('LOWER(tipe) IN (?, ?)', ['hutang', 'utang']);
-        $piutangQuery = Debt::with(['contact', 'detailDebts'])->whereRaw('LOWER(tipe) = ?', ['piutang']);
+        $period = $request->get('period');
+        $start_date = $request->get('start_date');
+        $end_date = $request->get('end_date');
+
+        if ($period === 'bulanan') {
+            $month = $request->get('month_date', date('Y-m'));
+            $start_date = $month . '-01';
+            $end_date = date('Y-m-t', strtotime($start_date));
+        } elseif ($period === 'tahunan') {
+            $year = $request->get('year_date', date('Y'));
+            $start_date = $year . '-01-01';
+            $end_date = $year . '-12-31';
+        } elseif ($period === 'harian') {
+            if (!$start_date) $start_date = date('Y-m-d');
+            if (!$end_date) $end_date = date('Y-m-d');
+        } else {
+            // No specific period requested, show all data
+            $start_date = null;
+            $end_date = null;
+            $period = 'semua';
+        }
+
+        $pengeluaranQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pengeluaran')->where('keterangan', 'NOT LIKE', '%(Trx:%');
+        $pemasukanQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pemasukan')->where('keterangan', 'NOT LIKE', '%(Trx:%');
+        $status = $request->input('status');
+        $hutangQuery = Debt::with(['contact', 'detailDebts.paymentMethod', 'paymentOrder.items'])->whereRaw('LOWER(tipe) IN (?, ?)', ['hutang', 'utang']);
+        $piutangQuery = Debt::with(['contact', 'detailDebts.paymentMethod', 'transaction.details.product'])->whereRaw('LOWER(tipe) = ?', ['piutang']);
+
+        if ($status === 'lunas') {
+            $hutangQuery->where('sisa', '<=', 0);
+            $piutangQuery->where('sisa', '<=', 0);
+        } elseif ($status === 'belum_lunas') {
+            $hutangQuery->where('sisa', '>', 0);
+            $piutangQuery->where('sisa', '>', 0);
+        }
         $suppliersQuery = Contact::whereRaw('LOWER(tipe) = ?', ['supplier']);
         $customersQuery = Contact::whereRaw('LOWER(tipe) = ?', ['customer']);
 
@@ -46,23 +80,49 @@ class BukuKasController extends Controller
             });
         }
 
+        // Apply Date Filters ONLY if provided
+        if ($start_date) {
+            $pengeluaranQuery->whereDate('tanggal', '>=', $start_date);
+            $pemasukanQuery->whereDate('tanggal', '>=', $start_date);
+        }
+        if ($end_date) {
+            $pengeluaranQuery->whereDate('tanggal', '<=', $end_date);
+            $pemasukanQuery->whereDate('tanggal', '<=', $end_date);
+        }
+
         $pengeluaran = $pengeluaranQuery->orderBy('tanggal', 'desc')->get();
         $pemasukan = $pemasukanQuery->orderBy('tanggal', 'desc')->get();
         $hutang = $hutangQuery->orderBy('jatuh_tempo', 'asc')->get();
         $piutang = $piutangQuery->orderBy('jatuh_tempo', 'asc')->get();
+
+        // Calculate Summaries
+        $totalPemasukan = $pemasukan->sum('nominal');
+        $totalPengeluaran = $pengeluaran->sum('nominal');
+        $saldoKasBersih = $totalPemasukan - $totalPengeluaran;
+
         $suppliers = $suppliersQuery->get();
         $customers = $customersQuery->get();
+        $paymentMethods = PaymentMethod::orderBy('nama_metode', 'asc')->get();
 
         return view('buku_kas.buku_kas', [
-            'title' => 'Buku Kas',
             'pengeluaran' => $pengeluaran,
             'pemasukan' => $pemasukan,
             'hutang' => $hutang,
             'piutang' => $piutang,
             'suppliers' => $suppliers,
             'customers' => $customers,
+            'paymentMethods' => $paymentMethods,
             'outlets' => $outlets,
             'store_id' => $store_id,
+            'status' => $status,
+            'active_tab' => $active_tab,
+            'start_date' => $start_date,
+            'end_date' => $end_date,
+            'period' => $period,
+            'is_filtered' => ($start_date !== null),
+            'totalPemasukan' => $totalPemasukan,
+            'totalPengeluaran' => $totalPengeluaran,
+            'saldoKasBersih' => $saldoKasBersih,
         ]);
     }
 
@@ -72,9 +132,18 @@ class BukuKasController extends Controller
             'store_id' => 'required',
             'jenis' => 'required|in:Pemasukan,Pengeluaran',
             'nominal' => 'required|numeric',
-            'keterangan' => 'nullable|string',
+            'keterangan' => 'required|string',
             'tanggal' => 'required|date',
+            'metode_pembayaran' => 'nullable|string',
         ]);
+
+        // Combine date with current time for full timestamp
+        $tanggal = $request->tanggal;
+        if ($tanggal == date('Y-m-d')) {
+            $tanggal = date('Y-m-d H:i:s');
+        } else {
+            $tanggal = $tanggal . ' ' . date('H:i:s');
+        }
 
         CashFlow::create([
             'store_id' => $request->store_id,
@@ -82,7 +151,8 @@ class BukuKasController extends Controller
             'jenis' => strtolower($request->jenis),
             'nominal' => $request->nominal,
             'keterangan' => $request->keterangan,
-            'tanggal' => $request->tanggal,
+            'tanggal' => $tanggal,
+            'metode_pembayaran' => $request->metode_pembayaran,
         ]);
 
         return redirect()->back()->with('success', $request->jenis . ' berhasil dicatat!')->with('active_tab', strtolower($request->jenis));
@@ -93,14 +163,14 @@ class BukuKasController extends Controller
         $request->validate([
             'nominal' => 'required|numeric',
             'keterangan' => 'nullable|string',
-            'tanggal' => 'required|date',
+            'metode_pembayaran' => 'nullable|string',
         ]);
 
         $cf = CashFlow::findOrFail($id);
         $cf->update([
             'nominal' => $request->nominal,
             'keterangan' => $request->keterangan,
-            'tanggal' => $request->tanggal,
+            'metode_pembayaran' => $request->metode_pembayaran,
         ]);
 
         return redirect()->back()->with('success', 'Data berhasil diperbarui!')->with('active_tab', strtolower($cf->jenis));
@@ -124,16 +194,25 @@ class BukuKasController extends Controller
             'nominal' => 'required|numeric',
             'uang_muka' => 'nullable|numeric',
             'jatuh_tempo' => 'required|date',
+            'metode_pembayaran' => 'nullable|string',
         ]);
 
         $kontakId = $request->kontak_id;
 
         if (!$kontakId && $request->kontak_nama) {
-            $contact = Contact::firstOrCreate([
-                'store_id' => $request->store_id,
-                'nama' => $request->kontak_nama,
-                'tipe' => $request->tipe == 'Hutang' ? 'supplier' : 'customer',
-            ], ['no_hp' => '-']);
+            $contact = Contact::where('store_id', $request->store_id)
+                ->where('nama', $request->kontak_nama)
+                ->where('tipe', $request->tipe == 'Hutang' ? 'supplier' : 'customer')
+                ->first();
+
+            if (!$contact) {
+                $contact = Contact::create([
+                    'store_id' => $request->store_id,
+                    'nama' => $request->kontak_nama,
+                    'tipe' => $request->tipe == 'Hutang' ? 'supplier' : 'customer',
+                    'no_hp' => null, // Avoid unique constraint violation with '-'
+                ]);
+            }
             $kontakId = $contact->uuid;
         }
 
@@ -153,11 +232,15 @@ class BukuKasController extends Controller
                 'debts_id' => $debt->uuid,
                 'sebelum' => $request->nominal,
                 'bayar' => $request->uang_muka,
-                'sisa' => $sisa
+                'sisa' => $sisa,
+                'metode_pembayaran' => $request->metode_pembayaran,
+                'tanggal' => date('Y-m-d H:i:s'),
+                'user_id' => auth()->user()->uuid ?? auth()->id(),
             ]);
         }
 
-        return redirect()->back()->with('success', $request->tipe . ' berhasil dicatat!')->with('active_tab', strtolower($request->tipe));
+        $tabTipe = strtolower($request->tipe) === 'utang' ? 'hutang' : strtolower($request->tipe);
+        return redirect()->back()->with('success', $request->tipe . ' berhasil dicatat!')->with('active_tab', $tabTipe);
     }
 
     public function updateDebt(Request $request, $id)
@@ -170,11 +253,19 @@ class BukuKasController extends Controller
 
         $debt = Debt::findOrFail($id);
         
-        $contact = Contact::firstOrCreate([
-            'store_id' => $debt->store_id,
-            'nama' => $request->kontak_nama,
-            'tipe' => $debt->tipe == 'Hutang' ? 'supplier' : 'customer',
-        ], ['no_hp' => '-']);
+        $contact = Contact::where('store_id', $debt->store_id)
+            ->where('nama', $request->kontak_nama)
+            ->where('tipe', $debt->tipe == 'Hutang' ? 'supplier' : 'customer')
+            ->first();
+
+        if (!$contact) {
+            $contact = Contact::create([
+                'store_id' => $debt->store_id,
+                'nama' => $request->kontak_nama,
+                'tipe' => $debt->tipe == 'Hutang' ? 'supplier' : 'customer',
+                'no_hp' => null,
+            ]);
+        }
 
         $diff = $request->nominal - $debt->nominal;
         $sisaBaru = $debt->sisa + $diff;
@@ -193,7 +284,8 @@ class BukuKasController extends Controller
     public function payDebt(Request $request, $id)
     {
         $request->validate([
-            'bayar' => 'required|numeric|min:1'
+            'bayar' => 'required|numeric|min:1',
+            'metode_pembayaran' => 'required|string',
         ]);
 
         $debt = Debt::findOrFail($id);
@@ -205,7 +297,10 @@ class BukuKasController extends Controller
             'debts_id' => $debt->uuid,
             'sebelum' => $sebelum,
             'bayar' => $request->bayar,
-            'sisa' => $sisaBaru
+            'sisa' => $sisaBaru,
+            'metode_pembayaran' => $request->metode_pembayaran,
+            'tanggal' => date('Y-m-d H:i:s'),
+            'user_id' => auth()->user()->uuid ?? auth()->id(),
         ]);
 
         $debt->update(['sisa' => $sisaBaru]);
@@ -278,12 +373,57 @@ class BukuKasController extends Controller
         );
 
         if ($format === 'excel') {
-            return response(view('buku_kas.export_pdf', $data))
+            return response(view('buku_kas.export_excel', $data))
                 ->header('Content-Type', 'application/vnd.ms-excel')
                 ->header('Content-Disposition', 'attachment; filename="Export_Buku_Kas_'.date('Ymd_His').'.xls"');
         }
 
         $pdf = Pdf::loadView('buku_kas.export_pdf', $data);
         return $pdf->download('Export_Buku_Kas_'.date('Ymd_His').'.pdf');
+    }
+
+    public function getReferenceDetail($id)
+    {
+        // Try to find in Transactions (Sales or Restocks)
+        $trx = \App\Models\Transaction::with(['details.product', 'user', 'store', 'contact'])->where('uuid', $id)->first();
+        if ($trx) {
+            $isPurchase = $trx->jenis === 'pembelian';
+            return response()->json([
+                'success' => true,
+                'type' => $isPurchase ? 'restok' : 'penjualan',
+                'user' => $trx->user->name ?? '-',
+                'store' => $trx->store->nama ?? '-',
+                'contact' => $trx->contact->nama ?? '-',
+                'formatted_date' => \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d F Y H:i'),
+                'items' => $trx->details->map(function($d) use ($isPurchase) {
+                    return [
+                        'nama' => $d->product->nama_produk ?? $d->product->nama ?? 'Produk Tidak Dikenal',
+                        'qty' => $d->jmlh,
+                        'harga' => $isPurchase ? ($d->harga_modal ?: $d->harga_jual) : $d->harga_jual
+                    ];
+                })
+            ]);
+        }
+
+        // Try to find in PaymentOrders (Optional: for other types of automated cashflows)
+        $order = \App\Models\PaymentOrder::with(['items', 'outlet'])->where('uuid', $id)->orWhere('midtrans_order_id', $id)->first();
+        if ($order) {
+            return response()->json([
+                'success' => true,
+                'type' => 'payment_order',
+                'user' => $order->recipient_name ?? '-',
+                'store' => $order->outlet->nama ?? '-',
+                'formatted_date' => \Carbon\Carbon::parse($order->created_at)->translatedFormat('d F Y H:i'),
+                'items' => $order->items->map(function($i) {
+                    return [
+                        'nama' => $i->product_name,
+                        'qty' => $i->quantity,
+                        'harga' => $i->price
+                    ];
+                })
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Data tidak ditemukan']);
     }
 }
