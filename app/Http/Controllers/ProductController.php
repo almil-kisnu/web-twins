@@ -35,13 +35,23 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
+        $data = $this->getConsolidatedData($request);
+        
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+
+        return view('product.index', $data);
+    }
+
+    private function getProductsData(Request $request)
+    {
         /** @var User $user */
         $user = Auth::user();
         $selectedStoreId = $request->get('store_id');
 
         $query = Product::with(['category', 'stores.store', 'priceLevels']);
 
-        // We show all products, context-based stock is calculated in transform below
         if (!$user->isOwner()) {
             $selectedStoreId = $user->store_id;
         }
@@ -63,7 +73,6 @@ class ProductController extends Controller
 
         $products = $query->paginate(10);
 
-        // Add current stock for each product based on store context
         $products->getCollection()->transform(function ($product) use ($user, $selectedStoreId) {
             $storeRelation = null;
             if ($user->isOwner()) {
@@ -83,24 +92,15 @@ class ProductController extends Controller
             return $product;
         });
 
-        $categories = Category::all();
-        $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
-
-        $data = [
+        return [
             'active_tab' => 'produk',
             'products' => $products,
-            'categories' => $categories,
-            'stores' => $stores,
+            'categories' => Category::all(),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
             'selected_store_id' => $selectedStoreId,
             'all_products' => $this->mapProductsForJs(Product::all(), $user, $selectedStoreId),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
-
-        if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
-        }
-
-        return view('product.index', $data);
     }
 
     /**
@@ -108,11 +108,19 @@ class ProductController extends Controller
      */
     public function opname(Request $request)
     {
+        $data = $this->getConsolidatedData($request, 'opname');
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+        return view('product.index', $data);
+    }
+
+    private function getOpnameData(Request $request)
+    {
         /** @var User $user */
         $user = Auth::user();
         $sub_tab = $request->get('sub_tab', 'semua');
 
-        // Calculate totals for cards (always needed)
         $summaryQuery = Opname::query();
         if (!$user->isOwner()) {
             $summaryQuery->where('store_id', $user->store_id);
@@ -123,41 +131,33 @@ class ProductController extends Controller
         $total_loss = $all_opnames->sum('total_kerugian');
 
         if ($sub_tab == 'produk_rugi') {
-            $query = OpnameDetail::with(['product', 'opname.store'])
-                ->where('selisih', '<', 0);
-            
+            $query = OpnameDetail::with(['product', 'opname.store'])->where('selisih', '<', 0);
             if (!$user->isOwner()) {
                 $query->whereHas('opname', function($q) use ($user) {
                     $q->where('store_id', $user->store_id);
                 });
             }
-
             if ($request->has('search') && $request->search != '') {
                 $search = strtolower($request->search);
                 $query->whereHas('product', function($q) use ($search) {
                     $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
                 });
             }
-            
             $opname_details = $query->orderBy('uuid', 'desc')->paginate(10)->withQueryString();
             $opnames = collect();
         } else {
             $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
-
             if (!$user->isOwner()) {
                 $query->where('store_id', $user->store_id);
             } elseif ($request->has('store_id') && $request->store_id != '') {
                 $query->where('store_id', $request->store_id);
             }
-
             if ($request->has('category_id') && $request->category_id != '') {
                 $query->where('kategori_id', $request->category_id);
             }
-
             if ($request->has('status') && $request->status != '') {
                 $query->where('status', $request->status);
             }
-
             if ($request->has('search') && $request->search != '') {
                 $search = strtolower($request->search);
                 $query->where(function($q) use ($search) {
@@ -172,10 +172,7 @@ class ProductController extends Controller
             $opname_details = collect();
         }
 
-        $categories = Category::all();
-        $outlets = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
-
-        $data = [
+        return [
             'active_tab' => 'opname',
             'sub_tab' => $sub_tab,
             'opnames' => $opnames,
@@ -183,9 +180,9 @@ class ProductController extends Controller
             'pending_count' => $pending_count,
             'selesai_count' => $selesai_count,
             'total_loss' => $total_loss,
-            'categories' => $categories,
-            'outlets' => $outlets,
-            'stores' => $outlets,
+            'categories' => Category::all(),
+            'outlets' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
             'selected_store_id' => $request->store_id,
             'all_products' => $this->mapProductsForJs(
                 Product::whereHas('stores', function($q) use ($user) {
@@ -198,12 +195,6 @@ class ProductController extends Controller
             ),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
-
-        if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
-        }
-
-        return view('product.index', $data);
     }
 
     /**
@@ -211,30 +202,36 @@ class ProductController extends Controller
      */
     public function request(Request $request)
     {
+        $data = $this->getConsolidatedData($request, 'stok');
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+        return view('product.index', $data);
+    }
+
+    private function getAlertData(Request $request)
+    {
         /** @var User $user */
         $user = Auth::user();
-        
         $query = ProductStore::with(['product.category', 'store']);
 
+        $selectedStoreId = 'all';
         if (!$user->isOwner()) {
             $query->where('store_id', $user->store_id);
+            $selectedStoreId = $user->store_id;
         } else {
-            $selectedStoreId = $request->get('store_id');
+            $selectedStoreId = $request->get('store_id', 'all');
             if ($selectedStoreId && $selectedStoreId !== 'all') {
                 $query->where('store_id', $selectedStoreId);
             }
         }
 
         $type = $request->get('type');
-
-        // Apply Type Filter
         if ($type == 'stok_habis') {
             $query->whereRaw('stok <= COALESCE(stok_minimum, 10)');
         } elseif ($type == 'expired') {
-            $query->whereNotNull('kadaluarsa')
-                  ->where('kadaluarsa', '<=', now()->addDays(30));
+            $query->whereNotNull('kadaluarsa')->where('kadaluarsa', '<=', now()->addDays(30));
         }
-        // If no type filter, show all products for that store/category
 
         if ($request->has('search') && $request->search != '') {
             $search = strtolower($request->search);
@@ -249,23 +246,17 @@ class ProductController extends Controller
             });
         }
         $alerts = $query->paginate(10)->withQueryString();
-        
-        // Resolve image URLs for products in alerts
         $alerts->getCollection()->each(function($alert) {
             if ($alert->product) {
                 $alert->product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($alert->product->image_url);
-                // Also ensure it has priceLevels for the modal
                 $alert->product->load('priceLevels');
             }
         });
         
-        // Count for stats
         $baseStatsQuery = ProductStore::query();
-
         if (!$user->isOwner()) {
             $baseStatsQuery->where('store_id', $user->store_id);
         } else {
-            $selectedStoreId = $request->get('store_id');
             if ($selectedStoreId && $selectedStoreId !== 'all') {
                 $baseStatsQuery->where('store_id', $selectedStoreId);
             }
@@ -275,53 +266,45 @@ class ProductController extends Controller
         $stok_habis_count = 0;
         foreach($allRecords as $rec) {
             $min = $rec->stok_minimum ?? 10;
-            if ($rec->stok <= $min) {
-                $stok_habis_count++;
-            }
+            if ($rec->stok <= $min) { $stok_habis_count++; }
         }
-        $expired_count = (clone $baseStatsQuery)->whereNotNull('kadaluarsa')
-                                               ->where('kadaluarsa', '<=', now()->addDays(30))->count();
+        $expired_count = (clone $baseStatsQuery)->whereNotNull('kadaluarsa')->where('kadaluarsa', '<=', now()->addDays(30))->count();
 
-        $categories = Category::all();
-        $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
-
-        $data = [
+        return [
             'active_tab' => 'stok',
             'alerts' => $alerts,
-            'categories' => $categories,
-            'stores' => $stores,
-            'selected_store_id' => $selectedStoreId ?? 'all',
+            'categories' => Category::all(),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'selected_store_id' => $selectedStoreId,
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
             'all_products' => Product::all(),
             'type' => $type,
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
-
-        if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
-        }
-
-        return view('product.index', $data);
     }
 
     public function restok(Request $request)
     {
+        $data = $this->getConsolidatedData($request, 'restok');
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+        return view('product.index', $data);
+    }
+
+    private function getRestokData(Request $request)
+    {
         /** @var User $user */
         $user = Auth::user();
-        
-        $query = Transaction::where('jenis', 'pembelian')
-            ->with(['contact', 'store', 'user'])
-            ->orderBy('tanggal', 'desc');
+        $query = Transaction::where('jenis', 'pembelian')->with(['contact', 'store', 'user'])->orderBy('tanggal', 'desc');
 
         if ($request->search) {
             $query->whereHas('contact', function($q) use ($request) {
                 $q->where('nama', 'ilike', "%{$request->search}%");
             });
         }
-        if ($request->supplier_id) {
-            $query->where('contact_id', $request->supplier_id);
-        }
+        if ($request->supplier_id) { $query->where('contact_id', $request->supplier_id); }
 
         if (!$user->isOwner()) {
             $query->where('store_id', $user->store_id);
@@ -329,13 +312,8 @@ class ProductController extends Controller
             $query->where('store_id', $request->store_id);
         }
 
-        // Filters
-        if ($request->start_date) {
-            $query->where('tanggal', '>=', $request->start_date);
-        }
-        if ($request->end_date) {
-            $query->where('tanggal', '<=', $request->end_date);
-        }
+        if ($request->start_date) { $query->where('tanggal', '>=', $request->start_date); }
+        if ($request->end_date) { $query->where('tanggal', '<=', $request->end_date); }
 
         if ($request->filter == 'today') {
             $query->whereDate('tanggal', today());
@@ -349,19 +327,13 @@ class ProductController extends Controller
             $query->whereRaw('bayar < total');
         }
 
-        $purchases = $query->paginate(10);
-        $suppliers = Contact::where('tipe', 'ilike', 'supplier')->get();
-        $categories = Category::all();
-        $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
-        $products = Product::all();
-
-        $data = [
+        return [
             'active_tab' => 'restok',
-            'purchases' => $purchases,
-            'suppliers' => $suppliers,
-            'categories' => $categories,
-            'stores' => $stores,
-            'all_products' => $products,
+            'purchases' => $query->paginate(10),
+            'suppliers' => Contact::where('tipe', 'ilike', 'supplier')->get(),
+            'categories' => Category::all(),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'all_products' => Product::all(),
             'filter' => $request->filter,
             'status_bayar' => $request->status_bayar,
             'start_date' => $request->start_date,
@@ -370,93 +342,77 @@ class ProductController extends Controller
             'payment_methods' => \App\Models\PaymentMethod::all(),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
-
-        if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
-        }
-
-        return view('product.index', $data);
     }
 
     public function transfer(Request $request)
     {
+        $data = $this->getConsolidatedData($request, 'transfer');
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+        return view('product.index', $data);
+    }
+
+    private function getConsolidatedData(Request $request, $defaultTab = 'produk')
+    {
+        $active_tab = $request->get('tab', $defaultTab);
+        
+        // Always load all data to support SPA-like switching
+        // Each data method should ideally use unique pagination parameters if needed,
+        // but for now they share 'page' as they are usually filtered one at a time.
+        return array_merge(
+            $this->getProductsData($request),
+            $this->getOpnameData($request),
+            $this->getAlertData($request),
+            $this->getRestokData($request),
+            $this->getTransferData($request),
+            ['active_tab' => $active_tab]
+        );
+    }
+
+    private function getTransferData(Request $request)
+    {
         /** @var User $user */
         $user = Auth::user();
-        
-        $query = Transaction::where('jenis', 'transfer')
-            ->with(['store', 'tujuanStore', 'user'])
-            ->orderBy('tanggal', 'desc');
+        $query = Transaction::where('jenis', 'transfer')->with(['store', 'tujuanStore', 'user'])->orderBy('tanggal', 'desc');
 
-        // Rule 5: History visibility
         if (!$user->isOwner()) {
             $query->where(function($q) use ($user) {
-                $q->where('store_id', $user->store_id)
-                  ->orWhere('tujuan_store_id', $user->store_id);
+                $q->where('store_id', $user->store_id)->orWhere('tujuan_store_id', $user->store_id);
             });
         }
 
         if ($request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('uuid', 'ilike', "%{$search}%")
-                  ->orWhere('catatan', 'ilike', "%{$search}%");
-
-                if (Schema::hasColumn('transactions', 'status')) {
-                    $q->orWhere('status', 'ilike', "%{$search}%");
-                }
-
-                $q->orWhereHas('tujuanStore', function($sq) use ($search) {
-                    $sq->where('nama', 'ilike', "%{$search}%");
-                })
-                ->orWhereHas('user', function($sq) use ($search) {
-                    $sq->where('username', 'ilike', "%{$search}%");
-                })
-                ->orWhereHas('store', function($sq) use ($search) {
-                    $sq->where('nama', 'ilike', "%{$search}%");
-                })
-                ->orWhereHas('details.product', function($sq) use ($search) {
-                    $sq->where('nama_produk', 'ilike', "%{$search}%")
-                      ->orWhere('barcode', 'ilike', "%{$search}%");
-                });
+                $q->where('uuid', 'ilike', "%{$search}%")->orWhere('catatan', 'ilike', "%{$search}%");
+                if (Schema::hasColumn('transactions', 'status')) { $q->orWhere('status', 'ilike', "%{$search}%"); }
+                $q->orWhereHas('tujuanStore', function($sq) use ($search) { $sq->where('nama', 'ilike', "%{$search}%"); })
+                  ->orWhereHas('user', function($sq) use ($search) { $sq->where('username', 'ilike', "%{$search}%"); })
+                  ->orWhereHas('store', function($sq) use ($search) { $sq->where('nama', 'ilike', "%{$search}%"); })
+                  ->orWhereHas('details.product', function($sq) use ($search) {
+                      $sq->where('nama_produk', 'ilike', "%{$search}%")->orWhere('barcode', 'ilike', "%{$search}%");
+                  });
             });
         }
 
-        if ($request->status && Schema::hasColumn('transactions', 'status')) {
-            $query->where('status', $request->status);
-        }
-
+        if ($request->status && Schema::hasColumn('transactions', 'status')) { $query->where('status', $request->status); }
         if ($request->store_id) {
             $storeId = $request->store_id;
-            $query->where(function($q) use ($storeId) {
-                $q->where('store_id', $storeId)
-                  ->orWhere('tujuan_store_id', $storeId);
-            });
+            $query->where(function($q) use ($storeId) { $q->where('store_id', $storeId)->orWhere('tujuan_store_id', $storeId); });
         }
 
-        if ($request->start_date) {
-            $query->where('tanggal', '>=', $request->start_date);
-        }
-        if ($request->end_date) {
-            $query->where('tanggal', '<=', $request->end_date);
-        }
+        if ($request->start_date) { $query->where('tanggal', '>=', $request->start_date); }
+        if ($request->end_date) { $query->where('tanggal', '<=', $request->end_date); }
 
         $transfers = $query->paginate(10);
-        $categories = Category::all();
         $stores = Outlet::where('status_aktif', true)->get();
-        
-        // Rule 1 & 2: Source store and products
         $sourceStoreId = $user->isOwner() ? ($request->source_store_id ?? $user->store_id) : $user->store_id;
-        if ($user->isOwner() && !$sourceStoreId && $stores->count() > 0) {
-            $sourceStoreId = $stores->first()->uuid;
-        }
+        if ($user->isOwner() && !$sourceStoreId && $stores->count() > 0) { $sourceStoreId = $stores->first()->uuid; }
 
         $products = [];
         if ($sourceStoreId) {
-            $products = ProductStore::where('store_id', $sourceStoreId)
-                ->where('stok', '>', 0)
-                ->where('status_aktif', true)
-                ->with('product')
-                ->get()
+            $products = ProductStore::where('store_id', $sourceStoreId)->where('stok', '>', 0)->where('status_aktif', true)->with('product')->get()
                 ->map(function ($item) {
                     return [
                         'uuid' => $item->product->uuid,
@@ -467,21 +423,15 @@ class ProductController extends Controller
                 });
         }
 
-        $data = [
+        return [
             'active_tab' => 'transfer',
             'transfers' => $transfers,
-            'categories' => $categories,
+            'categories' => Category::all(),
             'stores' => $stores,
             'current_source_store' => $sourceStoreId,
             'all_products' => $products,
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
-
-        if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
-        }
-
-        return view('product.index', $data);
     }
 
     public function getProductsByStore($store_id)

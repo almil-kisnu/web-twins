@@ -1008,9 +1008,8 @@
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" name="search" id="searchInput" class="search-input" 
-                        placeholder="{{ $active_tab == 'stok' ? 'Cari produk...' : 'cari data' }}" 
-                        value="{{ request('search') }}"
-                        oninput="debounceSearch()">
+                        placeholder="Cari data..." 
+                        onkeyup="realtimeSearch()">
                 </div>
 
                 @if($active_tab == 'restok')
@@ -1245,7 +1244,7 @@
     <div class="main-content-box">
         <div class="table-container">
             @if($active_tab == 'produk')
-                <table class="fitur-table">
+                <table class="fitur-table" id="produkTable">
                     <thead>
                         <tr>
                             <th class="mass-delete-checkbox" style="display: none; width: 40px; text-align: center;">
@@ -1384,7 +1383,7 @@
                 @endif
 
                 @if(($sub_tab ?? 'semua') == 'semua')
-                    <table class="fitur-table">
+                    <table class="fitur-table" id="opnameTable">
                         <thead>
                             <tr>
                                 <th>TANGGAL</th>
@@ -1459,7 +1458,7 @@
                     </div>
                 @else
                     {{-- Produk Rugi Table --}}
-                    <table class="fitur-table">
+                    <table class="fitur-table" id="rugiTable">
                         <thead>
                             <tr>
                                 <th>PRODUK</th>
@@ -1524,7 +1523,7 @@
                     </div>
                 </div>
 
-                <table class="fitur-table">
+                <table class="fitur-table" id="stokTable">
                     <thead>
                         <tr>
                             <th>PRODUK</th>
@@ -1618,7 +1617,7 @@
             @elseif($active_tab == 'restok')
                 {{-- Restok Table --}}
                 @if($purchases->count() > 0)
-                    <table class="fitur-table">
+                    <table class="fitur-table" id="restokTable">
                         <thead>
                             <tr>
                                 <th>TANGGAL</th>
@@ -1690,7 +1689,7 @@
                 @endif
             @elseif($active_tab == 'transfer')
                 @if($transfers->count() > 0)
-                    <table class="fitur-table">
+                    <table class="fitur-table" id="transferTable">
                         <thead>
                             <tr>
                                 <th>TANGGAL</th>
@@ -2687,10 +2686,77 @@
     let abortController = null;
 
     function debounceSearch() {
+        // Debounce search is now replaced by client-side realtimeSearch
+        // But we keep it as a fallback for triggering updateTableContent if needed
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
             updateTableContent();
-        }, 200); // Super snappy
+        }, 500);
+    }
+
+    function realtimeSearch() {
+        const input = document.getElementById('searchInput').value.toLowerCase();
+        // Target specifically the table in the main content area, not in modals
+        const activeTable = document.querySelector('.main-content-box .fitur-table');
+        
+        if (!activeTable) return;
+
+        const rows = activeTable.querySelectorAll('tbody tr');
+        let found = false;
+
+        rows.forEach(row => {
+            // Skip empty/no-data rows
+            if (row.querySelector('td[colspan]')) {
+                row.style.display = 'none';
+                return;
+            }
+
+            const text = row.innerText.toLowerCase();
+            if (text.includes(input)) {
+                row.style.display = '';
+                found = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Handle "No results" message
+        let noResultsRow = activeTable.querySelector('.no-results-row');
+        if (!found && input.length > 0) {
+            if (!noResultsRow) {
+                const colCount = activeTable.querySelectorAll('thead th').length;
+                noResultsRow = document.createElement('tr');
+                noResultsRow.className = 'no-results-row';
+                noResultsRow.innerHTML = `
+                    <td colspan="${colCount}" style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                            <iconify-icon icon="solar:magnifer-zoom-out-bold-duotone" style="font-size: 48px; opacity: 0.5;"></iconify-icon>
+                            <div>Data tidak ditemukan untuk kata kunci "<b>${input}</b>"</div>
+                            <button type="button" class="btn-action" style="background: #f1f5f9; color: #64748b; font-size: 12px;" onclick="resetSearch()">Bersihkan Pencarian</button>
+                        </div>
+                    </td>
+                `;
+                activeTable.querySelector('tbody').appendChild(noResultsRow);
+            } else {
+                noResultsRow.style.display = '';
+                noResultsRow.querySelector('b').innerText = input;
+            }
+        } else {
+            if (noResultsRow) noResultsRow.style.display = 'none';
+            
+            // If input is empty and no data was found originally, show the original empty row if it exists
+            if (input.length === 0 && !found) {
+                const originalEmpty = activeTable.querySelector('td[colspan]');
+                if (originalEmpty) originalEmpty.parentElement.style.display = '';
+            }
+        }
+    }
+
+    function resetSearch() {
+        const input = document.getElementById('searchInput');
+        input.value = '';
+        realtimeSearch();
+        input.focus();
     }
 
 
