@@ -16,7 +16,7 @@ class Debt extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'store_id', 'kontak_id', 'tipe', 'nominal', 'sisa', 'jatuh_tempo'
+        'store_id', 'kontak_id', 'tipe', 'nominal', 'sisa', 'jatuh_tempo', 'keterangan'
     ];
 
     protected static function boot()

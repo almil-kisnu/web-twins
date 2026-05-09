@@ -60,6 +60,10 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
     Route::get('/products/export/pdf', [ProductController::class, 'exportPdf'])->name('products.export.pdf');
     Route::post('/products/category', [ProductController::class, 'storeCategory'])->name('products.category.store');
     Route::post('/products/restok', [ProductController::class, 'storeRestok'])->name('products.restok.store');
+    Route::post('/products/restok/pay', [ProductController::class, 'payPurchaseDebt'])->name('products.restok.pay');
+    Route::delete('/products/restok/{uuid}', [ProductController::class, 'destroyRestok'])->name('products.restok.destroy');
+
+
 
 Route::get('/products/restok/{uuid}', [ProductController::class, 'viewPurchaseDetail'])->name('products.restok.detail');
     Route::get('/transfer', [ProductController::class, 'transfer'])->name('products.transfer');

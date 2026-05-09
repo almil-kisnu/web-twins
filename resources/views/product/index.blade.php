@@ -764,16 +764,35 @@
                         <div class="invalid-feedback">Supplier wajib dipilih</div>
                     </div>
                     <div class="form-group">
-                        <label>Metode Pembayaran</label>
+                        <label>Jenis Pembayaran</label>
                         <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
                             <span style="font-size: 13px; font-weight: 600; color: #64748b;">Kredit (Hutang)</span>
                             <label class="switch">
-                                <input type="checkbox" name="metode_pembayaran_toggle" id="paymentMethodToggle" checked onchange="updatePaymentLabel()">
+                                <input type="checkbox" name="payment_type_toggle" id="paymentMethodToggle" checked onchange="updatePaymentLabel()">
                                 <span class="slider round"></span>
                             </label>
                             <span style="font-size: 13px; font-weight: 600; color: #2E7D32;" id="paymentLabel">Tunai (Kas)</span>
                         </div>
-                        <input type="hidden" name="metode_pembayaran" id="paymentMethodValue" value="Tunai">
+                        <input type="hidden" name="payment_type" id="paymentMethodValue" value="Tunai">
+                    </div>
+                </div>
+
+                <div id="paymentOptions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; padding: 15px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;">
+                    <div class="form-group">
+                        <label id="pm_label">Metode Pembayaran</label>
+                        <select name="metode_pembayaran" id="metode_pembayaran_select" class="form-control" required>
+                            <option value="">-- Pilih Metode --</option>
+                            @foreach($payment_methods ?? [] as $pm)
+                                <option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group" id="dpAmountGroup" style="display: none;">
+                        <label style="color: #C53030;">Jumlah DP (Uang Muka)</label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600; z-index: 5;">Rp</span>
+                            <input type="number" name="dp_amount" id="dp_amount" class="form-control" style="padding-left: 48px;" placeholder="" min="0">
+                        </div>
                     </div>
                 </div>
 
@@ -838,6 +857,50 @@
         <div style="margin-top: 24px; display: flex; justify-content: center; padding: 0 20px 20px;">
             <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('purchaseDetailModal')">Tutup</button>
         </div>
+    </div>
+</div>
+
+<!-- Pay Debt Modal -->
+<div id="payDebtModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 450px; width: 95%; border-radius: 24px;">
+        <div class="modal-header">
+            <h3>Bayar Hutang Restok</h3>
+            <button class="close-modal" onclick="closeModal('payDebtModal')">&times;</button>
+        </div>
+        <form action="{{ route('products.restok.pay') }}" method="POST" id="payDebtForm">
+            @csrf
+            <input type="hidden" name="transaction_id" id="pay_transaction_id">
+            <div class="modal-body" style="padding: 24px;">
+                <div style="background: #FFF5F5; padding: 16px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #FED7D7;">
+                    <div style="font-size: 12px; color: #C53030; font-weight: 600; margin-bottom: 4px;">SISA HUTANG</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #C53030;" id="pay_sisa_label">Rp 0</div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Metode Pembayaran</label>
+                    <select name="metode_pembayaran" class="form-control" required>
+                        <option value="">-- Pilih Metode --</option>
+                        @foreach($payment_methods ?? [] as $pm)
+                            <option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Jumlah Bayar</label>
+                    <div style="position: relative;">
+                        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600; z-index: 5;">Rp</span>
+                        <input type="number" name="nominal" id="pay_nominal" class="form-control" style="padding-left: 48px;" required placeholder="">
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 0 24px 24px; display: flex; gap: 12px;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('payDebtModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 2; background: #E53E3E; color: white; justify-content: center;">
+                    <iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right: 8px;"></iconify-icon> Konfirmasi Bayar
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -1573,16 +1636,38 @@
                                     <td>{{ $p->contact->nama ?? 'Umum' }}</td>
                                     <td style="font-weight: 700;">Rp {{ number_format($p->total, 0, ',', '.') }}</td>
                                     <td>
-                                        @php $isHutang = $p->bayar < $p->total; @endphp
-                                        <span class="status-badge {{ $isHutang ? 'status-inactive' : 'status-active' }}" style="padding: 4px 10px; font-size: 10px; background: {{ $isHutang ? '#FFF5F5' : '#F0FFF4' }}; color: {{ $isHutang ? '#C53030' : '#2F855A' }};">
-                                            {{ $isHutang ? 'Hutang' : 'Lunas' }}
-                                        </span>
+                                        @php 
+                                            $isHutang = $p->bayar < $p->total; 
+                                            $percent = $p->total > 0 ? round(($p->bayar / $p->total) * 100) : 0;
+                                        @endphp
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <span class="status-badge {{ $isHutang ? 'status-inactive' : 'status-active' }}" style="padding: 2px 8px; font-size: 9px; width: fit-content; background: {{ $isHutang ? '#FFF5F5' : '#F0FFF4' }}; color: {{ $isHutang ? '#C53030' : '#2F855A' }};">
+                                                {{ $isHutang ? 'Hutang' : 'Lunas' }}
+                                            </span>
+                                            @if($isHutang)
+                                                <div style="width: 100px; height: 4px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 2px;">
+                                                    <div style="width: {{ $percent }}%; height: 100%; background: #ef4444; border-radius: 10px;"></div>
+                                                </div>
+                                                <small style="font-size: 9px; color: #666;">Terbayar {{ $percent }}%</small>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>{{ $p->user->name ?? '-' }}</td>
                                     <td>
-                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewPurchaseDetail('{{ $p->uuid }}')">
-                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                        </button>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewPurchaseDetail('{{ $p->uuid }}')" title="Lihat Detail">
+                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                                            </button>
+                                            @if($isHutang)
+                                                <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #E53E3E; border-color: #FED7D7; background: #FFF5F5;" onclick="openPayDebtModal('{{ $p->uuid }}', {{ $p->total - $p->bayar }})" title="Bayar Hutang">
+                                                    <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon>
+                                                </button>
+                                            @endif
+                                            <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #ef4444; border-color: #fee2e2; background: #fff5f5;" onclick="deleteRestok('{{ $p->uuid }}')" title="Hapus Restok">
+                                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                            </button>
+
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -3067,6 +3152,85 @@
 
     const rupiahFormatter = new Intl.NumberFormat('id-ID');
 
+    function openPayDebtModal(transactionId, sisa) {
+        document.getElementById('pay_transaction_id').value = transactionId;
+        document.getElementById('pay_sisa_label').innerText = 'Rp ' + sisa.toLocaleString('id-ID');
+        document.getElementById('pay_nominal').value = sisa;
+        document.getElementById('pay_nominal').max = sisa;
+        openModal('payDebtModal');
+    }
+
+    // Update form submission to use AJAX for better experience
+    document.addEventListener('DOMContentLoaded', function() {
+        const payForm = document.getElementById('payDebtForm');
+        if (payForm) {
+            payForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showLoading('Memproses Pembayaran...');
+                
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, timer: 1500, showConfirmButton: false })
+                        .then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', data.message || 'Gagal memproses pembayaran.', 'error');
+                    }
+                })
+                .catch(err => {
+                    hideLoading();
+                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                });
+            });
+        }
+    });
+
+    function deleteRestok(uuid) {
+        Swal.fire({
+            title: 'Hapus Restok ini?',
+            text: "Stok akan dikurangi dan catatan keuangan akan dihapus!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus Restok...');
+                fetch(`/products/restok/${uuid}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message, timer: 2000, showConfirmButton: false })
+                        .then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', data.message || 'Gagal menghapus restok.', 'error');
+                    }
+                })
+                .catch(err => {
+                    hideLoading();
+                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                });
+            }
+        });
+    }
+
     function viewPurchaseDetail(uuid) {
         showLoading('Memuat Detail...');
 
@@ -3121,6 +3285,28 @@
                                     <td colspan="4" style="text-align: right; padding: 12px;">TOTAL</td>
                                     <td style="padding: 12px; color: var(--primary-blue);">Rp ${rupiahFormatter.format(data.total)}</td>
                                 </tr>
+                                ${data.bayar < data.total ? `
+                                <tr style="background: #fff5f5; font-weight: 700;">
+                                    <td colspan="4" style="text-align: right; padding: 12px; color: #c53030;">TERBAYAR (DP/ANGSURAN)</td>
+                                    <td style="padding: 12px; color: #c53030;">Rp ${rupiahFormatter.format(data.bayar)}</td>
+                                </tr>
+                                <tr style="background: #fff5f5; font-weight: 700;">
+                                    <td colspan="4" style="text-align: right; padding: 12px; color: #c53030;">SISA HUTANG</td>
+                                    <td style="padding: 12px; color: #c53030;">Rp ${rupiahFormatter.format(data.total - data.bayar)}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="5" style="padding: 15px; background: #fff5f5;">
+                                        <div style="font-size: 11px; color: #c53030; margin-bottom: 6px; font-weight: 700;">PROGRES PELUNASAN</div>
+                                        <div style="width: 100%; height: 12px; background: #fed7d7; border-radius: 20px; overflow: hidden; border: 1px solid #feb2b2;">
+                                            <div style="width: ${Math.round((data.bayar / data.total) * 100)}%; height: 100%; background: #f56565; border-radius: 20px; transition: width 1s ease;"></div>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: #c53030; font-weight: 600;">
+                                            <span>Terbayar: ${Math.round((data.bayar / data.total) * 100)}%</span>
+                                            <span>Kekurangan: Rp ${rupiahFormatter.format(data.total - data.bayar)}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                ` : ''}
                             </tfoot>
                         </table>
                     </div>
@@ -3139,14 +3325,32 @@
         const toggle = document.getElementById('paymentMethodToggle');
         const label = document.getElementById('paymentLabel');
         const hidden = document.getElementById('paymentMethodValue');
+        const paymentOptions = document.getElementById('paymentOptions');
+        const dpAmountGroup = document.getElementById('dpAmountGroup');
+        const pmLabel = document.getElementById('pm_label');
+
         if (toggle.checked) {
             label.innerText = 'Tunai (Kas)';
             label.style.color = '#2E7D32';
             hidden.value = 'Tunai';
+            if (paymentOptions) {
+                paymentOptions.style.background = '#f8fafc';
+                paymentOptions.style.borderColor = '#e2e8f0';
+            }
+            if (dpAmountGroup) dpAmountGroup.style.display = 'none';
+            if (pmLabel) pmLabel.innerText = 'Metode Pembayaran';
+            if (pmLabel) pmLabel.style.color = '#334155';
         } else {
             label.innerText = 'Kredit (Hutang)';
             label.style.color = '#C53030';
             hidden.value = 'Kredit';
+            if (paymentOptions) {
+                paymentOptions.style.background = '#FFF5F5';
+                paymentOptions.style.borderColor = '#FED7D7';
+            }
+            if (dpAmountGroup) dpAmountGroup.style.display = 'block';
+            if (pmLabel) pmLabel.innerText = 'Metode Pembayaran DP';
+            if (pmLabel) pmLabel.style.color = '#C53030';
         }
     }
 

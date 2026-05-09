@@ -25,6 +25,8 @@ use App\Models\CashFlow;
 use App\Models\Debt;
 use Illuminate\Support\Str;
 use App\Models\Fitur;
+use App\Models\DetailDebt;
+
 
 class ProductController extends Controller
 {
@@ -365,6 +367,7 @@ class ProductController extends Controller
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'supplier_id' => $request->supplier_id,
+            'payment_methods' => \App\Models\PaymentMethod::all(),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
 
@@ -728,7 +731,9 @@ class ProductController extends Controller
 
         $request->validate([
             'contact_id' => 'required|exists:contacts,uuid',
-            'metode_pembayaran' => 'required|in:Tunai,Kredit',
+            'payment_type' => 'required|in:Tunai,Kredit',
+            'metode_pembayaran' => 'required|exists:payment_methods,uuid',
+            'dp_amount' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,uuid',
             'items.*.qty' => 'required|integer|min:1',
@@ -749,16 +754,19 @@ class ProductController extends Controller
                 $total += ($item['qty'] * $item['harga_beli']);
             }
 
+            $dp_paid = $request->payment_type == 'Tunai' ? $total : ($request->dp_amount ?? 0);
+
             // 1. Pencatatan Transaksi
             $transaction = Transaction::create([
                 'uuid' => (string) \Illuminate\Support\Str::uuid(),
                 'total' => $total,
-                'bayar' => $request->metode_pembayaran == 'Tunai' ? $total : 0,
+                'bayar' => $dp_paid,
                 'kembalian' => 0,
                 'jenis' => 'pembelian',
                 'store_id' => $store_id,
                 'user_id' => $user->uuid,
                 'contact_id' => $request->contact_id,
+                'metode_pembayaran' => $request->metode_pembayaran,
                 'catatan' => $request->catatan,
                 'tanggal' => now(),
             ]);
@@ -801,24 +809,31 @@ class ProductController extends Controller
             }
 
             // 6. Keuangan
-            if ($request->metode_pembayaran == 'Tunai') {
+            if ($request->payment_type == 'Tunai' || $dp_paid > 0) {
                 CashFlow::create([
                     'store_id' => $store_id,
                     'user_id' => $user->uuid,
                     'jenis' => 'pengeluaran',
-                    'nominal' => $total,
-                    'keterangan' => "Pembelian stok / Restok (Trx: {$transaction->uuid})",
+                    'nominal' => $dp_paid,
+                    'keterangan' => $request->payment_type == 'Tunai' ? "Pembelian stok / Restok (Trx: {$transaction->uuid})" : "DP Pembelian stok / Restok (Trx: {$transaction->uuid})",
                     'tanggal' => now(),
                 ]);
-            } else {
-                Debt::create([
-                    'store_id' => $store_id,
-                    'kontak_id' => $request->contact_id,
-                    'tipe' => 'utang',
-                    'nominal' => $total,
-                    'sisa' => $total,
-                    'jatuh_tempo' => now()->addDays(30), 
-                ]);
+            }
+
+            if ($request->payment_type == 'Kredit') {
+                $debt_amount = $total - $dp_paid;
+                if ($debt_amount > 0) {
+                    Debt::create([
+                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'store_id' => $store_id,
+                        'kontak_id' => $request->contact_id,
+                        'tipe' => 'utang',
+                        'nominal' => $debt_amount,
+                        'sisa' => $debt_amount,
+                        'jatuh_tempo' => now()->addDays(30), 
+                        'keterangan' => "Sisa pembayaran restok (Trx: {$transaction->uuid})",
+                    ]);
+                }
             }
 
             DB::commit();
@@ -1652,5 +1667,117 @@ class ProductController extends Controller
             ];
         }
         return [];
+    }
+
+    public function payPurchaseDebt(Request $request)
+    {
+        $request->validate([
+            'transaction_id' => 'required|exists:transactions,uuid',
+            'nominal' => 'required|numeric|min:1',
+            'metode_pembayaran' => 'required|exists:payment_methods,uuid',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $transaction = Transaction::findOrFail($request->transaction_id);
+            
+            // Find associated debt
+            $debt = Debt::where('keterangan', 'like', "%{$transaction->uuid}%")
+                        ->where('tipe', 'utang')
+                        ->first();
+
+            if (!$debt) {
+                if ($transaction->bayar < $transaction->total) {
+                     throw new \Exception('Data hutang tidak ditemukan untuk transaksi ini.');
+                }
+                throw new \Exception('Transaksi ini tidak memiliki hutang.');
+            }
+
+            $bayar = $request->nominal;
+            if ($bayar > $debt->sisa) {
+                $bayar = $debt->sisa;
+            }
+
+            $sebelum = $debt->sisa;
+            $sisaBaru = $debt->sisa - $bayar;
+
+            // 1. Create DetailDebt
+            DetailDebt::create([
+                'debts_id' => $debt->uuid,
+                'sebelum' => $sebelum,
+                'bayar' => $bayar,
+                'sisa' => $sisaBaru
+            ]);
+
+            // 2. Update Debt
+            $debt->update(['sisa' => $sisaBaru]);
+
+            // 3. Update Transaction (increment total bayar)
+            $transaction->increment('bayar', $bayar);
+
+            // 4. Create CashFlow (pengeluaran)
+            CashFlow::create([
+                'store_id' => $transaction->store_id,
+                'user_id' => Auth::id(),
+                'jenis' => 'pengeluaran',
+                'nominal' => $bayar,
+                'keterangan' => "Cicilan pelunasan hutang restok (Trx: {$transaction->uuid})",
+                'tanggal' => now(),
+            ]);
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Pembayaran berhasil dicatat!']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+    public function destroyRestok($uuid)
+    {
+        DB::beginTransaction();
+        try {
+            $transaction = Transaction::where('uuid', $uuid)->where('jenis', 'pembelian')->firstOrFail();
+            $details = TransactionDetail::where('transaction_id', $uuid)->get();
+
+            foreach ($details as $detail) {
+                // 1. Kembalikan Stok di ProductStore (Kurangi stok yang tadi ditambah)
+                $productStore = ProductStore::where('product_id', $detail->product_id)
+                    ->where('store_id', $transaction->store_id)
+                    ->first();
+
+                if ($productStore) {
+                    $productStore->decrement('stok', $detail->jmlh);
+                }
+
+                // 2. Catat di Stock Card sebagai pengurang (Reversal)
+                StockCard::create([
+                    'product_id' => $detail->product_id,
+                    'store_id' => $transaction->store_id,
+                    'jmlh' => -$detail->jmlh,
+                    'keterangan' => "Penghapusan Restok (Trx: {$uuid})",
+                ]);
+            }
+
+            // 3. Hapus catatan Keuangan (CashFlow)
+            // Mencari cashflow yang mencantumkan UUID transaksi di keterangannya
+            CashFlow::where('keterangan', 'like', "%{$uuid}%")->delete();
+
+            // 4. Hapus catatan Hutang (Debt) dan Detail Pembayarannya jika ada
+            $debt = Debt::where('keterangan', 'like', "%{$uuid}%")->first();
+            if ($debt) {
+                DetailDebt::where('debts_id', $debt->uuid)->delete();
+                $debt->delete();
+            }
+
+            // 5. Hapus Detail Transaksi dan Transaksi Utama
+            TransactionDetail::where('transaction_id', $uuid)->delete();
+            $transaction->delete();
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Restok berhasil dihapus. Stok produk dan catatan keuangan telah dikembalikan ke kondisi semula.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus restok: ' . $e->getMessage()], 500);
+        }
     }
 }
