@@ -6,16 +6,57 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
+use App\Models\PaymentMethod;
+use Illuminate\Support\Str;
+
 class KeuanganController extends Controller
 {
     public function index()
     {
-        return redirect()->route('keuangan.arus-uang');
+        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get();
+        return view('keuangan.cashbox', compact('cashboxes'));
+    }
+
+    public function storeCashbox(Request $request)
+    {
+        $request->validate([
+            'nama_metode' => 'required|string|max:255|unique:payment_methods,nama_metode',
+        ]);
+
+        PaymentMethod::create([
+            'uuid' => (string) Str::uuid(),
+            'nama_metode' => $request->nama_metode
+        ]);
+
+        return redirect()->back()->with('success', 'Cashbox berhasil ditambahkan!');
+    }
+
+    public function updateCashbox(Request $request, $id)
+    {
+        $pm = PaymentMethod::findOrFail($id);
+        
+        $request->validate([
+            'nama_metode' => 'required|string|max:255|unique:payment_methods,nama_metode,' . $id . ',uuid',
+        ]);
+
+        $pm->update([
+            'nama_metode' => $request->nama_metode
+        ]);
+
+        return redirect()->back()->with('success', 'Cashbox berhasil diperbarui!');
+    }
+
+    public function destroyCashbox($id)
+    {
+        $pm = PaymentMethod::findOrFail($id);
+        $pm->delete();
+
+        return redirect()->back()->with('success', 'Cashbox berhasil dihapus!');
     }
 
     public function kasBox()
     {
-        return view('keuangan.manage');
+        return $this->index();
     }
 
     public function arusUang(Request $request)
@@ -76,6 +117,6 @@ class KeuanganController extends Controller
 
     public function pemindahanSaldo()
     {
-        return view('keuangan.manage');
+        return view('keuangan.pemindahan-saldo');
     }
 }

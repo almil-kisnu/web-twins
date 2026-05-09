@@ -106,6 +106,9 @@ Route::prefix('transaksi')->middleware(['auth', 'verified', 'role:owner,kepala_t
 
 Route::prefix('keuangan')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [KeuanganController::class, 'index'])->name('keuangan.index');
+    Route::post('/cashbox', [KeuanganController::class, 'storeCashbox'])->name('keuangan.cashbox.store');
+    Route::put('/cashbox/{id}', [KeuanganController::class, 'updateCashbox'])->name('keuangan.cashbox.update');
+    Route::delete('/cashbox/{id}', [KeuanganController::class, 'destroyCashbox'])->name('keuangan.cashbox.destroy');
     Route::get('/kas-box', [KeuanganController::class, 'kasBox'])->name('keuangan.kas-box');
     Route::get('/arus-uang', [KeuanganController::class, 'arusUang'])->name('keuangan.arus-uang');
     Route::get('/pemindahan-saldo', [KeuanganController::class, 'pemindahanSaldo'])->name('keuangan.pemindahan-saldo');
@@ -120,7 +123,11 @@ Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko
 });
 
 Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
-    Route::get('/', [BukuKasController::class, 'index'])->name('keuangan.transaksi');
+    Route::get('/', [BukuKasController::class, 'pengeluaran'])->name('keuangan.transaksi');
+    Route::get('/pengeluaran', [BukuKasController::class, 'pengeluaran'])->name('keuangan.pengeluaran');
+    Route::get('/pemasukan', [BukuKasController::class, 'pemasukan'])->name('keuangan.pemasukan');
+    Route::get('/hutang', [BukuKasController::class, 'hutang'])->name('keuangan.hutang');
+    Route::get('/piutang', [BukuKasController::class, 'piutang'])->name('keuangan.piutang');
     Route::get('/export', [BukuKasController::class, 'export'])->name('keuangan.export');
     Route::post('/cashflow', [BukuKasController::class, 'storeCashFlow'])->name('keuangan.cashflow.store');
     Route::get('/cashflow', function() { return redirect()->route('keuangan.transaksi', ['active_tab' => 'pengeluaran']); });

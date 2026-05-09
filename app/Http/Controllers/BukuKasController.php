@@ -13,23 +13,32 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class BukuKasController extends Controller
 {
-    public function index(Request $request)
+    public function pengeluaran(Request $request) { return $this->renderView($request, 'pengeluaran'); }
+    public function pemasukan(Request $request) { return $this->renderView($request, 'pemasukan'); }
+    public function hutang(Request $request) { return $this->renderView($request, 'hutang'); }
+    public function piutang(Request $request) { return $this->renderView($request, 'piutang'); }
+
+    private function renderView(Request $request, $tab)
+    {
+        $data = $this->prepareData($request, $tab);
+        return view('buku_kas.' . $tab, $data);
+    }
+
+    private function prepareData(Request $request, $active_tab)
     {
         $user = auth()->user();
         
         $outlets = collect();
         if ($user->role === 'owner') {
             $outlets = DB::table('store')->get();
-        } elseif ($user->role === 'kepala_toko' && $user->outlet_id) {
-            $outlets = DB::table('store')->where('uuid', $user->outlet_id)->get();
+        } elseif ($user->role === 'kepala_toko' && $user->store_id) {
+            $outlets = DB::table('store')->where('uuid', $user->store_id)->get();
         }
         
-        $defaultStore = $user->role === 'owner' ? 'all' : ($user->outlet_id ?? ($outlets->first()->uuid ?? null));
+        $defaultStore = $user->role === 'owner' ? 'all' : ($user->store_id ?? ($outlets->first()->uuid ?? null));
         $store_id = $request->input('store_id', $defaultStore);
         
-        $active_tab = session('active_tab') ?? $request->input('active_tab', 'pengeluaran');
-
-        $period = $request->get('period');
+        $period = $request->get('period', 'semua');
         $start_date = $request->get('start_date');
         $end_date = $request->get('end_date');
 
@@ -44,11 +53,6 @@ class BukuKasController extends Controller
         } elseif ($period === 'harian') {
             if (!$start_date) $start_date = date('Y-m-d');
             if (!$end_date) $end_date = date('Y-m-d');
-        } else {
-            // No specific period requested, show all data
-            $start_date = null;
-            $end_date = null;
-            $period = 'semua';
         }
 
         $pengeluaranQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pengeluaran')->where('keterangan', 'NOT LIKE', '%(Trx:%');
@@ -64,6 +68,7 @@ class BukuKasController extends Controller
             $hutangQuery->where('sisa', '>', 0);
             $piutangQuery->where('sisa', '>', 0);
         }
+
         $suppliersQuery = Contact::whereRaw('LOWER(tipe) = ?', ['supplier']);
         $customersQuery = Contact::whereRaw('LOWER(tipe) = ?', ['customer']);
 
@@ -80,10 +85,10 @@ class BukuKasController extends Controller
             });
         }
 
-        // Apply Date Filters ONLY if provided
         if ($start_date) {
             $pengeluaranQuery->whereDate('tanggal', '>=', $start_date);
             $pemasukanQuery->whereDate('tanggal', '>=', $start_date);
+            // Optional: Filter hutang/piutang by date too if needed, but usually they are filtered by status
         }
         if ($end_date) {
             $pengeluaranQuery->whereDate('tanggal', '<=', $end_date);
@@ -95,7 +100,6 @@ class BukuKasController extends Controller
         $hutang = $hutangQuery->orderBy('jatuh_tempo', 'asc')->get();
         $piutang = $piutangQuery->orderBy('jatuh_tempo', 'asc')->get();
 
-        // Calculate Summaries
         $totalPemasukan = $pemasukan->sum('nominal');
         $totalPengeluaran = $pengeluaran->sum('nominal');
         $saldoKasBersih = $totalPemasukan - $totalPengeluaran;
@@ -104,7 +108,7 @@ class BukuKasController extends Controller
         $customers = $customersQuery->get();
         $paymentMethods = PaymentMethod::orderBy('nama_metode', 'asc')->get();
 
-        return view('buku_kas.buku_kas', [
+        return [
             'pengeluaran' => $pengeluaran,
             'pemasukan' => $pemasukan,
             'hutang' => $hutang,
@@ -123,7 +127,7 @@ class BukuKasController extends Controller
             'totalPemasukan' => $totalPemasukan,
             'totalPengeluaran' => $totalPengeluaran,
             'saldoKasBersih' => $saldoKasBersih,
-        ]);
+        ];
     }
 
     public function storeCashFlow(Request $request)
@@ -131,10 +135,18 @@ class BukuKasController extends Controller
         $request->validate([
             'store_id' => 'required',
             'jenis' => 'required|in:Pemasukan,Pengeluaran',
-            'nominal' => 'required|numeric',
+            'nominal' => 'required|numeric|min:1',
             'keterangan' => 'required|string',
             'tanggal' => 'required|date',
-            'metode_pembayaran' => 'nullable|string',
+            'metode_pembayaran' => 'required|string',
+        ], [
+            'store_id.required' => 'Pilih outlet terlebih dahulu.',
+            'nominal.required' => 'Nominal uang wajib diisi.',
+            'nominal.numeric' => 'Nominal harus berupa angka.',
+            'nominal.min' => 'Nominal minimal Rp 1.',
+            'keterangan.required' => 'Keterangan transaksi wajib diisi.',
+            'tanggal.required' => 'Tanggal transaksi wajib diisi.',
+            'metode_pembayaran.required' => 'Pilih metode pembayaran (Cashbox).',
         ]);
 
         // Combine date with current time for full timestamp

@@ -78,7 +78,7 @@
             @endif
 
             @if(Auth::user()->operator->hasFeature(8))
-                <a href="{{ route('keuangan.transaksi') }}" class="menu-item {{ request()->routeIs('keuangan.transaksi') ? 'active' : '' }}">
+                <a href="{{ route('keuangan.transaksi') }}" class="menu-item {{ request()->is('buku-kas*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
                     <span>Buku Kas</span>
@@ -137,7 +137,7 @@
                 @elseif(request()->routeIs('kontak.*'))
                     <i id="topbar-icon" data-lucide="contact"></i>
                     <h2 id="topbar-title">Kelola Kontak</h2>
-                @elseif(request()->routeIs('keuangan.transaksi'))
+                @elseif(request()->is('buku-kas*'))
                     <i id="topbar-icon" data-lucide="wallet"></i>
                     <h2 id="topbar-title">Buku Kas</h2>
                 @elseif(request()->routeIs('laporan.*'))
