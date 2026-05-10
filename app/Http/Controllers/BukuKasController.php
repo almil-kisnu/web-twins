@@ -13,19 +13,20 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class BukuKasController extends Controller
 {
-    public function pengeluaran(Request $request) { return $this->renderView($request, 'pengeluaran'); }
-    public function pemasukan(Request $request) { return $this->renderView($request, 'pemasukan'); }
-    public function hutang(Request $request) { return $this->renderView($request, 'hutang'); }
-    public function piutang(Request $request) { return $this->renderView($request, 'piutang'); }
+    public function pengeluaran(Request $request) { return $this->renderManageView($request, 'pengeluaran'); }
+    public function pemasukan(Request $request) { return $this->renderManageView($request, 'pemasukan'); }
+    public function hutang(Request $request) { return $this->renderManageView($request, 'hutang'); }
+    public function piutang(Request $request) { return $this->renderManageView($request, 'piutang'); }
 
-    private function renderView(Request $request, $tab)
+    private function renderManageView(Request $request, $tab)
     {
         $data = $this->prepareData($request, $tab);
-        return view('buku_kas.' . $tab, $data);
+        return view('buku_kas.manage', $data);
     }
 
     private function prepareData(Request $request, $active_tab)
     {
+        $active_tab = session('active_tab') ?: $active_tab;
         $user = auth()->user();
         
         $outlets = collect();

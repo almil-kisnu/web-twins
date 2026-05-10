@@ -488,15 +488,15 @@
 
 <!-- Modal View Produk -->
 <div id="viewModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 600px; width: 95%; height: auto; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
-        <div class="modal-header" style="flex-shrink: 0;">
+    <div class="modal-content" style="max-width: 600px; width: 95%;">
+        <div class="modal-header">
             <h3><iconify-icon icon="solar:eye-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Detail Produk</h3>
             <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
         </div>
-        <div class="modal-body" id="viewDetailContent" style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div class="modal-body" id="viewDetailContent" style="padding: 20px;">
             {{-- Content will be injected via JS --}}
         </div>
-        <div style="padding: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: center; flex-shrink: 0;">
+        <div style="padding: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: center;">
             <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('viewModal')">Tutup</button>
         </div>
     </div>
@@ -651,15 +651,15 @@
 
 <!-- Detail Transfer Modal v2 -->
 <div id="transferDetailModal_v2" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 800px; width: 95%; height: auto; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
-        <div class="modal-header" style="flex-shrink: 0;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
             <h3>Detail Transfer Stok</h3>
             <button class="close-modal" onclick="closeModal('transferDetailModal_v2')">&times;</button>
         </div>
-        <div class="modal-body" id="transferDetailBody_v2" style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div class="modal-body" id="transferDetailBody_v2" style="padding: 20px;">
             {{-- Content injected via JS --}}
         </div>
-        <div style="margin-top: auto; display: flex; justify-content: center; padding: 15px 20px 20px; border-top: 1px solid #eee; flex-shrink: 0;">
+        <div style="margin-top: 24px; display: flex; justify-content: center; padding-bottom: 20px;">
             <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; min-width: 150px; justify-content: center;" onclick="closeModal('transferDetailModal_v2')">Tutup</button>
         </div>
     </div>
@@ -880,15 +880,15 @@
 
 <!-- Detail Restok Modal -->
 <div id="purchaseDetailModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 800px; width: 95%; height: auto; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
-        <div class="modal-header" style="flex-shrink: 0;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
             <h3>Detail Pembelian / Restok</h3>
             <button class="close-modal" onclick="closeModal('purchaseDetailModal')">&times;</button>
         </div>
-        <div id="purchaseDetailContent" class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div id="purchaseDetailContent" class="modal-body" style="padding: 20px;">
             {{-- Content injected via JS --}}
         </div>
-        <div style="margin-top: auto; display: flex; justify-content: center; padding: 15px 20px 20px; border-top: 1px solid #eee; flex-shrink: 0;">
+        <div style="margin-top: 24px; display: flex; justify-content: center; padding: 0 20px 20px;">
             <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('purchaseDetailModal')">Tutup</button>
         </div>
     </div>
@@ -940,12 +940,12 @@
 
 <!-- Detail Opname Modal -->
 <div id="opnameDetailModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 900px; width: 95%; height: auto; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;">
-        <div class="modal-header" style="flex-shrink: 0;">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+        <div class="modal-header">
             <h3>Detail Sesi Opname</h3>
             <button class="close-modal" onclick="closeModal('opnameDetailModal')">&times;</button>
         </div>
-        <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+        <div class="modal-body" style="padding: 20px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 24px; padding: 15px; background: #f8fbff; border-radius: 12px; border: 1px solid #d0e7ff;">
                 <div>
                     <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">📅 Tanggal Sesi</div>

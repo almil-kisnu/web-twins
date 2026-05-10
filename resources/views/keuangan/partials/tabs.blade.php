@@ -1,15 +1,13 @@
-<link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
-
 <div class="tab-navigation">
-    <a href="{{ route('keuangan.kas-box') }}" class="tab-pill {{ (request()->routeIs('keuangan.kas-box') || request()->routeIs('keuangan.index')) ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-cashbox" onclick="switchTab('cashbox')">
         <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
         <span>Cashbox</span>
     </a>
-    <a href="{{ route('keuangan.arus-uang') }}" class="tab-pill {{ request()->routeIs('keuangan.arus-uang') ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-arus-uang" onclick="switchTab('arus-uang')">
         <iconify-icon icon="solar:round-transfer-horizontal-bold-duotone"></iconify-icon>
         <span>Arus Uang</span>
     </a>
-    <a href="{{ route('keuangan.pemindahan-saldo') }}" class="tab-pill {{ request()->routeIs('keuangan.pemindahan-saldo') ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-pemindahan-saldo" onclick="switchTab('pemindahan-saldo')">
         <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon>
         <span>Pemindahan Saldo</span>
     </a>

@@ -11,58 +11,19 @@ use Illuminate\Support\Str;
 
 class KeuanganController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get();
-        return view('keuangan.cashbox', compact('cashboxes'));
+        return $this->manage($request);
     }
 
-    public function storeCashbox(Request $request)
-    {
-        $request->validate([
-            'nama_metode' => 'required|string|max:255|unique:payment_methods,nama_metode',
-        ]);
-
-        PaymentMethod::create([
-            'uuid' => (string) Str::uuid(),
-            'nama_metode' => $request->nama_metode
-        ]);
-
-        return redirect()->back()->with('success', 'Cashbox berhasil ditambahkan!');
-    }
-
-    public function updateCashbox(Request $request, $id)
-    {
-        $pm = PaymentMethod::findOrFail($id);
-        
-        $request->validate([
-            'nama_metode' => 'required|string|max:255|unique:payment_methods,nama_metode,' . $id . ',uuid',
-        ]);
-
-        $pm->update([
-            'nama_metode' => $request->nama_metode
-        ]);
-
-        return redirect()->back()->with('success', 'Cashbox berhasil diperbarui!');
-    }
-
-    public function destroyCashbox($id)
-    {
-        $pm = PaymentMethod::findOrFail($id);
-        $pm->delete();
-
-        return redirect()->back()->with('success', 'Cashbox berhasil dihapus!');
-    }
-
-    public function kasBox()
-    {
-        return $this->index();
-    }
-
-    public function arusUang(Request $request)
+    public function manage(Request $request)
     {
         $user = auth()->user();
         
+        // 1. Data Cashbox
+        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get();
+
+        // 2. Data Arus Uang
         // Filter Outlet
         $outlets = collect();
         if ($user->role === 'owner') {
@@ -107,16 +68,66 @@ class KeuanganController extends Controller
         }
         $history = $historyQuery->orderBy('tanggal', 'desc')->paginate(100)->appends($request->query());
 
-        // Calculate Summaries from the base filtered query
+        // Calculate Summaries
         $pemasukan = (clone $query)->where('jenis', 'pemasukan')->sum('nominal');
         $pengeluaran = (clone $query)->where('jenis', 'pengeluaran')->sum('nominal');
         $saldo_bersih = $pemasukan - $pengeluaran;
 
-        return view('keuangan.arus-uang', compact('history', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'outlets', 'store_id', 'start_date', 'end_date'));
+        return view('keuangan.manage', compact(
+            'cashboxes', 
+            'history', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'outlets', 'store_id', 'start_date', 'end_date'
+        ));
+    }
+
+    public function storeCashbox(Request $request)
+    {
+        $request->validate([
+            'nama_metode' => 'required|string|max:255|unique:payment_methods,nama_metode',
+        ]);
+
+        PaymentMethod::create([
+            'uuid' => (string) Str::uuid(),
+            'nama_metode' => $request->nama_metode
+        ]);
+
+        return redirect()->route('keuangan.index', ['tab' => 'cashbox'])->with('success', 'Cashbox berhasil ditambahkan!');
+    }
+
+    public function updateCashbox(Request $request, $id)
+    {
+        $pm = PaymentMethod::findOrFail($id);
+        
+        $request->validate([
+            'nama_metode' => 'required|string|max:255|unique:payment_methods,nama_metode,' . $id . ',uuid',
+        ]);
+
+        $pm->update([
+            'nama_metode' => $request->nama_metode
+        ]);
+
+        return redirect()->route('keuangan.index', ['tab' => 'cashbox'])->with('success', 'Cashbox berhasil diperbarui!');
+    }
+
+    public function destroyCashbox($id)
+    {
+        $pm = PaymentMethod::findOrFail($id);
+        $pm->delete();
+
+        return redirect()->route('keuangan.index', ['tab' => 'cashbox'])->with('success', 'Cashbox berhasil dihapus!');
+    }
+
+    public function kasBox()
+    {
+        return redirect()->route('keuangan.index', ['tab' => 'cashbox']);
+    }
+
+    public function arusUang(Request $request)
+    {
+        return redirect()->route('keuangan.index', ['tab' => 'arus-uang']);
     }
 
     public function pemindahanSaldo()
     {
-        return view('keuangan.pemindahan-saldo');
+        return redirect()->route('keuangan.index', ['tab' => 'pemindahan-saldo']);
     }
 }
