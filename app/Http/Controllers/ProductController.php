@@ -38,7 +38,7 @@ class ProductController extends Controller
         $data = $this->getConsolidatedData($request);
         
         if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
+            return view('product.index', $data)->fragment('tab-content-' . $data['active_tab']);
         }
 
         return view('product.index', $data);
@@ -50,10 +50,25 @@ class ProductController extends Controller
         $user = Auth::user();
         $selectedStoreId = $request->get('store_id');
 
-        $query = Product::with(['category', 'stores.store', 'priceLevels']);
+        $query = Product::with(['category', 'priceLevels']);
 
-        if (!$user->isOwner()) {
-            $selectedStoreId = $user->store_id;
+        if ($user->isOwner()) {
+            if ($selectedStoreId && $selectedStoreId !== 'all') {
+                $query->with(['stores' => function($q) use ($selectedStoreId) {
+                    $q->where('store_id', $selectedStoreId);
+                }]);
+                // We'll still need the relation for the specific store info, 
+                // but for the sum we can be more efficient.
+                $query->withSum(['stores as current_stok' => function($q) use ($selectedStoreId) {
+                    $q->where('store_id', $selectedStoreId);
+                }], 'stok');
+            } else {
+                $query->withSum('stores as current_stok', 'stok');
+            }
+        } else {
+            $query->withSum(['stores as current_stok' => function($q) use ($user) {
+                $q->where('store_id', $user->store_id);
+            }], 'stok');
         }
 
         if ($request->has('category_id') && $request->category_id != '') {
@@ -74,21 +89,19 @@ class ProductController extends Controller
         $products = $query->paginate(10);
 
         $products->getCollection()->transform(function ($product) use ($user, $selectedStoreId) {
+            $product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url);
+            
+            // Re-calculating current_kadaluarsa from eager-loaded stores
             $storeRelation = null;
             if ($user->isOwner()) {
                 if ($selectedStoreId && $selectedStoreId !== 'all') {
                     $storeRelation = $product->stores->where('store_id', $selectedStoreId)->first();
-                    $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
-                } else {
-                    $product->current_stok = $product->stores->sum('stok');
                 }
             } else {
                 $storeRelation = $product->stores->where('store_id', $user->store_id)->first();
-                $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
             }
-            
             $product->current_kadaluarsa = $storeRelation && $storeRelation->kadaluarsa ? \Carbon\Carbon::parse($storeRelation->kadaluarsa)->format('d F Y') : '-';
-            $product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url);
+            
             return $product;
         });
 
@@ -110,7 +123,7 @@ class ProductController extends Controller
     {
         $data = $this->getConsolidatedData($request, 'opname');
         if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
+            return view('product.index', $data)->fragment('tab-content-' . $data['active_tab']);
         }
         return view('product.index', $data);
     }
@@ -125,10 +138,12 @@ class ProductController extends Controller
         if (!$user->isOwner()) {
             $summaryQuery->where('store_id', $user->store_id);
         }
-        $all_opnames = $summaryQuery->get();
-        $pending_count = $all_opnames->where('status', 'Pending')->count();
-        $selesai_count = $all_opnames->where('status', 'Selesai')->count();
-        $total_loss = $all_opnames->sum('total_kerugian');
+        $pending_count = (clone $summaryQuery)->where('status', 'Pending')->count();
+        $selesai_count = (clone $summaryQuery)->where('status', 'Selesai')->count();
+        $total_loss = OpnameDetail::whereIn('opname_id', (clone $summaryQuery)->select('uuid'))
+            ->join('products', 'opname_detail.product_id', '=', 'products.uuid')
+            ->where('opname_detail.selisih', '<', 0)
+            ->sum(DB::raw('opname_detail.selisih * COALESCE(products.harga_modal, 0)')) ?? 0;
 
         if ($sub_tab == 'produk_rugi') {
             $query = OpnameDetail::with(['product', 'opname.store'])->where('selisih', '<', 0);
@@ -204,7 +219,7 @@ class ProductController extends Controller
     {
         $data = $this->getConsolidatedData($request, 'stok');
         if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
+            return view('product.index', $data)->fragment('tab-content-' . $data['active_tab']);
         }
         return view('product.index', $data);
     }
@@ -253,22 +268,8 @@ class ProductController extends Controller
             }
         });
         
-        $baseStatsQuery = ProductStore::query();
-        if (!$user->isOwner()) {
-            $baseStatsQuery->where('store_id', $user->store_id);
-        } else {
-            if ($selectedStoreId && $selectedStoreId !== 'all') {
-                $baseStatsQuery->where('store_id', $selectedStoreId);
-            }
-        }
-        
-        $allRecords = (clone $baseStatsQuery)->get();
-        $stok_habis_count = 0;
-        foreach($allRecords as $rec) {
-            $min = $rec->stok_minimum ?? 10;
-            if ($rec->stok <= $min) { $stok_habis_count++; }
-        }
-        $expired_count = (clone $baseStatsQuery)->whereNotNull('kadaluarsa')->where('kadaluarsa', '<=', now()->addDays(30))->count();
+        $stok_habis_count = (clone $query)->whereRaw('stok <= COALESCE(stok_minimum, 10)')->count();
+        $expired_count = (clone $query)->whereNotNull('kadaluarsa')->where('kadaluarsa', '<=', now()->addDays(30))->count();
 
         return [
             'active_tab' => 'stok',
@@ -288,7 +289,7 @@ class ProductController extends Controller
     {
         $data = $this->getConsolidatedData($request, 'restok');
         if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
+            return view('product.index', $data)->fragment('tab-content-' . $data['active_tab']);
         }
         return view('product.index', $data);
     }
@@ -348,18 +349,57 @@ class ProductController extends Controller
     {
         $data = $this->getConsolidatedData($request, 'transfer');
         if ($request->ajax()) {
-            return view('product.index', $data)->fragment('dashboard-content');
+            return view('product.index', $data)->fragment('tab-content-' . $data['active_tab']);
         }
         return view('product.index', $data);
     }
 
     private function getConsolidatedData(Request $request, $defaultTab = 'produk')
     {
+        /** @var User $user */
+        $user = Auth::user();
         $active_tab = $request->get('tab', $defaultTab);
         
-        // Always load all data to support SPA-like switching
-        // Each data method should ideally use unique pagination parameters if needed,
-        // but for now they share 'page' as they are usually filtered one at a time.
+        // If it's an AJAX request, we prioritize the active tab to ensure "zero-loading" speed.
+        if ($request->ajax()) {
+            $data = ['active_tab' => $active_tab];
+            
+            switch ($active_tab) {
+                case 'produk':
+                    $data = array_merge($data, $this->getProductsData($request));
+                    break;
+                case 'opname':
+                    $data = array_merge($data, $this->getOpnameData($request));
+                    break;
+                case 'stok':
+                    $data = array_merge($data, $this->getAlertData($request));
+                    break;
+                case 'restok':
+                    $data = array_merge($data, $this->getRestokData($request));
+                    break;
+                case 'transfer':
+                    $data = array_merge($data, $this->getTransferData($request));
+                    break;
+            }
+            
+            // Fill missing variables with empty collections to prevent Blade errors
+            $data['products'] = $data['products'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+            $data['opnames'] = $data['opnames'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+            $data['opname_details'] = $data['opname_details'] ?? collect();
+            $data['alerts'] = $data['alerts'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+            $data['purchases'] = $data['purchases'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+            $data['transfers'] = $data['transfers'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+            
+            $data['categories'] = $data['categories'] ?? Category::all();
+            $data['stores'] = $data['stores'] ?? ($user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]));
+            $data['sub_menus'] = $data['sub_menus'] ?? Fitur::where('parent_id', 2)->orderBy('id')->get();
+            $data['suppliers'] = $data['suppliers'] ?? Contact::where('tipe', 'ilike', 'supplier')->get();
+            $data['payment_methods'] = $data['payment_methods'] ?? \App\Models\PaymentMethod::all();
+            
+            return $data;
+        }
+
+        // Full load: Fetch all data for instant SPA-like switching
         return array_merge(
             $this->getProductsData($request),
             $this->getOpnameData($request),
@@ -1730,6 +1770,26 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Gagal menghapus restok: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function massDelete(Request $request)
+    {
+        $uuids = explode(',', $request->uuids);
+        if (empty($uuids) || (count($uuids) == 1 && empty($uuids[0]))) {
+            return back()->with('error', 'Tidak ada produk terpilih untuk dihapus.');
+        }
+
+        DB::beginTransaction();
+        try {
+            ProductStore::whereIn('product_id', $uuids)->delete();
+            Product::whereIn('uuid', $uuids)->delete();
+
+            DB::commit();
+            return back()->with('success', count($uuids) . ' produk berhasil dihapus secara massal.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus produk secara massal: ' . $e->getMessage());
         }
     }
 }

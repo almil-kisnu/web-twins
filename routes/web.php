@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::post('/products/mass-delete', [ProductController::class, 'massDelete'])->name('products.mass-delete');
     Route::post('/products/mass-destroy', [ProductController::class, 'massDestroy'])->name('products.mass_destroy');
 
     // Opname Routes
