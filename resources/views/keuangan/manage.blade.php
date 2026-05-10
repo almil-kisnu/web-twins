@@ -29,6 +29,24 @@
     .is-invalid { border-color: #dc2626 !important; }
     .invalid-feedback { display: none; color: #dc2626; font-size: 12px; margin-top: 5px; font-weight: 600; }
     .is-invalid+.invalid-feedback { display: block !important; }
+
+    /* Premium Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .modal-content { max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0 !important; }
+    .modal-content form { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .modal-body-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+    .modal-footer { padding: 20px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 12px; background: #fff; }
+    .table-container { overflow-x: auto; }
+
+    /* Currency Input */
+    .nominal-wrapper { position: relative; display: flex; align-items: center; }
+    .nominal-wrapper::before { content: "Rp"; position: absolute; left: 15px; font-weight: 700; color: #64748b; font-size: 14px; pointer-events: none; }
+    .nominal-wrapper input { padding-left: 45px !important; }
 </style>
 @endpush
 
@@ -92,10 +110,10 @@
 
     {{-- SECTION ARUS UANG --}}
     <div id="view-arus-uang" class="view-section">
-        <div class="action-bar-container">
-            <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" class="action-bar" onchange="this.submit()">
-                <input type="hidden" name="tab" value="arus-uang">
-                <div class="left-actions-group">
+        <div class="action-bar" style="margin-bottom: 20px;">
+            <div class="left-actions-group">
+                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" onchange="this.submit()">
+                    <input type="hidden" name="tab" value="arus-uang">
                     <div class="search-wrapper">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                         <input type="text" name="search" id="searchInput" class="search-input" value="{{ request('search') }}" placeholder="Cari keterangan, jenis, atau outlet..." onkeyup="realtimeSearch()">
@@ -134,15 +152,19 @@
                     </div>
                     <input type="hidden" name="store_id" id="filter_store_id" value="{{ $store_id }}">
                     @endif
-                </div>
-                
-                <div class="right-actions">
-                    <button type="button" class="btn-action" onclick="exportToExcel()">
-                        <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon>
-                        <span>Export Excel</span>
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
+            
+            <div class="right-actions">
+                <button type="button" class="btn-action" style="background: #0081C9;" onclick="openModal('modalTransferSaldo')">
+                    <iconify-icon icon="solar:card-transfer-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    <span>Pemindahan Saldo</span>
+                </button>
+                <button type="button" class="btn-action" style="background: #64748b;" onclick="exportToExcel()">
+                    <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon>
+                    <span>Export</span>
+                </button>
+            </div>
         </div>
 
         <div class="main-content-box" style="background: transparent; padding: 0; box-shadow: none;">
@@ -223,12 +245,95 @@
 
     {{-- SECTION PEMINDAHAN SALDO --}}
     <div id="view-pemindahan-saldo" class="view-section">
+        <div class="action-bar" style="margin-bottom: 20px;">
+            <div class="left-actions-group">
+                <div class="search-wrapper">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="transferSearch" class="search-input" placeholder="Cari riwayat transfer..." onkeyup="filterTransfer()">
+                </div>
+
+                <div class="dropdown">
+                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    </button>
+                    <div class="dropdown-content" style="padding: 15px; width: 300px;">
+                        <form action="{{ route('keuangan.index') }}" method="GET">
+                            <input type="hidden" name="tab" value="pemindahan-saldo">
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Dari</label>
+                                    <input type="date" name="start_date" class="form-control" value="{{ $start_date }}">
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Sampai</label>
+                                    <input type="date" name="end_date" class="form-control" value="{{ $end_date }}">
+                                </div>
+                                <button type="submit" class="btn-action" style="width: 100%; justify-content: center;">Terapkan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                @if(auth()->user()->role === 'owner')
+                <div class="dropdown">
+                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="{{ route('keuangan.index', ['tab' => 'pemindahan-saldo', 'store_id' => 'all']) }}">Semua Outlet</a>
+                        @foreach($outlets as $outlet)
+                            <a href="{{ route('keuangan.index', ['tab' => 'pemindahan-saldo', 'store_id' => $outlet->uuid]) }}">{{ $outlet->nama }}</a>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+            </div>
+            
+            <div class="right-actions">
+                <button type="button" class="btn-action" onclick="openModal('modalTransferSaldo')">
+                    <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    <span>Tambah Pemindahan Saldo</span>
+                </button>
+            </div>
+        </div>
+
         <div class="main-content-box">
-            <x-coming-soon 
-                title="Pemindahan Saldo" 
-                icon="solar:card-transfer-bold-duotone" 
-                description="Fitur Pemindahan Saldo sedang dikembangkan untuk memudahkan transfer antar akun kas atau outlet Anda."
-            />
+            <div class="table-container">
+                <table class="fitur-table" id="transferTable">
+                    <thead>
+                        <tr>
+                            <th>TANGGAL</th>
+                            <th>KETERANGAN</th>
+                            <th>OUTLET</th>
+                            <th>AKUN</th>
+                            <th style="text-align: right;">NOMINAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $transfers = $history->filter(function($item) {
+                                return str_contains(strtolower($item->keterangan), 'transfer');
+                            });
+                        @endphp
+                        @forelse($transfers as $t)
+                            <tr class="transfer-row">
+                                <td style="white-space: nowrap;">{{ \Carbon\Carbon::parse($t->tanggal)->translatedFormat('d F Y') }} <br> <span style="font-size: 11px; color: #94a3b8;">{{ \Carbon\Carbon::parse($t->tanggal)->format('H:i') }}</span></td>
+                                <td>
+                                    <div style="font-weight: 600;">{{ $t->keterangan }}</div>
+                                    <div style="font-size: 11px; color: #64748b;">Oleh: {{ $t->user->name ?? $t->user->username ?? '-' }}</div>
+                                </td>
+                                <td>{{ $t->outlet->nama ?? '-' }}</td>
+                                <td>{{ $t->paymentMethod->nama_metode ?? '-' }}</td>
+                                <td style="text-align: right; font-weight: 700; color: {{ $t->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
+                                    {{ $t->jenis == 'pemasukan' ? '+' : '-' }} Rp {{ number_format($t->nominal, 0, ',', '.') }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">Belum ada riwayat transfer saldo.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -242,11 +347,13 @@
         </div>
         <form action="{{ route('keuangan.cashbox.store') }}" method="POST">
             @csrf
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Nama Cashbox / Metode Pembayaran</label>
-                <input type="text" name="nama_metode" class="form-control" placeholder="Contoh: Cash, QRIS, dll" required>
+            <div class="modal-body-scroll">
+                <div class="form-group">
+                    <label>Nama Cashbox / Metode Pembayaran</label>
+                    <input type="text" name="nama_metode" class="form-control" placeholder="Contoh: Cash, QRIS, dll" required>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <div class="modal-footer">
                 <button type="button" onclick="closeModal('modalAddCashbox')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button>
                 <button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Simpan</button>
             </div>
@@ -263,11 +370,13 @@
         <form id="formEditCashbox" method="POST">
             @csrf
             @method('PUT')
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Nama Cashbox / Metode Pembayaran</label>
-                <input type="text" name="nama_metode" id="edit_nama_metode" class="form-control" required>
+            <div class="modal-body-scroll">
+                <div class="form-group">
+                    <label>Nama Cashbox / Metode Pembayaran</label>
+                    <input type="text" name="nama_metode" id="edit_nama_metode" class="form-control" required>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <div class="modal-footer">
                 <button type="button" onclick="closeModal('modalEditCashbox')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button>
                 <button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Simpan Perubahan</button>
             </div>
@@ -279,6 +388,76 @@
     @csrf
     @method('DELETE')
 </form>
+
+<div id="modalTransferSaldo" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>Pemindahan Saldo Baru</h3>
+            <button type="button" class="close-modal" onclick="closeModal('modalTransferSaldo')">&times;</button>
+        </div>
+        <form action="{{ route('keuangan.transfer.store') }}" method="POST">
+            @csrf
+            <div class="modal-body-scroll">
+                @if(auth()->user()->role === 'owner')
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Pilih Outlet *</label>
+                    <select name="store_id" class="form-control" required>
+                        @foreach($outlets as $outlet)
+                            <option value="{{ $outlet->uuid }}" {{ $store_id == $outlet->uuid ? 'selected' : '' }}>{{ $outlet->nama }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @else
+                <input type="hidden" name="store_id" value="{{ auth()->user()->store_id }}">
+                @endif
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Dari Akun (Asal) *</label>
+                    <select name="from_cashbox_id" class="form-control" required>
+                        <option value="">-- Pilih Akun Asal --</option>
+                        @foreach($cashboxes as $cb)
+                            <option value="{{ $cb->uuid }}">
+                                {{ $cb->nama_metode }} (Saldo: Rp {{ number_format($cb->saldo, 0, ',', '.') }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Ke Akun (Tujuan) *</label>
+                    <select name="to_cashbox_id" class="form-control" required>
+                        <option value="">-- Pilih Akun Tujuan --</option>
+                        @foreach($cashboxes as $cb)
+                            <option value="{{ $cb->uuid }}">{{ $cb->nama_metode }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Nominal Transfer *</label>
+                    <div class="nominal-wrapper">
+                        <input type="number" name="nominal" class="form-control" placeholder="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Tanggal *</label>
+                    <input type="date" name="tanggal" class="form-control" value="{{ date('Y-m-d') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Keterangan (Opsional)</label>
+                    <textarea name="keterangan" class="form-control" placeholder="Contoh: Setor Tunai, dll" style="min-height: 80px;"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('modalTransferSaldo')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button>
+                <button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Proses Pemindahan</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 <script>
@@ -389,6 +568,13 @@
         if (!table) return;
         const wb = XLSX.utils.table_to_book(table, {sheet: "Arus Uang"});
         XLSX.writeFile(wb, `Laporan_Arus_Uang.xlsx`);
+    }
+
+    function filterTransfer() {
+        const input = document.getElementById('transferSearch').value.toLowerCase();
+        document.querySelectorAll('.transfer-row').forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+        });
     }
 </script>
 @endsection

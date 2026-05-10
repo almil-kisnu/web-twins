@@ -113,6 +113,7 @@ Route::prefix('keuangan')->middleware(['auth', 'verified', 'role:owner,kepala_to
     Route::get('/kas-box', [KeuanganController::class, 'kasBox'])->name('keuangan.kas-box');
     Route::get('/arus-uang', [KeuanganController::class, 'arusUang'])->name('keuangan.arus-uang');
     Route::get('/pemindahan-saldo', [KeuanganController::class, 'pemindahanSaldo'])->name('keuangan.pemindahan-saldo');
+    Route::post('/transfer', [KeuanganController::class, 'transferSaldo'])->name('keuangan.transfer.store');
 });
 
 Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {

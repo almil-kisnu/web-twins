@@ -20,8 +20,17 @@ class KeuanganController extends Controller
     {
         $user = auth()->user();
         
-        // 1. Data Cashbox
-        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get();
+        // 1. Data Cashbox with Balances
+        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get()->map(function($cb) use ($user) {
+            $query = \App\Models\CashFlow::where('metode_pembayaran', $cb->uuid);
+            if ($user->role !== 'owner' && $user->store_id) {
+                $query->where('store_id', $user->store_id);
+            }
+            $pemasukan = (clone $query)->where('jenis', 'pemasukan')->sum('nominal');
+            $pengeluaran = (clone $query)->where('jenis', 'pengeluaran')->sum('nominal');
+            $cb->saldo = $pemasukan - $pengeluaran;
+            return $cb;
+        });
 
         // 2. Data Arus Uang
         // Filter Outlet
@@ -126,8 +135,58 @@ class KeuanganController extends Controller
         return redirect()->route('keuangan.index', ['tab' => 'arus-uang']);
     }
 
-    public function pemindahanSaldo()
+    public function transferSaldo(Request $request)
     {
-        return redirect()->route('keuangan.index', ['tab' => 'pemindahan-saldo']);
+        $request->validate([
+            'from_cashbox_id' => 'required|exists:payment_methods,uuid',
+            'to_cashbox_id' => 'required|exists:payment_methods,uuid|different:from_cashbox_id',
+            'nominal' => 'required|numeric|min:1',
+            'keterangan' => 'nullable|string',
+            'tanggal' => 'required|date',
+            'store_id' => 'required|exists:store,uuid'
+        ]);
+
+        $from = PaymentMethod::findOrFail($request->from_cashbox_id);
+        $to = PaymentMethod::findOrFail($request->to_cashbox_id);
+        $user = auth()->user();
+
+        // 1. Check Saldo Asal
+        $pemasukan = \App\Models\CashFlow::where('metode_pembayaran', $from->uuid)->where('store_id', $request->store_id)->where('jenis', 'pemasukan')->sum('nominal');
+        $pengeluaran = \App\Models\CashFlow::where('metode_pembayaran', $from->uuid)->where('store_id', $request->store_id)->where('jenis', 'pengeluaran')->sum('nominal');
+        $saldo = $pemasukan - $pengeluaran;
+
+        if ($saldo < $request->nominal) {
+            return redirect()->back()->with('error', 'Saldo ' . $from->nama_metode . ' tidak mencukupi! (Tersedia: Rp ' . number_format($saldo, 0, ',', '.') . ')');
+        }
+
+        // 2. Create 2 CashFlow entries
+        $tanggal = $request->tanggal . ' ' . date('H:i:s');
+        $keteranganBase = $request->keterangan ?: 'Pemindahan Saldo';
+
+        \Illuminate\Support\Facades\DB::transaction(function() use ($request, $from, $to, $user, $tanggal, $keteranganBase) {
+            // Pengeluaran dari Akun Asal
+            \App\Models\CashFlow::create([
+                'store_id' => $request->store_id,
+                'user_id' => $user->uuid,
+                'jenis' => 'pengeluaran',
+                'nominal' => $request->nominal,
+                'keterangan' => $keteranganBase . " (Transfer ke " . $to->nama_metode . ")",
+                'tanggal' => $tanggal,
+                'metode_pembayaran' => $from->uuid
+            ]);
+
+            // Pemasukan ke Akun Tujuan
+            \App\Models\CashFlow::create([
+                'store_id' => $request->store_id,
+                'user_id' => $user->uuid,
+                'jenis' => 'pemasukan',
+                'nominal' => $request->nominal,
+                'keterangan' => $keteranganBase . " (Transfer dari " . $from->nama_metode . ")",
+                'tanggal' => $tanggal,
+                'metode_pembayaran' => $to->uuid
+            ]);
+        });
+
+        return redirect()->route('keuangan.index', ['tab' => 'pemindahan-saldo'])->with('success', 'Pemindahan saldo berhasil!');
     }
 }

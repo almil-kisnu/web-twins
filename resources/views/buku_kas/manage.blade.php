@@ -16,9 +16,21 @@
     .chip { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; border: none; font-weight: 500; }
     .chip:hover { background: #e2e8f0; }
     .empty-state { text-align: center; padding: 40px; color: #999; }
-    .form-control.is-invalid { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
-    .invalid-feedback { color: #ef4444; font-size: 12px; margin-top: 4px; font-weight: 500; display: none; }
     .is-invalid + .invalid-feedback { display: block !important; }
+
+    /* Premium Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .modal-content { max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0 !important; }
+    .modal-content form { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .modal-body-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+    .modal-footer { padding: 20px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 12px; background: #fff; }
+    .table-container { overflow-x: auto; }
+
     .nominal-wrapper { position: relative; display: flex; align-items: center; }
     .nominal-wrapper::before { content: "Rp"; position: absolute; left: 12px; font-weight: 700; color: #475569; font-size: 13px; pointer-events: none; }
     .nominal-wrapper input { padding-left: 35px !important; }
