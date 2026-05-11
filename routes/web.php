@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::post('/products/mass-delete', [ProductController::class, 'massDelete'])->name('products.mass-delete');
     Route::post('/products/mass-destroy', [ProductController::class, 'massDestroy'])->name('products.mass_destroy');
 
     // Opname Routes
@@ -112,6 +113,7 @@ Route::prefix('keuangan')->middleware(['auth', 'verified', 'role:owner,kepala_to
     Route::get('/kas-box', [KeuanganController::class, 'kasBox'])->name('keuangan.kas-box');
     Route::get('/arus-uang', [KeuanganController::class, 'arusUang'])->name('keuangan.arus-uang');
     Route::get('/pemindahan-saldo', [KeuanganController::class, 'pemindahanSaldo'])->name('keuangan.pemindahan-saldo');
+    Route::post('/transfer', [KeuanganController::class, 'transferSaldo'])->name('keuangan.transfer.store');
 });
 
 Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {

@@ -116,18 +116,29 @@
                 @elseif(request()->is('transaksi*'))
                     <i id="topbar-icon" data-lucide="receipt"></i>
                     <h2 id="topbar-title">Transaksi & Diskon</h2>
-                @elseif(request()->is('keuangan'))
-                    <i id="topbar-icon" data-lucide="trending-up"></i>
-                    <h2 id="topbar-title">Keuangan</h2>
-                @elseif(request()->routeIs('keuangan.kas-box'))
-                    <i id="topbar-icon" data-lucide="wallet"></i>
-                    <h2 id="topbar-title">Kas Box</h2>
-                @elseif(request()->routeIs('keuangan.arus-uang'))
-                    <i id="topbar-icon" data-lucide="arrow-left-right"></i>
-                    <h2 id="topbar-title">Arus Uang</h2>
-                @elseif(request()->routeIs('keuangan.pemindahan-saldo'))
-                    <i id="topbar-icon" data-lucide="move"></i>
-                    <h2 id="topbar-title">Pemindahan Saldo</h2>
+                @elseif(request()->is('keuangan*'))
+                    @php
+                        $tab = request('tab', 'cashbox');
+                        $icon = 'trending-up';
+                        $title = 'Keuangan';
+                        if($tab == 'cashbox') { $icon = 'wallet'; $title = 'Cashbox'; }
+                        elseif($tab == 'arus-uang') { $icon = 'arrow-left-right'; $title = 'Arus Uang'; }
+                        elseif($tab == 'pemindahan-saldo') { $icon = 'move'; $title = 'Pemindahan Saldo'; }
+                    @endphp
+                    <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
+                    <h2 id="topbar-title">{{ $title }}</h2>
+                @elseif(request()->is('buku-kas*'))
+                    @php
+                        $tab = request('tab', 'pengeluaran');
+                        $icon = 'trending-up';
+                        $title = 'Buku Kas';
+                        if($tab == 'pengeluaran') { $icon = 'round-arrow-left-down'; $title = 'Pengeluaran'; }
+                        elseif($tab == 'pemasukan') { $icon = 'round-arrow-right-up'; $title = 'Pemasukan'; }
+                        elseif($tab == 'hutang') { $icon = 'wallet-money'; $title = 'Hutang'; }
+                        elseif($tab == 'piutang') { $icon = 'hand-money'; $title = 'Piutang'; }
+                    @endphp
+                    <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
+                    <h2 id="topbar-title">{{ $title }}</h2>
                 @elseif(request()->is('outlet*'))
                     <i id="topbar-icon" data-lucide="store"></i>
                     <h2 id="topbar-title">Operasional & Outlet</h2>

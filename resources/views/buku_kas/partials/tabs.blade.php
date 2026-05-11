@@ -1,17 +1,17 @@
 <div class="tab-navigation">
-    <a href="{{ route('keuangan.pengeluaran') }}" class="tab-pill {{ request()->routeIs('keuangan.pengeluaran') || request()->routeIs('keuangan.transaksi') ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-pengeluaran" onclick="switchTab('pengeluaran')">
         <iconify-icon icon="solar:round-arrow-left-down-bold-duotone"></iconify-icon>
         <span>Pengeluaran</span>
     </a>
-    <a href="{{ route('keuangan.pemasukan') }}" class="tab-pill {{ request()->routeIs('keuangan.pemasukan') ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-pemasukan" onclick="switchTab('pemasukan')">
         <iconify-icon icon="solar:round-arrow-right-up-bold-duotone"></iconify-icon>
         <span>Pemasukan Lainnya</span>
     </a>
-    <a href="{{ route('keuangan.hutang') }}" class="tab-pill {{ request()->routeIs('keuangan.hutang') ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-hutang" onclick="switchTab('hutang')">
         <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
         <span>Hutang</span>
     </a>
-    <a href="{{ route('keuangan.piutang') }}" class="tab-pill {{ request()->routeIs('keuangan.piutang') ? 'active' : '' }}">
+    <a href="javascript:void(0)" class="tab-pill" id="pill-piutang" onclick="switchTab('piutang')">
         <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon>
         <span>Piutang</span>
     </a>

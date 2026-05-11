@@ -9,7 +9,11 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 <style>
-    /* Force SweetAlert2 and Global Loading to be on top of EVERYTHING */
+    .is-invalid + .invalid-feedback { display: block !important; }
+    .view-section { display: none; }
+    .view-section.active { display: block; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .nominal-wrapper { position: relative; display: flex; align-items: center; }
     /* Force SweetAlert2 and Global Loading to be on top of EVERYTHING */
     .swal2-container { 
         z-index: 999999999 !important; 
@@ -171,6 +175,36 @@
     }
     .is-invalid + .invalid-feedback {
         display: block;
+    }
+
+    /* Premium Shimmer Loading Effect */
+    @keyframes shimmer {
+        0% { background-position: -468px 0; }
+        100% { background-position: 468px 0; }
+    }
+    .loading-shimmer {
+        animation: shimmer 1.2s linear infinite;
+        background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+        background-size: 800px 104px;
+        position: relative;
+    }
+    .table-loading-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        border-radius: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+    }
+    .main-content-box.is-loading .table-loading-overlay {
+        opacity: 1;
+        pointer-events: auto;
     }
 </style>
 <script>
@@ -973,23 +1007,23 @@
 <div class="fitur-container">
     {{-- PILL TABS --}}
     <div class="tab-navigation">
-        <a href="{{ route('products.index') }}" class="tab-pill {{ $active_tab == 'produk' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'produk' ? 'active' : '' }}" onclick="switchTab('produk', event)">
             <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
             <span>Produk</span>
         </a>
-        <a href="{{ route('products.stok') }}" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}" onclick="switchTab('stok', event)">
             <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
             <span>Katalog & Stok</span>
         </a>
-        <a href="{{ route('products.restok') }}" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}" onclick="switchTab('restok', event)">
             <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
             <span>Restok</span>
         </a>
-        <a href="{{ route('products.transfer') }}" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}" onclick="switchTab('transfer', event)">
             <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
             <span>Transfer Stok</span>
         </a>
-        <a href="{{ route('products.opname') }}" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}" onclick="switchTab('opname', event)">
             <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
             <span>Stok Opname</span>
         </a>
@@ -997,218 +1031,103 @@
 
     <div id="ajax-content-area">
     @fragment('dashboard-content')
+    {{-- We no longer use @fragment for tab switching as we render everything for instant visibility toggling --}}
 
-    {{-- ACTION BAR --}}
-    <div class="action-bar">
-        <form action="{{ url()->current() }}" method="GET" style="display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 12px;" id="filterForm">
-            @if(isset($sub_tab))
-                <input type="hidden" name="sub_tab" value="{{ $sub_tab }}">
-            @endif
+    @php
+        $tabs = ['produk', 'stok', 'restok', 'transfer', 'opname'];
+    @endphp
+
+    @foreach($tabs as $tab)
+    <div id="section-{{ $tab }}" class="view-section {{ $active_tab == $tab ? 'active' : '' }}">
+        {{-- TAB-SPECIFIC ACTION BAR --}}
+        <div class="action-bar">
             <div class="left-actions-group">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" name="search" id="searchInput" class="search-input" 
-                        placeholder="Cari data..." 
-                        onkeyup="realtimeSearch()">
+                    <input type="text" id="searchInput-{{ $tab }}" class="search-input" 
+                        placeholder="Cari di {{ $tab }}..." 
+                        onkeyup="realtimeSearch('{{ $tab }}')">
                 </div>
 
-                @if($active_tab == 'restok')
-                    <input type="hidden" name="supplier_id" id="hiddenSupplierId" value="{{ request('supplier_id') }}">
-                    
-                    <div style="display: flex; gap: 8px;">
-                        {{-- Supplier Filter --}}
-                        <div class="dropdown">
-                            <button type="button" class="btn-filter" title="Filter Supplier" onclick="toggleDropdown(event)">
-                                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;" class="{{ request('supplier_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                            </button>
-                            <div class="dropdown-content" style="left: 0; right: auto;">
-                                <a href="javascript:void(0)" onclick="setSupplierFilter('')" class="{{ !request('supplier_id') ? 'active-dropdown-item' : '' }}">
-                                    Semua Supplier
-                                </a>
-                                @foreach($suppliers as $supplier)
-                                    <a href="javascript:void(0)" onclick="setSupplierFilter('{{ $supplier->uuid }}')" class="{{ request('supplier_id') == $supplier->uuid ? 'active-dropdown-item' : '' }}">
-                                        {{ $supplier->nama }}
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
-
-                    </div>
-                @elseif($active_tab == 'transfer')
-                    <input type="hidden" name="store_id" id="hiddenTransferStoreId" value="{{ request('store_id') }}">
-                    @if(Auth::user()->isOwner())
-                        <div class="dropdown">
-                            <button type="button" class="btn-filter" title="Filter Outlet: {{ request('store_id') ? $stores->firstWhere('uuid', request('store_id'))->nama ?? 'Semua' : 'Semua Outlet' }}" onclick="toggleDropdown(event)">
-                                <iconify-icon icon="solar:shop-2-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                            </button>
-                            <div class="dropdown-content" style="left: 0; right: auto;">
-                                <a href="javascript:void(0)" onclick="setTransferStore('')" class="{{ !request('store_id') ? 'active-dropdown-item' : '' }}">
-                                    Semua Outlet
-                                </a>
-                                @foreach($stores as $s)
-                                    <a href="javascript:void(0)" onclick="setTransferStore('{{ $s->uuid }}')" class="{{ request('store_id') == $s->uuid ? 'active-dropdown-item' : '' }}">
-                                        {{ $s->nama }}
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-                @else
-                    <input type="hidden" name="category_id" id="hiddenCategoryId" value="{{ request('category_id') }}">
-                    
-                    <div style="display: flex; gap: 8px;">
-                        {{-- Category Filter --}}
-                        <div class="dropdown">
-                            <button type="button" class="btn-filter" title="Filter Kategori" onclick="toggleDropdown(event)">
-                                <iconify-icon icon="solar:filter-bold-duotone" style="font-size: 24px;" class="{{ request('category_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                            </button>
-                            <div class="dropdown-content" style="left: 0; right: auto;">
-                                <a href="javascript:void(0)" onclick="setCategory('')" class="{{ !request('category_id') ? 'active-dropdown-item' : '' }}">
-                                    Semua Kategori
-                                </a>
-                                @foreach($categories as $category)
-                                    <a href="javascript:void(0)" onclick="setCategory('{{ $category->uuid }}')" class="{{ request('category_id') == $category->uuid ? 'active-dropdown-item' : '' }}">
-                                        {{ $category->nama_category }}
-                                    </a>
-                                @endforeach
-                            </div>
+                @if($tab == 'produk' || $tab == 'stok' || $tab == 'opname')
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Kategori">
+                            <iconify-icon icon="solar:filter-bold-duotone" style="font-size: 24px;" class="{{ request('category_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{{ route('products.index', ['tab' => $tab, 'category_id' => '']) }}">Semua Kategori</a>
+                            @foreach($categories as $cat)
+                                <a href="{{ route('products.index', ['tab' => $tab, 'category_id' => $cat->uuid]) }}">{{ $cat->nama_category }}</a>
+                            @endforeach
                         </div>
                     </div>
                 @endif
 
-                @if($active_tab == 'stok')
-                    {{-- Type Filter for Stock Alerts --}}
+                @if($tab == 'restok')
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter: {{ request('type') == 'stok_habis' ? 'Stok Habis' : (request('type') == 'expired' ? 'Mau Expired' : 'Semua Alert') }}" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size: 24px;" class="{{ request('type') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Supplier">
+                            <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ request()->fullUrlWithQuery(['type' => '']) }}">Semua Alert</a>
-                            <a href="{{ request()->fullUrlWithQuery(['type' => 'stok_habis']) }}">Stok Habis</a>
-                            <a href="{{ request()->fullUrlWithQuery(['type' => 'expired']) }}">Mau Expired</a>
-                        </div>
-                    </div>
-                @elseif($active_tab == 'transfer')
-                    {{-- Status Filter Transfer --}}
-                    <input type="hidden" name="status" id="hiddenTransferStatus" value="{{ request('status') }}">
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Status: {{ request('status') ?: 'Semua' }}" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:checklist-bold-duotone" style="font-size: 24px;" class="{{ request('status') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="setTransferStatus('')">Semua Status</a>
-                            <a href="javascript:void(0)" onclick="setTransferStatus('Pending')">Menunggu</a>
-                            <a href="javascript:void(0)" onclick="setTransferStatus('Disetujui')">Disetujui</a>
-                            <a href="javascript:void(0)" onclick="setTransferStatus('Dikirim')">Sedang Dikirim</a>
-                            <a href="javascript:void(0)" onclick="setTransferStatus('Selesai')">Diterima</a>
-                        </div>
-                    </div>
-                    {{-- Time Filter --}}
-                    <input type="hidden" name="start_date" id="hiddenStartDate" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" id="hiddenEndDate" value="{{ request('end_date') }}">
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Range Waktu" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size: 24px;" class="{{ request('start_date') || request('end_date') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content" style="padding: 15px; width: 280px; left: auto; right: 0;">
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div>
-                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Dari</label>
-                                    <input type="datetime-local" id="inputStartDateTransfer" class="form-control" style="font-size: 12px;" value="{{ request('start_date') }}">
-                                </div>
-                                <div>
-                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Sampai</label>
-                                    <input type="datetime-local" id="inputEndDateTransfer" class="form-control" style="font-size: 12px;" value="{{ request('end_date') }}">
-                                </div>
-                                <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 8px;" onclick="applyDateFilter('Transfer')">Terapkan</button>
-                            </div>
-                        </div>
-                    </div>
-                @elseif($active_tab == 'restok')
-                    {{-- Time Filter --}}
-                    <input type="hidden" name="start_date" id="hiddenStartDate" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" id="hiddenEndDate" value="{{ request('end_date') }}">
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Waktu" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;" class="{{ request('start_date') || request('end_date') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content" style="padding: 15px; width: 280px; left: 0; right: auto;">
-                            <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--primary-blue);">PILIH RENTANG WAKTU</div>
-                            <div class="form-group" style="margin-bottom: 12px;">
-                                <label style="font-size: 11px; color: #666;">Dari Tanggal & Jam</label>
-                                <input type="datetime-local" id="inputStartDateRestok" class="form-control" style="font-size: 12px;" value="{{ request('start_date') }}">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 15px;">
-                                <label style="font-size: 11px; color: #666;">Sampai Tanggal & Jam</label>
-                                <input type="datetime-local" id="inputEndDateRestok" class="form-control" style="font-size: 12px;" value="{{ request('end_date') }}">
-                            </div>
-                            <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 10px;" onclick="applyDateFilter('Restok')">
-                                Terapkan Filter
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Payment Filter --}}
-                    <input type="hidden" name="status_bayar" id="hiddenPaymentFilter" value="{{ request('status_bayar') }}">
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Bayar: {{ request('status_bayar') ?: 'Semua' }}" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size: 24px;" class="{{ request('status_bayar') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="setPaymentFilter('')">Semua Status</a>
-                            <a href="javascript:void(0)" onclick="setPaymentFilter('Lunas')">Lunas</a>
-                            <a href="javascript:void(0)" onclick="setPaymentFilter('Hutang')">Hutang</a>
+                            <a href="{{ route('products.index', ['tab' => 'restok', 'supplier_id' => '']) }}">Semua Supplier</a>
+                            @foreach($suppliers as $sup)
+                                <a href="{{ route('products.index', ['tab' => 'restok', 'supplier_id' => $sup->uuid]) }}">{{ $sup->nama }}</a>
+                            @endforeach
                         </div>
                     </div>
                 @endif
-                @if(Auth::user()->isOwner() && ($active_tab == 'produk' || $active_tab == 'stok' || $active_tab == 'restok' || $active_tab == 'opname'))
-                    <input type="hidden" name="store_id" id="hiddenStoreId" value="{{ request('store_id') }}">
+
+                @if($tab == 'transfer')
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Toko: {{ request('store_id') ? $stores->firstWhere('uuid', request('store_id'))->nama ?? 'Semua' : 'Semua Toko' }}" onclick="toggleDropdown(event)">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Status Transfer">
+                            <iconify-icon icon="solar:checklist-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => '']) }}">Semua Status</a>
+                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Pending']) }}">Menunggu</a>
+                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Disetujui']) }}">Disetujui</a>
+                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Dikirim']) }}">Dikirim</a>
+                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Selesai']) }}">Selesai</a>
+                        </div>
+                    </div>
+                @endif
+
+                @if(Auth::user()->isOwner())
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Toko">
                             <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="setStore('')" class="{{ !request('store_id') || request('store_id') == 'all' ? 'active-dropdown-item' : '' }}">
-                                Semua Toko
-                            </a>
-                            @foreach($stores as $store)
-                                <a href="javascript:void(0)" onclick="setStore('{{ $store->uuid }}')" class="{{ request('store_id') == $store->uuid ? 'active-dropdown-item' : '' }}">
-                                    {{ $store->nama }}
-                                </a>
+                            <a href="{{ route('products.index', ['tab' => $tab, 'store_id' => 'all']) }}">Semua Toko</a>
+                            @foreach($stores as $s)
+                                <a href="{{ route('products.index', ['tab' => $tab, 'store_id' => $s->uuid]) }}">{{ $s->nama }}</a>
                             @endforeach
                         </div>
                     </div>
                 @endif
             </div>
-            
+
             <div class="right-actions">
-                {{-- EXTRACT DROPDOWN --}}
                 <div class="dropdown">
                     <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                         <span>Extract</span>
                     </button>
                     <div class="dropdown-content" style="right: 0; left: auto;">
-                        <a href="{{ route('products.export.excel', array_merge(request()->query(), ['active_tab' => $active_tab])) }}">
-                            <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
-                            Excel
-                        </a>
-                        <a href="{{ route('products.export.pdf', array_merge(request()->query(), ['active_tab' => $active_tab])) }}" target="_blank">
-                            <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
-                            PDF
-                        </a>
+                        <a href="{{ route('products.export.excel', ['active_tab' => $tab]) }}">Excel</a>
+                        <a href="{{ route('products.export.pdf', ['active_tab' => $tab]) }}" target="_blank">PDF</a>
                     </div>
                 </div>
 
-                @if($active_tab == 'produk')
+                @if($tab == 'produk')
                     <div id="normalActionGroup" style="display: flex; gap: 12px;">
                         <button type="button" class="btn-action btn-danger" onclick="toggleMassDeleteMode(true)">
                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                            <span>Hapus Produk</span>
+                            <span>Hapus</span>
                         </button>
                         <button type="button" class="btn-action" onclick="openAddProductModal()">
                             <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                            <span>Tambah Produk</span>
+                            <span>Tambah</span>
                         </button>
                     </div>
                     <div id="massDeleteActionGroup" style="display: none; gap: 12px;">
@@ -1220,562 +1139,47 @@
                             <span id="massDeleteBtnText">Hapus Terpilih (0)</span>
                         </button>
                     </div>
-                @elseif($active_tab == 'restok')
+                @elseif($tab == 'restok')
                     <button type="button" class="btn-action" onclick="openRestokModal()">
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                        <span>Tambah Restok Baru</span>
+                        <span>Tambah Restok</span>
                     </button>
-                @elseif($active_tab == 'opname')
+                @elseif($tab == 'transfer')
+                    <button type="button" class="btn-action" onclick="openTransferModal()">
+                        <iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon>
+                        <span>Buat Transfer</span>
+                    </button>
+                @elseif($tab == 'opname')
                     <button type="button" class="btn-action" onclick="openAddOpnameModal()">
                         <iconify-icon icon="solar:clipboard-add-bold-duotone"></iconify-icon>
                         <span>Tambah Opname</span>
                     </button>
-                @elseif($active_tab == 'transfer')
-                    <button type="button" class="btn-action" onclick="openTransferModal()">
-                        <iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon>
-                        <span>Buat Transfer Baru</span>
-                    </button>
                 @endif
             </div>
-        </form>
-    </div>
+        </div>
 
-    {{-- MAIN BOX --}}
-    <div class="main-content-box">
-        <div class="table-container">
-            @if($active_tab == 'produk')
-                <table class="fitur-table" id="produkTable">
-                    <thead>
-                        <tr>
-                            <th class="mass-delete-checkbox" style="display: none; width: 40px; text-align: center;">
-                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" style="transform: scale(1.2); cursor: pointer;">
-                            </th>
-                            <th>PRODUK</th>
-                            <th>KATEGORI</th>
-                            <th style="white-space: nowrap;">HARGA MODAL</th>
-                            <th style="white-space: nowrap;">HARGA JUAL</th>
-                            <th>STOK</th>
-                            <th style="white-space: nowrap; min-width: 130px;">AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($products as $product)
-                            <tr>
-                                <td class="mass-delete-checkbox" style="display: none; text-align: center;">
-                                    <input type="checkbox" class="product-checkbox" value="{{ $product->uuid }}" data-nama="{{ $product->nama_produk }}" onchange="updateMassDeleteCount()" style="transform: scale(1.2); cursor: pointer;">
-                                </td>
-                                <td>
-                                    <div class="product-info">
-                                        <img src="{{ $product->resolved_image_url }}?t={{ time() }}" class="product-img">
-                                        <div>
-                                            <div style="font-weight: 600;">{{ $product->nama_produk }}</div>
-                                            <div style="font-size: 12px; color: #888;">{{ $product->barcode ?? '-' }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>{{ $product->category->nama_category ?? '-' }}</td>
-                                <td class="price-text" style="white-space: nowrap;">Rp {{ number_format($product->harga_modal, 0, ',', '.') }}</td>
-                                <td class="price-text" style="white-space: nowrap;">Rp {{ number_format($product->harga_jual, 0, ',', '.') }}</td>
-                                <td style="min-width: 120px;">
-                                    @if(Auth::user()->isOwner())
-                                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                            @foreach($product->stores as $ps)
-                                                <div style="display: flex; align-items: center; gap: 5px; background: {{ $ps->stok > 0 ? '#eff6ff' : '#f1f5f9' }}; padding: 4px 8px; border-radius: 6px; border: 1px solid {{ $ps->stok > 0 ? '#dbeafe' : '#e2e8f0' }};" title="{{ $ps->store->nama ?? '-' }}">
-                                                    <span style="font-size: 10px; font-weight: 600; color: {{ $ps->stok > 0 ? 'var(--primary-blue)' : '#64748b' }};">
-                                                        @php
-                                                            $storeName = $ps->store->nama ?? '-';
-                                                            if (preg_match('/\((.*?)\)/', $storeName, $match)) {
-                                                                $displayName = $match[1];
-                                                            } else {
-                                                                $displayName = Str::limit($storeName, 10);
-                                                            }
-                                                        @endphp
-                                                        {{ $displayName }}:
-                                                    </span>
-                                                    <span style="font-size: 11px; font-weight: 800; color: {{ $ps->stok > 0 ? 'var(--primary-blue)' : '#64748b' }};">
-                                                        {{ $ps->stok }}
-                                                    </span>
-                                                </div>
-                                            @endforeach
-                                            @if($product->stores->isEmpty())
-                                                <span style="font-size: 10px; color: #999; font-style: italic;">Kosong</span>
-                                            @endif
-                                        </div>
-                                    @else
-                                        <div style="font-weight: 800; color: var(--primary-blue); font-size: 16px;">
-                                            {{ $product->current_stok }}
-                                        </div>
-                                        <div style="font-size: 10px; color: #64748b; font-weight: 500;">Exp: {{ $product->current_kadaluarsa }}</div>
-                                        <div style="font-size: 10px; color: #94a3b8;">Di {{ Auth::user()->store->nama ?? 'Cabang' }}</div>
-                                    @endif
-                                </td>
-                                <td style="white-space: nowrap;">
-                                    <div style="display: flex; gap: 8px;">
-                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openViewModal('{{ $product->uuid }}')" title="Lihat">
-                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                        </button>
-                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openEditModal('{{ $product->uuid }}')" title="Edit">
-                                            <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                        </button>
-                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="confirmDelete('{{ $product->uuid }}', '{{ $product->nama_produk }}')">
-                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" id="emptyProdukTd" style="text-align: center; padding: 40px; color: #999;">Belum ada data produk.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                    <div class="pagination-container">
-                        {{ $products->appends(request()->query())->links() }}
-                    </div>
-                @endif
-            @elseif($active_tab == 'opname')
-                {{-- Sub-tab Navigation --}}
-                <div class="sub-tab-navigation" style="margin-bottom: 20px;">
-                    <a href="{{ route('products.opname', ['sub_tab' => 'semua']) }}" class="sub-tab-pill {{ ($sub_tab ?? 'semua') == 'semua' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
-                        <iconify-icon icon="solar:layers-bold-duotone"></iconify-icon>
-                        Semua Sesi
-                    </a>
-                    <a href="{{ route('products.opname', ['sub_tab' => 'produk_rugi']) }}" class="sub-tab-pill {{ ($sub_tab ?? '') == 'produk_rugi' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
-                        <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
-                        Produk Rugi
-                    </a>
-                </div>
-
-                @if(Auth::user()->isOwner() || Auth::user()->isKepalaToko())
-                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="background: #FFEBEE; color: #C62828; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; color: #888;">🔥 Menunggu Approval</div>
-                                <div style="font-size: 18px; font-weight: 700;">{{ $pending_count ?? 0 }}</div>
-                            </div>
-                        </div>
-                        <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="background: #FFF3E0; color: #E65100; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; color: #888;">📉 Total Kerugian (Seluruh)</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #C62828;">
-                                    Rp {{ number_format(abs($total_loss ?? 0), 0, ',', '.') }}
-                                </div>
-                            </div>
-                        </div>
-                        <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="background: #E8F5E9; color: #2E7D32; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; color: #888;">✅ Selesai (Finalized)</div>
-                                <div style="font-size: 18px; font-weight: 700;">{{ $selesai_count ?? 0 }}</div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @if(($sub_tab ?? 'semua') == 'semua')
-                    <table class="fitur-table" id="opnameTable">
-                        <thead>
-                            <tr>
-                                <th>TANGGAL</th>
-                                <th>OUTLET</th>
-                                <th>PETUGAS</th>
-                                <th>SUMMARY</th>
-                                @if(Auth::user()->isOwner())
-                                    <th>KERUGIAN (RP)</th>
-                                @endif
-                                <th>STATUS</th>
-                                <th>AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($opnames as $opname)
-                                <tr>
-                                    <td>{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}</td>
-                                    <td>{{ $opname->store->nama ?? '-' }}</td>
-                                    <td><strong>{{ $opname->user->name ?? $opname->user->username ?? '-' }}</strong></td>
-                                    <td>
-                                        <div style="font-weight: 600;">{{ $opname->total_items }} item</div>
-                                        <div style="font-size: 12px; display: flex; align-items: center; gap: 4px; color: {{ $opname->total_selisih != 0 ? '#ef4444' : '#22c55e' }}; font-weight: 600;">
-                                            <span>{{ $opname->total_selisih > 0 ? '+' : '' }}{{ $opname->total_selisih }}</span>
-                                            @if($opname->total_selisih != 0)
-                                                <iconify-icon icon="solar:danger-bold" style="font-size: 14px; color: #ef4444;"></iconify-icon>
-                                            @else
-                                                <iconify-icon icon="solar:check-circle-bold" style="font-size: 14px; color: #22c55e;"></iconify-icon>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    @if(Auth::user()->isOwner())
-                                        <td style="font-weight: 700; color: {{ $opname->total_kerugian < 0 ? '#C62828' : ($opname->total_kerugian > 0 ? '#2E7D32' : '#666') }}">
-                                            Rp {{ number_format(abs($opname->total_kerugian), 0, ',', '.') }}
-                                            <div style="font-size: 10px; opacity: 0.7;">{{ $opname->total_kerugian < 0 ? '(Kurang)' : ($opname->total_kerugian > 0 ? '(Lebih)' : '-') }}</div>
-                                        </td>
-                                    @endif
-                                    <td>
-                                        @php $lowStatus = strtolower($opname->status); @endphp
-                                        <span class="status-badge stat-{{ $lowStatus }}">
-                                            {{ $opname->status }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div style="display: flex; gap: 8px;">
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #60a5fa; border: 1.5px solid #60a5fa; background: white;" 
-                                                data-uuid="{{ $opname->uuid }}" onclick="openOpnameDetailModal(this.dataset.uuid)" title="Lihat Detail">
-                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                            </button>
-                                            @if($opname->status == 'Pending')
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #0284c7; border: 1.5px solid #0284c7; background: white;" 
-                                                    onclick="openEditOpnameModal('{{ $opname->uuid }}')" title="Edit Draft">
-                                                    <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @endif
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #ef4444; border: 1.5px solid #fecaca; background: white;" 
-                                                data-uuid="{{ $opname->uuid }}" data-date="{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}"
-                                                onclick="confirmDeleteOpname(this.dataset.uuid, this.dataset.date)" title="Hapus">
-                                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">Belum ada riwayat opname.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="pagination-container">
-                        {{ $opnames->links() }}
-                    </div>
-                @else
-                    {{-- Produk Rugi Table --}}
-                    <table class="fitur-table" id="rugiTable">
-                        <thead>
-                            <tr>
-                                <th>PRODUK</th>
-                                <th>OUTLET</th>
-                                <th>TANGGAL</th>
-                                <th style="text-align: center;">SISTEM</th>
-                                <th style="text-align: center;">FISIK</th>
-                                <th style="text-align: center;">SELISIH</th>
-                                <th style="text-align: right;">KERUGIAN (RP)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($opname_details as $detail)
-                                <tr>
-                                    <td>
-                                        <div style="font-weight: 600;">{{ $detail->product->nama_produk ?? '-' }}</div>
-                                        <div style="font-size: 11px; color: #888;">{{ $detail->product->barcode ?? '-' }}</div>
-                                    </td>
-                                    <td>{{ $detail->opname->store->nama ?? '-' }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($detail->opname->tanggal)->format('d/m/Y') }}</td>
-                                    <td style="text-align: center;">{{ (float)$detail->stok_sistem }}</td>
-                                    <td style="text-align: center;">{{ (float)$detail->stok_fisik }}</td>
-                                    <td style="text-align: center; color: #C62828; font-weight: 700;">{{ (float)$detail->selisih }}</td>
-                                    <td style="text-align: right; color: #C62828; font-weight: 700;">
-                                        @php
-                                            $modal = $detail->product->harga_modal ?? 0;
-                                            $kerugian = abs($detail->selisih * $modal);
-                                        @endphp
-                                        Rp {{ number_format($kerugian, 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">Tidak ada produk rugi ditemukan.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="pagination-container">
-                        {{ $opname_details->links() }}
-                    </div>
-                @endif
-            @elseif($active_tab == 'stok' || $active_tab == 'request')
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div style="background: #FFEBEE; color: #C62828; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                            <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
-                        </div>
-                        <div>
-                            <div style="font-size: 12px; color: #888;">📦 Stok Menipis</div>
-                            <div style="font-size: 18px; font-weight: 700;">{{ $stok_habis_count ?? 0 }}</div>
-                        </div>
-                    </div>
-                    <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div style="background: #FFF3E0; color: #E65100; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                            <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
-                        </div>
-                        <div>
-                            <div style="font-size: 12px; color: #888;">⚠️ Hampir Expired</div>
-                            <div style="font-size: 18px; font-weight: 700;">{{ $expired_count ?? 0 }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <table class="fitur-table" id="stokTable">
-                    <thead>
-                        <tr>
-                            <th>PRODUK</th>
-                            <th>STOK</th>
-                            <th>TGL MASUK</th>
-                            <th>KADALUARSA</th>
-                            <th>STATUS</th>
-                            <th>AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($alerts as $alert)
-                            @php
-                                $minThreshold = $alert->stok_minimum ?? 10;
-                                $isLowStock = $alert->stok <= $minThreshold;
-                                $isExpired = $alert->kadaluarsa && \Carbon\Carbon::parse($alert->kadaluarsa)->isPast();
-                                $isNearExp = $alert->kadaluarsa && 
-                                            \Carbon\Carbon::parse($alert->kadaluarsa)->isFuture() && 
-                                            \Carbon\Carbon::parse($alert->kadaluarsa)->lessThanOrEqualTo(now()->addDays(30));
-                                $rowBg = '';
-                                if($isExpired) $rowBg = '#FFF5F5';
-                                elseif($isLowStock || $isNearExp) $rowBg = '#FFFAF0';
-                            @endphp
-                            <tr style="background: white">
-                                <td>
-                                    <div class="product-info">
-                                        <img src="{{ optional($alert->product)->resolved_image_url ?? asset('images/placeholder-product.png') }}" class="product-img">
-                                        <div>
-                                            <div style="font-weight: 600;">{{ optional($alert->product)->nama_produk ?? 'Produk Terhapus' }}</div>
-                                            <div style="font-size: 11px; color: #888;">{{ optional($alert->store)->nama ?? '-' }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="font-weight: 700; color: {{ $isLowStock ? '#D9534F' : 'inherit' }}">
-                                        {{ $alert->stok }} Pcs
-                                        @if($isLowStock)
-                                            <div style="font-size: 10px; color: #D9534F; font-weight: 600;">(Stok Menipis)</div>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="font-size: 13px; color: #666;">
-                                        {{ $alert->tanggal_masuk ? \Carbon\Carbon::parse($alert->tanggal_masuk)->format('d/m/Y') : '-' }}
-                                    </div>
-                                </td>
-                                <td>
-                                    @if($alert->kadaluarsa)
-                                        <span style="color: {{ $isExpired ? '#D9534F' : ($isNearExp ? '#FBC02D' : 'inherit') }}; font-weight: {{ $isNearExp || $isExpired ? '700' : '400' }}">
-                                            {{ \Carbon\Carbon::parse($alert->kadaluarsa)->format('d F Y') }}
-                                            @if($isExpired) 
-                                                (Sudah Expired) 
-                                            @elseif($isNearExp) 
-                                                (Akan Expired) 
-                                            @endif
-                                        </span>
-                                    @else
-                                        <span style="color: #999;">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($alert->status_aktif === false)
-                                        <span class="status-badge status-inactive" style="padding: 4px 10px; font-size: 10px;">Nonaktif</span>
-                                    @else
-                                        <span class="status-badge status-active" style="padding: 4px 10px; font-size: 10px;">Aktif</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
-                                            onclick="openViewModalFromAlert('{{ $alert->uuid }}')" title="Lihat Detail">
-                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                        </button>
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
-                                            onclick="openEditAlertModal('{{ $alert->uuid }}')" title="Update Data">
-                                            <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">Tidak ada produk yang perlu perhatian saat ini.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                <div class="pagination-container">
-                    {{ $alerts->links() }}
-                </div>
-            @elseif($active_tab == 'restok')
-                {{-- Restok Table --}}
-                @if($purchases->count() > 0)
-                    <table class="fitur-table" id="restokTable">
-                        <thead>
-                            <tr>
-                                <th>TANGGAL</th>
-                                <th>SUPPLIER</th>
-                                <th>TOTAL</th>
-                                <th>STATUS</th>
-                                <th>PETUGAS</th>
-                                <th>AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($purchases as $p)
-                                <tr>
-                                    <td>{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y H:i') }}</td>
-                                    <td>{{ $p->contact->nama ?? 'Umum' }}</td>
-                                    <td style="font-weight: 700;">Rp {{ number_format($p->total, 0, ',', '.') }}</td>
-                                    <td>
-                                        @php 
-                                            $isHutang = $p->bayar < $p->total; 
-                                            $percent = $p->total > 0 ? round(($p->bayar / $p->total) * 100) : 0;
-                                        @endphp
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <span class="status-badge {{ $isHutang ? 'status-inactive' : 'status-active' }}" style="padding: 2px 8px; font-size: 9px; width: fit-content; background: {{ $isHutang ? '#FFF5F5' : '#F0FFF4' }}; color: {{ $isHutang ? '#C53030' : '#2F855A' }};">
-                                                {{ $isHutang ? 'Hutang' : 'Lunas' }}
-                                            </span>
-                                            @if($isHutang)
-                                                <div style="width: 100px; height: 4px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 2px;">
-                                                    <div style="width: {{ $percent }}%; height: 100%; background: #ef4444; border-radius: 10px;"></div>
-                                                </div>
-                                                <small style="font-size: 9px; color: #666;">Terbayar {{ $percent }}%</small>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td>{{ $p->user->name ?? '-' }}</td>
-                                    <td>
-                                        <div style="display: flex; gap: 8px;">
-                                            <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewPurchaseDetail('{{ $p->uuid }}')" title="Lihat Detail">
-                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                            </button>
-                                            @if($isHutang)
-                                                <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #E53E3E; border-color: #FED7D7; background: #FFF5F5;" onclick="openPayDebtModal('{{ $p->uuid }}', {{ $p->total - $p->bayar }})" title="Bayar Hutang">
-                                                    <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @endif
-                                            <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #ef4444; border-color: #fee2e2; background: #fff5f5;" onclick="deleteRestok('{{ $p->uuid }}')" title="Hapus Restok">
-                                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                            </button>
-
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                    <div class="pagination-container">
-                        {{ $purchases->links() }}
-                    </div>
-                @else
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
-                        <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
-                            <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
-                        </div>
-                        <h3 style="color: #334155; margin-bottom: 8px;">Belum Ada Riwayat Restok</h3>
-                        <p style="color: #64748b; text-align: center; max-width: 400px; margin-bottom: 24px;">Klik tombol di bawah untuk mulai menambah stok produk Anda.</p>
-                        <button type="button" class="btn-action" onclick="openRestokModal()" style="padding: 10px 24px;">
-                            Mulai Restok Sekarang
-                        </button>
-                    </div>
-                @endif
-            @elseif($active_tab == 'transfer')
-                @if($transfers->count() > 0)
-                    <table class="fitur-table" id="transferTable">
-                        <thead>
-                            <tr>
-                                <th>TANGGAL</th>
-                                <th>DARI</th>
-                                <th>TUJUAN</th>
-                                <th>STATUS</th>
-                                <th>PETUGAS</th>
-                                <th>AKSI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($transfers as $t)
-                                <tr>
-                                    <td>{{ \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y H:i') }}</td>
-                                    <td>{{ $t->store->nama ?? '-' }}</td>
-                                    <td>{{ $t->tujuanStore->nama ?? '-' }}</td>
-                                    <td>
-                                        @php $s = strtolower($t->status ?: 'pending'); @endphp
-                                        @if($s == 'selesai')
-                                            <span class="status-badge status-active" style="padding: 4px 10px; font-size: 10px;">Diterima</span>
-                                        @elseif($s == 'dikirim')
-                                            <span class="status-badge" style="padding: 4px 10px; font-size: 10px; background: #E3F2FD; color: #1565C0;">Dikirim</span>
-                                        @elseif($s == 'disetujui')
-                                            <span class="status-badge" style="padding: 4px 10px; font-size: 10px; background: #E8F5E9; color: #2E7D32;">Disetujui</span>
-                                        @else
-                                            <span class="status-badge" style="padding: 4px 10px; font-size: 10px; background: #FFF3E0; color: #E65100;">{{ $t->status ?: 'Pending' }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $t->user->username ?? '-' }}</td>
-                                    <td>
-                                        <div style="display: flex; gap: 8px;">
-                                            <button class="btn-filter" title="Lihat Detail" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewTransferDetail('{{ $t->uuid }}')">
-                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                            </button>
-
-                                            {{-- Tombol Setujui (HANYA OWNER) --}}
-                                            @if(in_array(strtolower($t->status ?: 'pending'), ['pending', 'proses', '']) && Auth::user()->isOwner())
-                                                <button class="btn-filter" title="Setujui Transfer" style="width: 32px; height: 32px; border-radius: 8px; color: #0081C9; border-color: #0081C9;" onclick="approveTransfer('{{ $t->uuid }}')">
-                                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @endif
-
-                                            {{-- Tombol Kirim (HANYA Outlet Pengirim) --}}
-                                            @if(strtolower($t->status) == 'disetujui' && Auth::user()->store_id == $t->store_id)
-                                                <button class="btn-filter" title="Kirim Barang" style="width: 32px; height: 32px; border-radius: 8px; color: #E65100; border-color: #FFE0B2;" onclick="shipTransfer('{{ $t->uuid }}')">
-                                                    <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @endif
-
-                                            {{-- Tombol Terima (HANYA Outlet Penerima) --}}
-                                            @if(strtolower($t->status) == 'dikirim' && Auth::user()->store_id == $t->tujuan_store_id)
-                                                <button class="btn-filter" title="Terima Barang" style="width: 32px; height: 32px; border-radius: 8px; color: #2F855A; border-color: #C6F6D5;" onclick="confirmReceiveTransfer('{{ $t->uuid }}')">
-                                                    <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                    <div class="pagination-container">
-                        {{ $transfers->links() }}
-                    </div>
-                @else
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
-                        <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
-                            <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
-                        </div>
-                        <h3 style="color: #334155; margin-bottom: 8px;">Belum Ada Riwayat Transfer</h3>
-                        <p style="color: #64748b; text-align: center; max-width: 400px; margin-bottom: 24px;">Klik tombol di bawah untuk mulai memindahkan stok antar toko.</p>
-                        <button type="button" class="btn-action" onclick="openTransferModal()" style="padding: 10px 24px;">
-                            Buat Transfer Baru
-                        </button>
-                    </div>
-                @endif
-            @endif
-            
-            {{-- Data Bridge for JS (Moved inside fragment for AJAX updates) --}}
-            <div id="js-data-transfer" style="display: none;" 
-                 data-products="{{ json_encode(isset($products) ? $products->items() : []) }}" 
-                 data-alerts="{{ json_encode(isset($alerts) ? $alerts->items() : []) }}">
+        <div class="main-content-box" style="position: relative;">
+            <div class="table-loading-overlay">
+                <div class="loading-spinner" style="width: 30px; height: 30px; border-width: 3px;"></div>
             </div>
+            @fragment('tab-content-' . $tab)
+                @if($tab == 'produk')
+                    @include('product.partials.table_produk')
+                @elseif($tab == 'stok')
+                    @include('product.partials.table_stok')
+                @elseif($tab == 'restok')
+                    @include('product.partials.table_restok')
+                @elseif($tab == 'transfer')
+                    @include('product.partials.table_transfer')
+                @elseif($tab == 'opname')
+                    @include('product.partials.table_opname')
+                @endif
             @endfragment
+        </div>
     </div>
-</div>
+    @endforeach
+    @endfragment
+    </div>
 
 
 
@@ -2685,160 +2089,301 @@
     let searchTimer;
     let abortController = null;
 
+    function realtimeSearch(tab = 'produk') {
+        const inputId = `searchInput-${tab}`;
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        const filter = input.value.toLowerCase();
+        
+        const tableMap = {
+            'produk': 'produkTable',
+            'stok': 'stokTable',
+            'restok': 'restokTable',
+            'transfer': 'transferTable',
+            'opname': 'opnameTable'
+        };
+        const tableId = tableMap[tab];
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        
+        const tr = table.getElementsByTagName("tr");
+        for (let i = 1; i < tr.length; i++) {
+            let found = false;
+            const td = tr[i].getElementsByTagName("td");
+            for (let j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    const txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            tr[i].style.display = found ? "" : "none";
+        }
+    }
+
+    let selectedProducts = [];
+    function toggleMassDeleteMode(active) {
+        document.getElementById('normalActionGroup').style.display = active ? 'none' : 'flex';
+        document.getElementById('massDeleteActionGroup').style.display = active ? 'flex' : 'none';
+        
+        document.querySelectorAll('.mass-delete-checkbox').forEach(el => {
+            el.style.display = active ? 'table-cell' : 'none';
+        });
+        
+        if (!active) {
+            selectedProducts = [];
+            document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+            updateMassDeleteCount();
+        }
+    }
+
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('selectAllCheckbox').checked;
+        document.querySelectorAll('.product-checkbox').forEach(cb => {
+            cb.checked = isChecked;
+        });
+        updateMassDeleteCount();
+    }
+
+    function updateMassDeleteCount() {
+        selectedProducts = [];
+        document.querySelectorAll('.product-checkbox:checked').forEach(cb => {
+            selectedProducts.push(cb.value);
+        });
+        const btnText = document.getElementById('massDeleteBtnText');
+        if (btnText) btnText.innerText = `Hapus Terpilih (${selectedProducts.length})`;
+    }
+
+    function confirmMassDelete() {
+        if (selectedProducts.length === 0) {
+            Swal.fire('Peringatan', 'Pilih minimal satu produk untuk dihapus.', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Hapus Massal?',
+            text: `Yakin ingin menghapus ${selectedProducts.length} produk terpilih? Tindakan ini tidak bisa dibatalkan!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Ya, Hapus Semua!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus Produk...');
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ route('products.mass-delete') }}";
+                form.innerHTML = `
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="uuids" value="${selectedProducts.join(',')}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
     function debounceSearch() {
-        // Debounce search is now replaced by client-side realtimeSearch
-        // But we keep it as a fallback for triggering updateTableContent if needed
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
             updateTableContent();
         }, 500);
     }
 
-    function realtimeSearch() {
-        const input = document.getElementById('searchInput').value.toLowerCase();
-        // Target specifically the table in the main content area, not in modals
-        const activeTable = document.querySelector('.main-content-box .fitur-table');
+
+
+    window.currentTab = '{{ $active_tab }}';
+
+    function switchTab(tabName, event) {
+        if (event) event.preventDefault();
+        window.currentTab = tabName;
         
-        if (!activeTable) return;
-
-        const rows = activeTable.querySelectorAll('tbody tr');
-        let found = false;
-
-        rows.forEach(row => {
-            // Skip empty/no-data rows
-            if (row.querySelector('td[colspan]')) {
-                row.style.display = 'none';
-                return;
-            }
-
-            const text = row.innerText.toLowerCase();
-            if (text.includes(input)) {
-                row.style.display = '';
-                found = true;
-            } else {
-                row.style.display = 'none';
+        // Hide all sections
+        document.querySelectorAll('.view-section').forEach(s => {
+            s.classList.remove('active');
+        });
+        
+        // Show target section
+        const target = document.getElementById('section-' + tabName);
+        if (target) {
+            target.classList.add('active');
+        }
+        
+        // Update pills
+        document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
+        const pills = document.querySelectorAll('.tab-pill');
+        pills.forEach(p => {
+            if (p.getAttribute('onclick').includes(`'${tabName}'`)) {
+                p.classList.add('active');
             }
         });
+        
+        // Update URL
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabName);
+        window.history.pushState({ tab: tabName }, '', url);
+    }
 
-        // Handle "No results" message
-        let noResultsRow = activeTable.querySelector('.no-results-row');
-        if (!found && input.length > 0) {
-            if (!noResultsRow) {
-                const colCount = activeTable.querySelectorAll('thead th').length;
-                noResultsRow = document.createElement('tr');
-                noResultsRow.className = 'no-results-row';
-                noResultsRow.innerHTML = `
-                    <td colspan="${colCount}" style="text-align: center; padding: 40px; color: #94a3b8;">
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                            <iconify-icon icon="solar:magnifer-zoom-out-bold-duotone" style="font-size: 48px; opacity: 0.5;"></iconify-icon>
-                            <div>Data tidak ditemukan untuk kata kunci "<b>${input}</b>"</div>
-                            <button type="button" class="btn-action" style="background: #f1f5f9; color: #64748b; font-size: 12px;" onclick="resetSearch()">Bersihkan Pencarian</button>
-                        </div>
-                    </td>
-                `;
-                activeTable.querySelector('tbody').appendChild(noResultsRow);
-            } else {
-                noResultsRow.style.display = '';
-                noResultsRow.querySelector('b').innerText = input;
-            }
-        } else {
-            if (noResultsRow) noResultsRow.style.display = 'none';
-            
-            // If input is empty and no data was found originally, show the original empty row if it exists
-            if (input.length === 0 && !found) {
-                const originalEmpty = activeTable.querySelector('td[colspan]');
-                if (originalEmpty) originalEmpty.parentElement.style.display = '';
-            }
+    // Handle initial load and back/forward buttons
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.tab) {
+            switchTab(event.state.tab);
         }
-    }
+    });
 
-    function resetSearch() {
-        const input = document.getElementById('searchInput');
-        input.value = '';
-        realtimeSearch();
-        input.focus();
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab) {
+            // Find pill
+            const pills = document.querySelectorAll('.tab-pill');
+            pills.forEach(p => {
+                if (p.innerText.toLowerCase().includes(tab)) {
+                    p.click(); // This will trigger switchTab correctly
+                }
+            });
+        }
+    });
 
+    const pageCache = new Map();
 
     async function updateTableContent(url = null) {
-        const form = document.getElementById('filterForm');
-        const contentArea = document.getElementById('ajax-content-area');
-
-        if (abortController) {
-            abortController.abort();
-        }
+        if (abortController) abortController.abort();
         abortController = new AbortController();
 
         if (!url) {
-            if (form) {
-                const formData = new FormData(form);
-                const params = new URLSearchParams(formData);
-                url = form.action + '?' + params.toString();
-            } else {
-                url = window.location.href;
-            }
+            const params = new URLSearchParams(window.location.search);
+            params.set('tab', window.currentTab || 'produk');
+            url = window.location.pathname + '?' + params.toString();
         }
 
+        const urlObj = new URL(url, window.location.origin);
+        const tab = urlObj.searchParams.get('tab') || window.currentTab || 'produk';
+        urlObj.searchParams.set('tab', tab);
+        const finalUrl = urlObj.toString();
 
-
-        if (contentArea) {
-            contentArea.style.opacity = '0.7';
+        const activeSection = document.getElementById(`section-${tab}`);
+        
+        // Instant check: if we already have it in cache, show it immediately!
+        if (pageCache.has(finalUrl)) {
+            applyNewTableHtml(pageCache.get(finalUrl), tab);
+            window.history.pushState({ tab: tab }, '', finalUrl);
+            window.currentTab = tab;
+            return;
         }
 
         try {
-            const response = await fetch(url, {
+            const response = await fetch(finalUrl, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 signal: abortController.signal
             });
             const html = await response.text();
             
-
-
             if (html.includes('menu-nav') || html.includes('sidebar')) {
                 window.location.reload();
                 return;
             }
 
-            if (contentArea) {
-                contentArea.innerHTML = html;
-                syncDataMaps();
-                if (typeof lucide !== 'undefined') lucide.createIcons();
+            pageCache.set(finalUrl, html); // Cache it for next time
+            applyNewTableHtml(html, tab);
 
-                // Update status aktif pada pill navigation
-                const currentPath = new URL(url, window.location.origin).pathname;
-                document.querySelectorAll('.tab-pill').forEach(pill => {
-                    const pillPath = new URL(pill.href, window.location.origin).pathname;
-                    if (currentPath === pillPath) {
-                        pill.classList.add('active');
-                    } else {
-                        pill.classList.remove('active');
-                    }
-                });
-            }
-
-            window.history.pushState({ path: url }, '', url);
-            
+            window.history.pushState({ tab: tab }, '', finalUrl);
+            window.currentTab = tab;
         } catch (error) {
             if (error.name === 'AbortError') return;
-            console.error('Navigasi gagal:', error);
-            if (!url.includes('search=')) window.location.href = url;
-        } finally {
-
-            if (contentArea) {
-                contentArea.style.opacity = '1';
-                contentArea.style.pointerEvents = 'auto';
-            }
+            console.error('AJAX Navigation Failed:', error);
+            if (!url.includes('javascript:')) window.location.href = finalUrl;
         }
     }
 
-    // Intercept pagination clicks
+    function applyNewTableHtml(html, tab) {
+        const activeSection = document.getElementById(`section-${tab}`);
+        const targetContainer = activeSection ? activeSection.querySelector('.main-content-box') : null;
+        if (targetContainer) {
+            const currentOverlay = targetContainer.querySelector('.table-loading-overlay');
+            targetContainer.innerHTML = '';
+            if (currentOverlay) targetContainer.appendChild(currentOverlay);
+            targetContainer.insertAdjacentHTML('beforeend', html);
+            
+            syncDataMaps();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            // Subtle scroll only if needed
+            const rect = targetContainer.getBoundingClientRect();
+            if (rect.top < 0) {
+                window.scrollTo({ top: window.pageYOffset + rect.top - 100, behavior: 'auto' });
+            }
+
+            // After successful apply, pre-fetch next page links to make next click instant
+            prefetchAdjacentPages(activeSection);
+        } else {
+            const contentArea = document.getElementById('ajax-content-area');
+            if (contentArea) contentArea.innerHTML = html;
+        }
+    }
+
+    function prefetchAdjacentPages(container) {
+        const links = container.querySelectorAll('.pagination a');
+        links.forEach(link => {
+            if (link.href && !pageCache.has(link.href) && !link.href.includes('javascript:')) {
+                fetch(link.href, { 
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    priority: 'low' 
+                }).then(r => r.text()).then(html => {
+                    if (!html.includes('sidebar')) pageCache.set(link.href, html);
+                }).catch(() => {});
+            }
+        });
+    }
+
+    // Intercept Pagination & Dropdown Filters for High Performance
     document.addEventListener('click', function(e) {
-        const link = e.target.closest('.pagination a');
-        if (link) {
+        // Pagination links
+        const paginationLink = e.target.closest('.pagination a');
+        if (paginationLink) {
             e.preventDefault();
-            updateTableContent(link.href);
+            updateTableContent(paginationLink.href);
+            return;
+        }
+
+        // Dropdown Filter links
+        const filterLink = e.target.closest('.dropdown-content a');
+        if (filterLink && !filterLink.target) {
+            e.preventDefault();
+            updateTableContent(filterLink.href);
+            return;
         }
     });
+
+    // Aggressive Prefetching: Start loading next pages as soon as user hovers over them
+    document.addEventListener('mouseover', function(e) {
+        const link = e.target.closest('.pagination a');
+        if (link && link.href && !pageCache.has(link.href) && !link.href.includes('javascript:')) {
+            fetch(link.href, { 
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                priority: 'low' 
+            }).then(r => r.text()).then(html => {
+                if (!html.includes('sidebar')) pageCache.set(link.href, html);
+            }).catch(() => {});
+        }
+    });
+
+    // Idle Prefetching: Load all pagination links when browser is idle
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+            const activeSection = document.querySelector('.view-section.active');
+            if (activeSection) prefetchAdjacentPages(activeSection);
+        });
+    } else {
+        setTimeout(() => {
+            const activeSection = document.querySelector('.view-section.active');
+            if (activeSection) prefetchAdjacentPages(activeSection);
+        }, 2000);
+    }
 
     // Duplicate filter functions removed (already defined above)
 
