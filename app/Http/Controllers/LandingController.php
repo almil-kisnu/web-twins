@@ -471,6 +471,7 @@ class LandingController extends Controller
             ],
             'custom_field1' => $outlet->nama,
             'custom_field2' => 'Jarak: ' . number_format($distanceKm, 2, '.', '') . ' km',
+            'enabled_payments' => ['bank_transfer'],
         ];
 
         $notificationUrl = trim((string) config('services.midtrans.notification_url', ''));
