@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Services\MidtransPaymentService;
 
 class LandingController extends Controller
 {
@@ -205,31 +206,7 @@ class LandingController extends Controller
 
         session()->put('delivery_address.' . $outlet->uuid, $deliveryData);
 
-        try {
-            // Gunakan data akun jika login
-            $user = Auth::user();
-            $finalName = ($user && $user->username) ? $user->username : $validated['recipient_name'];
-            $finalPhone = ($user && $user->no_hp) ? $user->no_hp : $validated['recipient_phone'];
-
-            $contactData = [
-                'nama' => $finalName,
-                'tipe' => 'customer'
-            ];
-
-            $matchCriteria = ['no_hp' => $finalPhone];
-
-            if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
-                $matchCriteria['store_id'] = $outlet->uuid;
-            }
-
-            if ($user && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
-                $contactData['user_id'] = $user->uuid;
-            }
-
-            Contact::updateOrCreate($matchCriteria, $contactData);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal menyimpan kontak otomatis: ' . $e->getMessage());
-        }
+            // Sinkronisasi kontak otomatis dihapus karena menyebabkan error duplikasi
 
         return response()->json([
             'message' => 'Alamat pengiriman dan kontak berhasil disimpan.',
@@ -402,30 +379,7 @@ class LandingController extends Controller
                 ],
             ]);
 
-            // Sinkronisasi otomatis ke tabel contacts
-            try {
-                // Prioritas: Gunakan Nama & No HP dari Akun yang sedang Login
-                // Jika tidak login, gunakan Nama & No HP Penerima
-                $finalName = ($user && $user->username) ? $user->username : $validated['recipient_name'];
-                $finalPhone = ($user && $user->no_hp) ? $user->no_hp : $validated['recipient_phone'];
-
-                $contactData = [
-                    'nama' => $finalName,
-                    'tipe' => 'customer'
-                ];
-
-                $matchCriteria = ['no_hp' => $finalPhone];
-                if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
-                    $matchCriteria['store_id'] = $outlet->uuid;
-                }
-                if ($user && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
-                    $contactData['user_id'] = $user->uuid;
-                }
-
-                Contact::updateOrCreate($matchCriteria, $contactData);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Gagal sinkronisasi kontak saat checkout: ' . $e->getMessage());
-            }
+            // Sinkronisasi kontak dimatikan untuk mencegah error duplikasi
 
             if (!empty($dbItems)) {
                 $rows = [];
@@ -733,9 +687,41 @@ class LandingController extends Controller
                     'recipient_phone' => $order->recipient_phone,
                     'address' => $order->delivery_address,
                     'payment_status' => $order->payment_status,
+                    'snap_token' => $order->snap_token,
                 ];
             });
 
         return response()->json(['history' => $orders]);
+    }
+
+    public function syncPaymentStatus(Request $request, $id)
+    {
+        $request->validate([
+            'order_id' => 'required|string'
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('Syncing payment status for order: ' . $request->order_id);
+
+        try {
+            $service = app(MidtransPaymentService::class);
+            $order = $service->syncByOrderId($request->order_id);
+
+            if (!$order) {
+                \Illuminate\Support\Facades\Log::warning('Order not found during sync: ' . $request->order_id);
+                return response()->json(['message' => 'Order tidak ditemukan'], 404);
+            }
+
+            \Illuminate\Support\Facades\Log::info('Sync success for order: ' . $request->order_id . ' - New Status: ' . $order->payment_status);
+
+            return response()->json([
+                'message' => 'Status berhasil disinkronkan',
+                'payment_status' => $order->payment_status
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Sync error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal sinkronisasi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

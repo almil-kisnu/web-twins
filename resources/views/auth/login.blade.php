@@ -36,7 +36,7 @@
         <div class="panel-visual">
             <div class="nama-brand">TWINS</div>
             <div class="teks-hero">
-                <h1>Welcome Back</h1>
+                <h1>SELAMAT DATANG</h1>
                 <p>Belanja bahan kue jadi lebih gampang di Twins. Lengkap, cepat, dan siap bantu kamu bikin kue impian.</p>
             </div>
 
@@ -59,7 +59,7 @@
                     <div class="grup-input">
                         <label class="label-input">Email</label>
                         <input type="text" name="email" id="inputEmail" class="field-input @error('email') is-invalid @enderror" 
-                            placeholder="nama@email.com" value="{{ old('email') }}" autofocus>
+                            placeholder="nama@gmail.com" value="{{ old('email') }}" autofocus>
                         @error('email')
                             <span class="pesan-error">{{ $message }}</span>
                         @enderror

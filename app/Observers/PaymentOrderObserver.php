@@ -14,6 +14,8 @@ class PaymentOrderObserver
      */
     public function saved(PaymentOrder $order): void
     {
+        /* 
+        // Fitur sinkronisasi kontak otomatis dimatikan karena menyebabkan error duplikasi di database
         if ($order->user_id) {
             $user = User::where('uuid', $order->user_id)->first();
             if ($user) {
@@ -47,5 +49,6 @@ class PaymentOrderObserver
                 }
             }
         }
+        */
     }
 }

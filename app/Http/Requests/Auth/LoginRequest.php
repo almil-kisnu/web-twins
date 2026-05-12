@@ -39,10 +39,10 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'Enter your email',
-            'email.email' => 'Please enter a valid email address',
-            'password.required' => 'Enter your password',
-            'password.min' => 'Password must be at least 6 characters',
+            'email.required' => 'Masukkan Email Anda',
+            'email.email' => 'Silakan masukkan alamat email yang valid',
+            'password.required' => 'Masukkan kata sandi Anda',
+            'password.min' => 'Kata sandi harus minimal 6 karakter',
         ];
     }
 

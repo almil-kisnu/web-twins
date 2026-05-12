@@ -16,6 +16,7 @@
         content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
     <meta name="checkout-token-url" content="{{ route('user.checkout.token', ['id' => $outlet->uuid]) }}">
     <meta name="user-history-url" content="{{ route('user.history.api', ['id' => $outlet->uuid]) }}">
+    <meta name="sync-payment-url" content="{{ route('user.payment.sync', ['id' => $outlet->uuid]) }}">
     <meta name="midtrans-enabled"
         content="{{ config('services.midtrans.client_key') && config('services.midtrans.server_key') ? 'true' : 'false' }}">
     <meta name="persisted-delivery-preference" content="{{ json_encode($deliveryPreference ?? null) }}">
@@ -126,6 +127,7 @@
             background: rgba(15, 23, 42, 0.75) !important;
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+            will-change: transform, opacity;
         }
 
         [data-theme="light"] .swal2-popup {
@@ -134,14 +136,45 @@
             color: #1e293b !important;
         }
 
-        .swal2-title, .swal2-html-container {
+        .premium-swal-success {
+            border: 1px solid rgba(16, 185, 129, 0.2) !important;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(6, 78, 59, 0.4)) !important;
+        }
+
+        .swal2-success-circular-line-left,
+        .swal2-success-circular-line-right,
+        .swal2-success-fix {
+            background-color: transparent !important;
+        }
+
+        .swal2-title,
+        .swal2-html-container {
             color: var(--text-color) !important;
+        }
+
+        @keyframes swalPremiumIn {
+            from { transform: scale(0.85); opacity: 0; filter: blur(4px); }
+            to { transform: scale(1); opacity: 1; filter: blur(0); }
+        }
+
+        @keyframes swalPremiumOut {
+            from { transform: scale(1); opacity: 1; filter: blur(0); }
+            to { transform: scale(0.95); opacity: 0; filter: blur(4px); }
+        }
+
+        .premium-swal-show {
+            animation: swalPremiumIn 0.3s cubic-bezier(0.19, 1, 0.22, 1) forwards !important;
+        }
+
+        .premium-swal-hide {
+            animation: swalPremiumOut 0.2s cubic-bezier(0.19, 1, 0.22, 1) forwards !important;
         }
 
         @media (max-width: 850px) {
             .address-popup-layout {
                 flex-direction: column;
             }
+
             .address-popup-left {
                 min-width: 100%;
             }
@@ -1545,6 +1578,20 @@
                 deliveryDistanceKm = Number.isFinite(result.value.distanceKm) ? Math.max(0, result.value
                     .distanceKm) : 0;
                 deliveryCoordinates = result.value.coordinates;
+
+                // Animasi Menyimpan Data
+                Swal.fire({
+                    title: 'Menyimpan Lokasi',
+                    html: 'Sedang mensinkronkan data alamat Anda...',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
                 const persisted = await savePersistedDeliveryAddress();
                 updateDeliveryAddressUI();
                 renderCart();
@@ -1561,14 +1608,26 @@
                     return;
                 }
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Alamat berhasil diperbarui',
-                    timer: 1400,
-                    showConfirmButton: false,
-                    background: 'var(--bg-color)',
-                    color: 'var(--text-color)'
-                });
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Alamat Diperbarui',
+                        text: 'Lokasi telah disinkronkan.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: 'var(--bg-color)',
+                        color: 'var(--text-color)',
+                        customClass: {
+                            popup: 'premium-swal-success',
+                        },
+                        showClass: {
+                            popup: 'premium-swal-show'
+                        },
+                        hideClass: {
+                            popup: 'premium-swal-hide'
+                        }
+                    });
+                }, 100);
             });
         }
 
@@ -1955,7 +2014,7 @@
         }
 
         function goToWhatsApp() {
-            window.open(`https://wa.me/6281234567890?text=Halo TWINS!`, '_blank');
+            window.open(`https://wa.me/6282330755390?text=Halo TWINS!`, '_blank');
         }
 
         function checkout() {
@@ -2161,27 +2220,73 @@
                     switchPage('history');
                 };
 
+                const syncPaymentStatus = (orderId) => {
+                    const syncUrl = document.querySelector('meta[name="sync-payment-url"]').content;
+                    return fetch(syncUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId
+                        })
+                    }).catch(err => console.error('Sync failed:', err));
+                };
+
                 window.snap.pay(paymentData.snap_token, {
                     onSuccess: function(resultSnap) {
-                        finalizeOrder('success', resultSnap);
                         Swal.fire({
-                            icon: 'success',
-                            title: 'Pembayaran Berhasil',
-                            text: 'Pesanan Anda sedang diproses.',
+                            title: 'Memproses Transaksi...',
+                            text: 'Pembayaran berhasil! Sedang mensinkronkan pesanan Anda.',
+                            allowOutsideClick: false,
                             background: 'var(--bg-color)',
                             color: 'var(--text-color)',
-                            confirmButtonColor: 'var(--orange-brand)'
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        syncPaymentStatus(paymentData.order_id).finally(() => {
+                            finalizeOrder('paid', resultSnap);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Pembayaran Berhasil',
+                                text: 'Pesanan Anda telah diterima dan sedang diproses.',
+                                background: 'var(--bg-color)',
+                                color: 'var(--text-color)',
+                                confirmButtonColor: 'var(--orange-brand)'
+                            }).then(() => {
+                                switchPage('history');
+                            });
                         });
                     },
                     onPending: function(resultSnap) {
-                        finalizeOrder('pending', resultSnap);
                         Swal.fire({
-                            icon: 'info',
-                            title: 'Pembayaran Menunggu',
-                            text: 'Silakan selesaikan pembayaran Anda di kanal yang dipilih.',
+                            title: 'Menunggu Konfirmasi...',
+                            text: 'Sedang menyiapkan instruksi pembayaran.',
+                            allowOutsideClick: false,
                             background: 'var(--bg-color)',
                             color: 'var(--text-color)',
-                            confirmButtonColor: 'var(--orange-brand)'
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        syncPaymentStatus(paymentData.order_id).finally(() => {
+                            finalizeOrder('pending', resultSnap);
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Menunggu Pembayaran',
+                                text: 'Silakan selesaikan pembayaran Anda sesuai instruksi.',
+                                background: 'var(--bg-color)',
+                                color: 'var(--text-color)',
+                                confirmButtonColor: 'var(--orange-brand)'
+                            }).then(() => {
+                                switchPage('history');
+                            });
                         });
                     },
                     onError: function() {
@@ -2209,16 +2314,20 @@
         }
 
         function getPaymentStatusLabel(status) {
-            const normalized = (status || 'success').toLowerCase();
+            const normalized = (status || '').toLowerCase();
             if (normalized === 'pending') return 'MENUNGGU PEMBAYARAN';
-            if (normalized === 'failed' || normalized === 'error') return 'GAGAL';
-            return 'BERHASIL';
+            if (normalized === 'paid' || normalized === 'success' || normalized === 'settlement' || normalized === 'capture') return 'PESANAN DIPROSES';
+            if (normalized === 'expired') return 'KADALUWARSA';
+            if (normalized === 'canceled' || normalized === 'cancel') return 'DIBATALKAN';
+            if (normalized === 'denied') return 'DITOLAK';
+            return 'GAGAL';
         }
 
         function getPaymentStatusColor(status) {
-            const normalized = (status || 'success').toLowerCase();
-            if (normalized === 'pending') return '#f59e0b';
-            if (normalized === 'failed' || normalized === 'error') return '#ef4444';
+            const normalized = (status || '').toLowerCase();
+            if (normalized === 'pending') return '#f59e0b'; // Amber/Orange
+            if (normalized === 'paid' || normalized === 'success' || normalized === 'settlement' || normalized === 'capture') return '#10b981'; // Green
+            if (normalized === 'expired' || normalized === 'canceled' || normalized === 'denied' || normalized === 'failed') return '#ef4444'; // Red
             return '#10b981';
         }
 
@@ -2238,17 +2347,108 @@
                         <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">📍 ${trx.address || '-'}</p>
                         <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">🚚 Ongkir: ${formatRupiah(trx.shipping_fee || 0)}</p>
                     </div>
-                    <div style="text-align: right;">
+                    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                         <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">${formatRupiah(trx.total)}</span>
-                        <p style="color: ${getPaymentStatusColor(trx.payment_status)}; font-size: 0.7rem; font-weight: bold; margin-top: 5px;">${getPaymentStatusLabel(trx.payment_status)}</p>
+                        <p style="color: ${getPaymentStatusColor(trx.payment_status)}; font-size: 0.7rem; font-weight: bold;">${getPaymentStatusLabel(trx.payment_status)}</p>
+                        ${(trx.payment_status || '').toLowerCase() === 'pending' && trx.snap_token ? `
+                            <button onclick="event.stopPropagation(); payPendingOrder('${trx.snap_token}', '${trx.id}')" style="background: var(--orange-brand); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);">Bayar Sekarang</button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
         }
 
+        function payPendingOrder(token, orderId) {
+            if (typeof window.snap === 'undefined') {
+                Swal.fire('Error', 'Midtrans Snap belum dimuat.', 'error');
+                return;
+            }
+
+            const syncUrl = document.querySelector('meta[name="sync-payment-url"]').content;
+            const syncPaymentStatus = (oId) => {
+                return fetch(syncUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        order_id: oId
+                    })
+                }).catch(err => console.error('Sync failed:', err));
+            };
+
+            window.snap.pay(token, {
+                onSuccess: function(resultSnap) {
+                    Swal.fire({
+                        title: 'Memproses Transaksi...',
+                        text: 'Sedang mensinkronkan status pembayaran Anda.',
+                        allowOutsideClick: false,
+                        background: 'var(--bg-color)',
+                        color: 'var(--text-color)',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    syncPaymentStatus(orderId).finally(() => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pembayaran Berhasil',
+                            text: 'Status pesanan Anda telah diperbarui.',
+                            confirmButtonColor: 'var(--orange-brand)',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
+                        }).then(() => {
+                            fetchHistoryFromServer().then(() => renderHistory());
+                        });
+                    });
+                },
+                onPending: function(resultSnap) {
+                    Swal.fire({
+                        title: 'Menunggu Konfirmasi...',
+                        text: 'Sedang mengecek status pembayaran.',
+                        allowOutsideClick: false,
+                        background: 'var(--bg-color)',
+                        color: 'var(--text-color)',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    syncPaymentStatus(orderId).finally(() => {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Menunggu Pembayaran',
+                            text: 'Silakan selesaikan pembayaran Anda.',
+                            confirmButtonColor: 'var(--orange-brand)',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
+                        }).then(() => {
+                            fetchHistoryFromServer().then(() => renderHistory());
+                        });
+                    });
+                }
+            });
+        }
+
         // Show transaction detail modal. Try DB lookup by numeric id first, fall back to minimal data in history.
         function showTransactionDetail(dbId, legacyId) {
             const outletUuid = document.querySelector('meta[name="outlet-uuid"]').content || '';
+            
+            // Show fast loading animation
+            Swal.fire({
+                title: 'Memuat Pesanan...',
+                allowOutsideClick: false,
+                background: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             if (dbId) {
                 const url = `/outlet/${outletUuid}/payment-order/${encodeURIComponent(dbId)}`;
                 fetch(url, {
@@ -2262,9 +2462,9 @@
                         const order = data.order;
                         const items = order.items || [];
                         const itemsHtml = items.map(it => `
-                            <div style="display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(148,163,184,0.08);">
+                            <div style="display:flex; justify-content:space-between; gap:8px; padding:10px 0; border-bottom:1px solid rgba(148,163,184,0.08);">
                                 <div style="flex:1; min-width:0;">
-                                    <div style="font-weight:700;">${escapeHtml(it.product_name || it.product_name)}</div>
+                                    <div style="font-weight:700;">${escapeHtml(it.product_name)}</div>
                                     <div style="font-size:0.8rem; color:var(--sub-text);">${it.quantity} × ${formatRupiah(it.unit_price)}</div>
                                     ${it.discount_amount > 0 ? `<div style="font-size:0.8rem; color:#10b981;">Diskon: ${formatRupiah(it.discount_amount)}</div>` : ''}
                                 </div>
@@ -2273,24 +2473,60 @@
                         `).join('');
 
                         const meta = order.meta || {};
+                        const orderDate = new Date(order.created_at).toLocaleString('id-ID', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short'
+                        });
+
                         Swal.fire({
-                            title: `Detail Pesanan #${String(order.id).slice(-6)}`,
+                            title: `<div style="font-size: 1.1rem; font-weight: 800;">Detail Pesanan #${String(order.id).slice(-6)}</div>`,
                             html: `
                                 <div style="text-align:left; font-size:0.9rem; line-height:1.45;">
-                                    <p style="margin:0 0 6px 0; font-size:0.75rem; color:var(--sub-text);">Penerima: <strong>${escapeHtml(order.recipient_name)}</strong> | ${escapeHtml(order.recipient_phone)}</p>
-                                    <p style="margin:0 0 12px 0; font-size:0.8rem; color:var(--sub-text);">Alamat: ${escapeHtml(order.delivery_address || '')}</p>
-                                    <div style="border-top:1px solid rgba(148,163,184,0.06); padding-top:10px;">${itemsHtml}</div>
-                                    <div style="margin-top:10px; border-top:1px dashed rgba(148,163,184,0.08); padding-top:10px; font-size:0.9rem;">
-                                        <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div>
-                                        <div style="display:flex; justify-content:space-between;"><span>Diskon Item</span><strong>${formatRupiah(meta.item_discount_total || 0)}</strong></div>
-                                        <div style="display:flex; justify-content:space-between;"><span>Diskon Global</span><strong>${formatRupiah(meta.global_discount_amount || 0)}</strong></div>
-                                        <div style="display:flex; justify-content:space-between;"><span>Ongkir</span><strong>${formatRupiah(order.shipping_fee || 0)}</strong></div>
-                                        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:1.1rem;"><span>Total</span><strong>${formatRupiah(order.total_amount)}</strong></div>
+                                    <div style="background: rgba(148,163,184,0.05); padding: 12px; border-radius: 12px; margin-bottom: 20px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                            <span style="color: var(--sub-text);">Status:</span>
+                                            <strong style="color: ${getPaymentStatusColor(order.payment_status)};">${getPaymentStatusLabel(order.payment_status)}</strong>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                            <span style="color: var(--sub-text);">Waktu:</span>
+                                            <strong>${orderDate}</strong>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between;">
+                                            <span style="color: var(--sub-text);">Metode:</span>
+                                            <strong>${(order.midtrans_payment_type || order.payment_gateway || 'Midtrans').toUpperCase()}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-bottom: 20px;">
+                                        <p style="margin:0 0 6px 0; font-size:0.75rem; color:var(--sub-text); font-weight: 700;">PENERIMA</p>
+                                        <p style="margin:0; font-weight: 700;">${escapeHtml(order.recipient_name)} | ${escapeHtml(order.recipient_phone)}</p>
+                                        <p style="margin:4px 0 0 0; font-size:0.8rem; color:var(--sub-text);">${escapeHtml(order.delivery_address || '')}</p>
+                                    </div>
+
+                                    <div style="margin-bottom: 10px;">
+                                        <p style="margin:0 0 6px 0; font-size:0.75rem; color:var(--sub-text); font-weight: 700;">DAFTAR ITEM</p>
+                                        <div style="border-top:1px solid rgba(148,163,184,0.06);">${itemsHtml}</div>
+                                    </div>
+
+                                    <div style="margin-top:20px; background: rgba(249, 115, 22, 0.05); padding: 12px; border-radius: 12px; font-size:0.9rem;">
+                                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>Subtotal</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div>
+                                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>Diskon Total</span><strong>${formatRupiah((meta.item_discount_total || 0) + (meta.global_discount_amount || 0))}</strong></div>
+                                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>Ongkir</span><strong>${formatRupiah(order.shipping_fee || 0)}</strong></div>
+                                        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:1.1rem; color: var(--orange-brand);"><span>Total</span><strong>${formatRupiah(order.total_amount)}</strong></div>
+                                    </div>
+
+                                    <div style="margin-top: 25px; display: grid; gap: 10px;">
+                                        <a href="https://wa.me/6281249414369?text=Halo Admin, saya ingin menanyakan pesanan #${String(order.id).slice(-6)}" target="_blank" style="text-decoration: none; background: #25D366; color: white; padding: 12px; border-radius: 12px; text-align: center; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                            <span>💬 Hubungi Admin</span>
+                                        </a>
                                     </div>
                                 </div>
                             `,
-                            width: 'min(760px, 96vw)',
-                            confirmButtonColor: 'var(--orange-brand)'
+                            width: 'min(500px, 96vw)',
+                            confirmButtonText: 'Tutup',
+                            confirmButtonColor: 'var(--orange-brand)',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
                         });
                     })
                     .catch(() => {
@@ -2317,7 +2553,7 @@
             }
 
             const fallbackHtml = found.items.map(i => `
-                <div style="display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(148,163,184,0.08);">
+                <div style="display:flex; justify-content:space-between; gap:8px; padding:10px 0; border-bottom:1px solid rgba(148,163,184,0.08);">
                     <div style="flex:1; min-width:0;">
                         <div style="font-weight:700;">${escapeHtml(i.name)}</div>
                         <div style="font-size:0.8rem; color:var(--sub-text);">${i.qty} × ${formatRupiah(i.price)}</div>
@@ -2327,10 +2563,47 @@
             `).join('');
 
             Swal.fire({
-                title: `Detail Pesanan #${String(found.id).slice(-6)}`,
-                html: `<div style="text-align:left;">${fallbackHtml}<div style="margin-top:8px; font-weight:700;">Total: ${formatRupiah(found.total)}</div></div>`,
-                width: 'min(720px, 96vw)',
-                confirmButtonColor: 'var(--orange-brand)'
+                title: `<div style="font-size: 1.1rem; font-weight: 800;">Detail Pesanan #${String(found.id).slice(-6)}</div>`,
+                html: `
+                    <div style="text-align:left; font-size:0.9rem; line-height:1.45;">
+                        <div style="background: rgba(148,163,184,0.05); padding: 12px; border-radius: 12px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="color: var(--sub-text);">Status:</span>
+                                <strong style="color: ${getPaymentStatusColor(found.payment_status)};">${getPaymentStatusLabel(found.payment_status)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--sub-text);">Waktu:</span>
+                                <strong>${found.date || '-'}</strong>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <p style="margin:0 0 6px 0; font-size:0.75rem; color:var(--sub-text); font-weight: 700;">PENERIMA</p>
+                            <p style="margin:0; font-weight: 700;">${escapeHtml(found.recipient_name || '-')} | ${escapeHtml(found.recipient_phone || '-')}</p>
+                            <p style="margin:4px 0 0 0; font-size:0.8rem; color:var(--sub-text);">${escapeHtml(found.address || '')}</p>
+                        </div>
+
+                        <div style="margin-bottom: 10px;">
+                            <p style="margin:0 0 6px 0; font-size:0.75rem; color:var(--sub-text); font-weight: 700;">DAFTAR ITEM</p>
+                            <div style="border-top:1px solid rgba(148,163,184,0.06);">${fallbackHtml}</div>
+                        </div>
+
+                        <div style="margin-top:20px; background: rgba(249, 115, 22, 0.05); padding: 12px; border-radius: 12px; font-size:0.9rem;">
+                            <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:1.1rem; color: var(--orange-brand);"><span>Total</span><strong>${formatRupiah(found.total)}</strong></div>
+                        </div>
+
+                        <div style="margin-top: 25px;">
+                            <a href="https://wa.me/6281249414369?text=Halo Admin, saya ingin menanyakan pesanan #${String(found.id).slice(-6)}" target="_blank" style="text-decoration: none; background: #25D366; color: white; padding: 12px; border-radius: 12px; text-align: center; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span>💬 Hubungi Admin</span>
+                            </a>
+                        </div>
+                    </div>
+                `,
+                width: 'min(500px, 96vw)',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: 'var(--orange-brand)',
+                background: 'var(--bg-color)',
+                color: 'var(--text-color)',
             });
         }
 
@@ -2509,8 +2782,50 @@
                 });
             }
         });
-        // Panggil render pertama kali saat halaman dimuat
+        // Initial load for payment and history
         document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectOrderId = urlParams.get('order_id');
+            const redirectStatus = urlParams.get('status_code');
+
+            if (redirectOrderId && redirectStatus) {
+                Swal.fire({
+                    title: 'Memperbarui Status...',
+                    text: 'Sedang mensinkronkan pembayaran Anda.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const syncUrl = document.querySelector('meta[name="sync-payment-url"]').content;
+                fetch(syncUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ order_id: redirectOrderId })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    Swal.close();
+                    // Clean up URL without refreshing
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                    fetchHistoryFromServer();
+                })
+                .catch(err => {
+                    console.error('Auto-sync failed:', err);
+                    Swal.close();
+                    fetchHistoryFromServer();
+                });
+            } else {
+                fetchHistoryFromServer();
+            }
+
             renderProducts();
         });
         async function fetchHistoryFromServer() {

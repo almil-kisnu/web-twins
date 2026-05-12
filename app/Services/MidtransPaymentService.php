@@ -1,14 +1,13 @@
 <?php
-
 namespace App\Services;
 
 use App\Models\PaymentOrder;
 use App\Models\ProductStore;
 use App\Models\StockCard;
+use App\Models\CashFlow;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
-use Midtrans\Config;
-use Midtrans\Transaction;
 
 class MidtransPaymentService
 {
@@ -75,9 +74,26 @@ class MidtransPaymentService
 
     private function fetchTransactionStatus(string $orderId): object
     {
-        $this->configureSdk();
+        $serverKey = (string) config('services.midtrans.server_key', '');
+        $isProduction = (bool) config('services.midtrans.is_production', false);
+        
+        $baseUrl = $isProduction 
+            ? 'https://api.midtrans.com/v2' 
+            : 'https://api.sandbox.midtrans.com/v2';
 
-        return Transaction::status($orderId);
+        $response = Http::withBasicAuth($serverKey, '')
+            ->acceptJson()
+            ->get("{$baseUrl}/{$orderId}/status");
+
+        if (!$response->successful()) {
+            \Illuminate\Support\Facades\Log::error('Midtrans API Error: ' . $response->body());
+            throw new \Exception('Gagal mengambil status transaksi dari Midtrans: ' . $response->body());
+        }
+
+        $data = $response->json();
+        \Illuminate\Support\Facades\Log::info('Midtrans API Response for ' . $orderId . ': ' . json_encode($data));
+
+        return (object) $data;
     }
 
     private function syncOrderFromResponse(object $statusResponse, array $notificationPayload = []): ?PaymentOrder
@@ -136,6 +152,7 @@ class MidtransPaymentService
 
             if ($shouldProcessStock) {
                 $this->processStockForPaidOrder($order);
+                $this->recordCashFlowForPaidOrder($order);
                 $updateData['stock_processed_at'] = now();
             }
 
@@ -147,6 +164,7 @@ class MidtransPaymentService
 
     private function processStockForPaidOrder(PaymentOrder $order): void
     {
+        \Illuminate\Support\Facades\Log::info('Processing stock reduction for order: ' . $order->order_code);
         $order->loadMissing('items');
 
         $qtyByProduct = [];
@@ -185,6 +203,7 @@ class MidtransPaymentService
             }
 
             $productStore->decrement('stok', $qty);
+            \Illuminate\Support\Facades\Log::info("Reduced stock for product {$productId} by {$qty} in store {$order->outlet_id}");
 
             StockCard::create([
                 'product_id' => $productId,
@@ -193,6 +212,19 @@ class MidtransPaymentService
                 'keterangan' => 'Pengurangan stok otomatis dari pembayaran online order ' . $order->order_code,
             ]);
         }
+    }
+
+    private function recordCashFlowForPaidOrder(PaymentOrder $order): void
+    {
+        CashFlow::create([
+            'store_id' => (string) $order->outlet_id,
+            'user_id' => $order->user_id,
+            'jenis' => 'pemasukan',
+            'nominal' => $order->total_amount,
+            'keterangan' => 'Pendapatan dari online order ' . $order->order_code,
+            'tanggal' => now(),
+            'metode_pembayaran' => null, // Placeholder for Midtrans
+        ]);
     }
 
     private function mapPaymentStatus(string $transactionStatus, string $fraudStatus): string
@@ -230,20 +262,6 @@ class MidtransPaymentService
         }
 
         return 'failed';
-    }
-
-    private function configureSdk(): void
-    {
-        $serverKey = (string) config('services.midtrans.server_key', '');
-
-        if ($serverKey === '') {
-            throw new InvalidArgumentException('Midtrans server key belum dikonfigurasi.');
-        }
-
-        Config::$serverKey = $serverKey;
-        Config::$isProduction = (bool) config('services.midtrans.is_production', false);
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
     }
 
     private function responseToArray(object $response): array

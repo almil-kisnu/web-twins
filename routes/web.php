@@ -178,6 +178,9 @@ Route::get('/outlet/{id}/history', [LandingController::class, 'getUserHistory'])
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
     ->middleware(['auth', 'verified'])
     ->name('store.review.store');
+Route::post('/outlet/{id}/sync-payment', [LandingController::class, 'syncPaymentStatus'])
+    ->middleware(['auth'])
+    ->name('user.payment.sync');
 Route::post('/submit-general-review', [LandingController::class, 'generalReview'])
     ->middleware(['auth', 'verified'])
     ->name('landing.review.store');
