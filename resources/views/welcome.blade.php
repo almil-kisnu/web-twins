@@ -124,8 +124,25 @@
                     </svg>
                 </button>
                 <div class="user-dropdown-menu" id="userMenu">
-                    <button onclick="location.href='/login'">Login</button>
-                    <button onclick="location.href='/register'">Register</button>
+                    @auth
+                        @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                            <button onclick="location.href='/dashboard'">Dashboard</button>
+                        @endif
+                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-mobile">
+                            @csrf
+                        </form>
+                        <button onclick="document.getElementById('logout-form-mobile').submit();" style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Logout
+                        </button>
+                    @else
+                        <button onclick="location.href='/login'">Login</button>
+                        <button onclick="location.href='/register'">Register</button>
+                    @endauth
                 </div>
             </div>
 
@@ -146,11 +163,23 @@
 
             @if (Route::has('login'))
                 @auth
-                    <a href="{{ url('/dashboard') }}" class="user-profile-link">
+                    <a href="{{ (auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko') ? url('/dashboard') : '#' }}" class="user-profile-link">
                         <div class="user-initial">
                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </div>
                         <span class="user-name">{{ Auth::user()->name }}</span>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" id="logout-form-desktop" style="display: none;">
+                        @csrf
+                    </form>
+                    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-desktop').submit();" 
+                       class="logout-icon-desktop"
+                       title="Logout">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
                     </a>
                 @else
                     <a href="{{ route('login') }}" class="btn-outline" style="text-decoration: none;">Login</a>

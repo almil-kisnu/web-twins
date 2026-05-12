@@ -2186,38 +2186,99 @@ body:not([data-theme='light']) .promo-content h4 {
 }
 
 .user-dropdown-menu {
-    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
     position: absolute;
     top: 120%;
     right: 0;
     background: var(--nav-bg);
     border: 1px solid var(--card-border);
     border-radius: 12px;
-    width: 150px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    width: 170px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
     z-index: 2002;
     overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: none;
 }
 
 .user-dropdown-menu.show {
-    display: block;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
 }
 
 .user-dropdown-menu button {
     width: 100%;
-    padding: 12px 15px;
+    padding: 12px 18px;
     border: none;
     background: transparent;
-    color: var(--text-color);
+    color: inherit;
     text-align: left;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.8;
 }
 
 .user-dropdown-menu button:hover {
-    background: var(--orange-brand);
-    color: white;
+    background: var(--card-bg);
+    padding-left: 22px;
+    opacity: 1;
+    color: var(--accent-purple) !important;
+}
+
+.user-dropdown-menu button:active {
+    transform: translateX(5px);
+    filter: brightness(1.2);
+}
+
+[data-theme="dark"] .user-dropdown-menu button {
+    color: #ffffff;
+}
+
+[data-theme="light"] .user-dropdown-menu button {
+    color: #000000;
+}
+
+.logout-icon-desktop {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    opacity: 0.7;
+}
+
+[data-theme="dark"] .logout-icon-desktop {
+    color: #ffffff;
+}
+
+[data-theme="light"] .logout-icon-desktop {
+    color: #000000;
+}
+
+.logout-icon-desktop:hover {
+    background: var(--card-bg);
+    opacity: 1;
+    color: var(--accent-purple) !important;
+    border-color: var(--accent-purple);
+    box-shadow: var(--glow);
+}
+
+.logout-icon-desktop:active {
+    transform: scale(0.9);
+    filter: brightness(1.2);
+    opacity: 1;
 }
 
 @media (max-width: 1024px) {
@@ -3897,7 +3958,7 @@ body.show-content {
 .product-name-discount {
     font-size: 0.75rem;
     margin: 0;
-    color: white;
+    color: var(--text-color);
     line-height: 1.2;
     height: 2.4em;
     overflow: hidden;
@@ -3919,7 +3980,7 @@ body.show-content {
 .product-new-price-discount {
     font-size: 0.95rem;
     font-weight: 800;
-    color: #00c853;
+    color: var(--orange-brand);
 }
 
 .discount-add-btn {

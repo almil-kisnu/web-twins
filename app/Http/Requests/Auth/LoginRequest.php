@@ -65,7 +65,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Email atau kata sandi yang Anda masukkan salah.',
             ]);
         }
 
@@ -77,7 +77,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => 'User found in Supabase but not in local database.',
+                'email' => 'User ditemukan di Supabase tetapi tidak di database lokal.',
             ]);
         }
 
@@ -102,10 +102,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => "Terlalu banyak upaya masuk. Silakan coba lagi dalam $seconds detik.",
         ]);
     }
 
