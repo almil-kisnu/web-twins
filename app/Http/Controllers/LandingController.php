@@ -507,12 +507,12 @@ class LandingController extends Controller
         ]);
 
         $outlet = Outlet::findOrFail($id);
-        $exists = StoreReview::where('store_id', $outlet->uuid)
+        $reviewCount = StoreReview::where('store_id', $outlet->uuid)
             ->where('user_id', Auth::id())
-            ->exists();
+            ->count();
 
-        if ($exists) {
-            return back()->with('error', 'Anda sudah memberikan ulasan untuk toko ini.');
+        if ($reviewCount >= 3) {
+            return back()->with('error', 'Batas maksimal ulasan adalah 3 per akun.');
         }
 
         DB::transaction(function () use ($request, $outlet) {
@@ -565,12 +565,12 @@ class LandingController extends Controller
 
         $outlet = Outlet::findOrFail($request->store_id);
 
-        $exists = StoreReview::where('store_id', $outlet->uuid)
+        $reviewCount = StoreReview::where('store_id', $outlet->uuid)
             ->where('user_id', Auth::id())
-            ->exists();
+            ->count();
 
-        if ($exists) {
-            return back()->with('error', 'Anda sudah memberikan ulasan untuk cabang ini.');
+        if ($reviewCount >= 3) {
+            return back()->with('error', 'Batas maksimal ulasan adalah 3 per akun.');
         }
 
         DB::transaction(function () use ($request, $outlet) {

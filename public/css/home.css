@@ -3237,7 +3237,7 @@ body:not([data-theme='light']) .promo-content h4 {
 
 .footer-container {
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 40px;
     margin-bottom: 60px;
 }
@@ -3318,10 +3318,13 @@ body:not([data-theme='light']) .promo-content h4 {
 
 .footer-links {
     list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
 }
 
 .footer-links li {
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .footer-links a {
