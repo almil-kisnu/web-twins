@@ -151,8 +151,12 @@ class MidtransPaymentService
                 && $order->stock_processed_at === null;
 
             if ($shouldProcessStock) {
+                // Pengurangan stok tetap berjalan
                 $this->processStockForPaidOrder($order);
-                $this->recordCashFlowForPaidOrder($order);
+                
+                // Pencatatan Cash Flow tetap dimatikan sesuai permintaan
+                // $this->recordCashFlowForPaidOrder($order);
+                
                 $updateData['stock_processed_at'] = now();
             }
 
