@@ -301,16 +301,41 @@
             <a class="nav-link" id="nav-chat" onclick="goToWhatsApp()">Chat</a>
         </nav>
         <div class="nav-btns">
-            <div class="mobile-user-drop">
-                <button class="user-icon-btn" onclick="toggleUserMenu()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </button>
-                <div class="user-dropdown-menu" id="userMenu">
-                    @auth
+            @auth
+                <div class="user-premium-card desktop-only">
+                    <span class="user-name-text">{{ Auth::user()->name }}</span>
+                    
+                    @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                        <a href="/dashboard" class="nav-action-btn" title="Dashboard">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        </a>
+                    @endif
+
+                    <form method="POST" action="{{ route('logout') }}" id="logout-form-card" style="display: none;">
+                        @csrf
+                    </form>
+                    <button type="button" class="nav-action-btn logout-btn" title="Logout" onclick="document.getElementById('logout-form-card').submit();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mobile-user-drop mobile-only">
+                    <button class="user-icon-btn" onclick="toggleUserMenu()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown-menu" id="userMenu">
                         <div class="user-menu-header" style="padding: 12px 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 5px;">
                             <span style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color);">{{ Auth::user()->name }}</span>
                             <span style="display: block; font-size: 0.75rem; color: var(--sub-text);">{{ Auth::user()->email }}</span>
@@ -318,23 +343,28 @@
                         @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
                             <button onclick="location.href='/dashboard'">Dashboard</button>
                         @endif
-                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-user-page">
+                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-user-page-mob">
                             @csrf
                         </form>
-                        <button onclick="document.getElementById('logout-form-user-page').submit();" style="display: flex; align-items: center; color: #ef4444;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
+                        <button onclick="document.getElementById('logout-form-user-page-mob').submit();" style="display: flex; align-items: center; color: #ef4444;">
                             Logout
                         </button>
-                    @else
+                    </div>
+                </div>
+            @else
+                <div class="mobile-user-drop">
+                    <button class="user-icon-btn" onclick="toggleUserMenu()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown-menu" id="userMenu">
                         <button onclick="location.href='/login'">Login</button>
                         <button onclick="location.href='/register'">Register</button>
-                    @endauth
+                    </div>
                 </div>
-            </div>
+            @endauth
 
             <div class="theme-dropdown">
                 <button class="theme-btn" onclick="toggleThemeMenu()">

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <meta name="session-success" content="{{ session('success') ?? '' }}">
     <meta name="session-error" content="{{ session('error') ?? '' }}">
     <title>TWINS - ahlinya belanja sembako</title>
@@ -79,8 +79,28 @@
             max-width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow-x: hidden !important;
+            overflow-x: clip !important;
             position: relative;
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+            left: 0 !important;
+            right: 0 !important;
+            box-sizing: border-box !important;
+        }
+        * {
+            box-sizing: border-box !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        section {
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow: hidden !important;
+            position: relative !important;
+        }
+        #bakery-bg, .animated-bg, .light-rays-container {
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow: hidden !important;
         }
     </style>
     
@@ -109,7 +129,7 @@
         <div class="god-ray ray3"></div>
         <div class="god-ray ray4"></div>
     </div>
-    <div id="bakery-bg" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1;"></div>
+    <div id="bakery-bg" style="position:fixed; top:0; left:0; width:100%; height:100vh; z-index:-1; overflow:hidden;"></div>
     <div class="glow-sphere"></div>
 
     <header id="mainHeader">
@@ -126,47 +146,70 @@
         </nav>
 
         <div class="nav-btns">
-            <div class="mobile-user-drop">
-                <button class="user-icon-btn" onclick="toggleUserMenu()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </button>
-                <div class="user-dropdown-menu" id="userMenu">
-                    @auth
+            @auth
+                <div class="user-premium-card desktop-only">
+                    <span class="user-name-text">{{ Auth::user()->name }}</span>
+                    
+                    @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                        <a href="/dashboard" class="nav-action-btn" title="Dashboard">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        </a>
+                    @endif
+
+                    <form method="POST" action="{{ route('logout') }}" id="logout-form-card" style="display: none;">
+                        @csrf
+                    </form>
+                    <button type="button" class="nav-action-btn logout-btn" title="Logout" onclick="document.getElementById('logout-form-card').submit();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mobile-user-drop mobile-only">
+                    <button class="user-icon-btn" onclick="toggleUserMenu()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown-menu" id="userMenu">
                         <div class="user-menu-header" style="padding: 12px 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 5px;">
                             <span style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color);">{{ Auth::user()->name }}</span>
                             <span style="display: block; font-size: 0.75rem; color: var(--sub-text);">{{ Auth::user()->email }}</span>
                         </div>
                         @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
-                            <button onclick="location.href='/dashboard'">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                                    <rect x="3" y="3" width="7" height="7"></rect>
-                                    <rect x="14" y="3" width="7" height="7"></rect>
-                                    <rect x="14" y="14" width="7" height="7"></rect>
-                                    <rect x="3" y="14" width="7" height="7"></rect>
-                                </svg>
-                                Dashboard
-                            </button>
+                            <button onclick="location.href='/dashboard'">Dashboard</button>
                         @endif
-                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-header">
+                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-header-mob">
                             @csrf
                         </form>
-                        <button onclick="document.getElementById('logout-form-header').submit();" style="display: flex; align-items: center; color: #ef4444;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
+                        <button onclick="document.getElementById('logout-form-header-mob').submit();" style="display: flex; align-items: center; color: #ef4444;">
                             Logout
                         </button>
-                    @else
+                    </div>
+                </div>
+            @else
+                <div class="mobile-user-drop">
+                    <button class="user-icon-btn" onclick="toggleUserMenu()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown-menu" id="userMenu">
                         <button onclick="location.href='/login'">Login</button>
                         <button onclick="location.href='/register'">Register</button>
-                    @endauth
+                    </div>
                 </div>
-            </div>
+            @endauth
 
             <div class="theme-dropdown">
                 <button class="theme-btn" onclick="toggleThemeMenu()">
@@ -221,197 +264,91 @@
         </main>
     </section>
 
-    <section id="promo-outlet" class="promo-section" style="width: 100vw !important; position: relative !important; left: 50% !important; right: 50% !important; margin-left: -50vw !important; margin-right: -50vw !important; padding: 20px 0 !important; overflow: hidden !important; background: transparent !important;">
-        <div class="promo-header" style="margin-bottom: 12px !important; text-align: center !important; width: 100% !important;">
-            <h2 id="promoTitle" style="font-size: 18px !important; letter-spacing: 2px !important; color: var(--text-color) !important; margin: 0 !important; text-transform: uppercase !important; font-weight: 800 !important;">
-                PROMO <span style="color: var(--primary-color, #0081C9) !important;">PRODUK</span>
+    <section id="promo-outlet" class="promo-section" style="padding: 30px 0; overflow: hidden; background: transparent;">
+        <div class="promo-header" style="margin-bottom: 20px; text-align: center;">
+            <h2 id="promoTitle" style="font-size: 28px; letter-spacing: 2px; color: var(--text-color); margin: 0; text-transform: uppercase; font-weight: 800;">
+                PROMO <span style="color: var(--accent-purple);">UNGGULAN</span>
             </h2>
+            <p style="color: var(--sub-text); margin-top: 10px;">Penawaran spesial terbaik hanya untuk Anda</p>
         </div>
 
-        <div class="promo-scroll-wrapper" style="position: relative !important; width: 100% !important; cursor: grab;">
-            <div class="promo-slider-container" id="promoSliderNew" style="display: flex !important; gap: 15px !important; overflow-x: auto !important; padding: 20px 10% !important; scroll-snap-type: x mandatory !important; scrollbar-width: none !important; -ms-overflow-style: none !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; height: auto !important; transition: transform 0.2s ease;">
-                @php
-                    // Gandakan produk untuk efek infinite scroll
-                    $infinitePromos = collect($promoProducts)->concat($promoProducts)->concat($promoProducts);
-                @endphp
-                
-                @forelse($infinitePromos as $index => $promo)
-                <div class="promo-banner-card" data-index="{{ $index }}" style="flex: 0 0 80% !important; width: 80% !important; aspect-ratio: 4 / 2 !important; border-radius: 30px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important; cursor: pointer; position: relative; scroll-snap-align: center; background: rgba(0,0,0,0.1) !important; transition: transform 0.3s ease;">
-                    <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}" style="width: 100% !important; height: 100% !important; object-fit: contain !important; background: #000;">
+        <div class="promo-carousel-wrapper">
+            <button class="promo-nav-btn prev" id="prevPromo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            
+            <div class="promo-carousel-slider" id="promoSliderMain">
+                @forelse($promoProducts as $promo)
+                <div class="promo-carousel-item">
+                    @if(isset($promo->diskon) && $promo->diskon > 0)
+                        <div class="promo-badge-premium">Diskon {{ $promo->diskon }}%</div>
+                    @endif
+                    <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}">
                 </div>
                 @empty
-                <div style="text-align: center; width: 100%; padding: 40px 20px; color: var(--sub-text); font-size: 14px;">
+                <div style="text-align: center; width: 100%; padding: 40px 20px; color: var(--sub-text); font-size: 16px; background: var(--card-bg); border-radius: 20px;">
                     Belum ada promo aktif saat ini.
                 </div>
                 @endforelse
             </div>
+
+            <button class="promo-nav-btn next" id="nextPromo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
         </div>
 
-        <style>
-            #promoSliderNew::-webkit-scrollbar { display: none !important; }
-            #promoSliderNew.active { cursor: grabbing; scroll-snap-type: none !important; }
-            @media (min-width: 1024px) {
-                .promo-slider-container { padding: 30px 15% !important; }
-                .promo-banner-card { flex: 0 0 70% !important; width: 70% !important; max-width: 900px !important; }
-                
-                /* Tetap jaga media di kanan untuk desktop */
-                .highlight-text-box { order: 1 !important; }
-                .highlight-media-box { order: 2 !important; }
-            }
-
-            @media (max-width: 1024px) {
-                /* Tentang Toko Mobile Fix */
-                .highlight-header { text-align: center !important; margin-bottom: 30px !important; }
-                .highlight-header h2 { font-size: 2.2rem !important; }
-                .highlight-container { display: flex !important; flex-direction: column !important; gap: 30px !important; }
-                .highlight-text-box { text-align: center !important; padding: 30px 20px !important; }
-                .highlight-text-box * { text-align: center !important; }
-                .owner-profile { justify-content: center !important; }
-                
-                /* Media Box tetap horizontal (kanan-kiri) */
-                .highlight-media-box { flex-direction: row !important; gap: 10px !important; align-items: flex-start !important; }
-                .image-item { flex: 1.2 !important; width: auto !important; aspect-ratio: 3 / 4 !important; }
-                .media-group-right { flex: 1 !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }
-                .video-item { width: 100% !important; aspect-ratio: 1/1 !important; }
-                .video-meta { text-align: left !important; }
-                .video-meta p { font-size: 0.7rem !important; margin-bottom: 5px !important; line-height: 1.2 !important; }
-                .btn-highlights-sm { padding: 5px 10px !important; font-size: 0.65rem !important; }
-
-                /* Kenapa Belanja di Twins Mobile Fix */
-                .product-features-section .grid-container { 
-                    display: grid !important; 
-                    grid-template-columns: 1fr 80px 1fr !important; 
-                    gap: 15px !important; 
-                    align-items: center !important;
-                    width: 100% !important;
-                    padding: 0 15px !important;
-                    box-sizing: border-box !important;
-                }
-                .product-features-section .feature-list { gap: 15px !important; }
-                .product-features-section .feature-title { font-size: 0.7rem !important; margin-bottom: 2px !important; }
-                .product-features-section .feature-description { font-size: 0.6rem !important; line-height: 1.2 !important; }
-                .product-features-section .feature-icon { 
-                    width: 32px !important; 
-                    height: 32px !important; 
-                    margin-bottom: 5px !important; 
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                }
-                .product-features-section .feature-icon svg { width: 16px !important; height: 16px !important; }
-                .product-image-container { order: 0 !important; width: 80px !important; display: flex !important; justify-content: center !important; }
-                .featured-product-image { height: auto !important; max-height: 120px !important; width: 80px !important; }
-                .product-features-section .left-side { text-align: right !important; }
-                .product-features-section .right-side { text-align: left !important; }
-
-                /* Header Mobile Full Width Fix */
-                header, #mainHeader {
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    left: 0 !important;
-                    right: 0 !important;
-                    margin: 0 !important;
-                    border-radius: 0 !important;
-                    padding: 0 15px !important;
-                    box-sizing: border-box !important;
-                    position: sticky !important;
-                }
-                .nav-btns { gap: 12px !important; }
-                .theme-btn { padding: 6px 10px !important; font-size: 0.8rem !important; }
-                .desktop-only { display: none !important; }
-
-                /* Outlet Section Mobile Fix */
-                .explore-section { padding: 40px 0 !important; width: 100% !important; overflow: hidden !important; }
-                .explore-section h2 { padding: 0 15px !important; font-size: 1.8rem !important; text-align: left !important; width: 100% !important; }
-                .nft-grid { padding: 20px 15px !important; gap: 15px !important; width: 100% !important; display: flex !important; overflow-x: auto !important; }
-                .nft-item { flex: 0 0 280px !important; }
-
-                /* Fix for blue area on right */
-                .animated-bg, .light-rays-container, #bakery-bg, .glow-sphere {
-                    width: 100vw !important;
-                    left: 0 !important;
-                }
-
-
-            }
-        </style>
-
         <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const slider = document.getElementById('promoSliderNew');
+            function movePromo(direction) {
+                const slider = document.getElementById('promoSliderMain');
                 if (!slider) return;
-
-                let isDown = false;
-                let startX;
-                let scrollLeft;
-                const cardCount = {{ count($promoProducts) }};
                 
-                if (cardCount === 0) return;
-
-                // Inisialisasi posisi di tengah (copy kedua)
-                const centerScroll = () => {
-                    const card = slider.querySelector('.promo-banner-card');
-                    if (card) {
-                        const cardWidth = card.offsetWidth + 15; // Width + gap
-                        // Set posisi ke awal copy kedua
-                        slider.scrollLeft = cardWidth * cardCount;
-                    }
-                };
+                const itemWidth = slider.querySelector('.promo-carousel-item')?.offsetWidth || slider.offsetWidth;
+                const scrollAmount = itemWidth + 20; // width + gap
                 
-                setTimeout(centerScroll, 150);
+                if (direction === 'next') {
+                    const isAtEnd = slider.scrollLeft + slider.offsetWidth >= slider.scrollWidth - 20;
+                    if (isAtEnd) {
+                        slider.scrollTo({ left: 0, behavior: 'smooth' });
+                    } else {
+                        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                    }
+                } else {
+                    const isAtStart = slider.scrollLeft <= 10;
+                    if (isAtStart) {
+                        slider.scrollTo({ left: slider.scrollWidth, behavior: 'smooth' });
+                    } else {
+                        slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                    }
+                }
+            }
 
-                // Efek Infinite Loop
-                slider.addEventListener('scroll', () => {
-                    if (isDown) return;
-                    
-                    const card = slider.querySelector('.promo-banner-card');
-                    if (!card) return;
-                    const cardWidth = card.offsetWidth + 15;
-                    const totalWidth = cardWidth * cardCount;
+            // Bind buttons
+            document.getElementById('prevPromo')?.addEventListener('click', () => movePromo('prev'));
+            document.getElementById('nextPromo')?.addEventListener('click', () => movePromo('next'));
 
-                    // Jika hampir sampai ke copy pertama (kiri)
-                    if (slider.scrollLeft < (cardWidth / 2)) {
-                        slider.style.scrollBehavior = 'auto';
-                        slider.scrollLeft += totalWidth;
-                    } 
-                    // Jika hampir sampai ke copy ketiga (kanan)
-                    else if (slider.scrollLeft > (totalWidth * 2)) {
-                        slider.style.scrollBehavior = 'auto';
-                        slider.scrollLeft -= totalWidth;
+            // Auto-play
+            let promoAutoPlay = setInterval(() => { movePromo('next'); }, 6000);
+            
+            const sliderWrap = document.querySelector('.promo-carousel-wrapper');
+            if(sliderWrap) {
+                sliderWrap.addEventListener('mouseenter', () => clearInterval(promoAutoPlay));
+                sliderWrap.addEventListener('mouseleave', () => {
+                    clearInterval(promoAutoPlay);
+                    promoAutoPlay = setInterval(() => { movePromo('next'); }, 6000);
+                });
+            }
+
+            // Intersection Observer to ensure autoplay only when in view
+            const promoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // restart autoplay if needed
+                    } else {
+                        clearInterval(promoAutoPlay);
                     }
                 });
-
-                slider.addEventListener('mousedown', (e) => {
-                    isDown = true;
-                    slider.classList.add('active');
-                    startX = e.clientX;
-                    scrollLeft = slider.scrollLeft;
-                    slider.style.scrollSnapType = 'none';
-                    slider.style.scrollBehavior = 'auto';
-                });
-
-                slider.addEventListener('mouseleave', () => {
-                    if (!isDown) return;
-                    isDown = false;
-                    slider.classList.remove('active');
-                    slider.style.scrollSnapType = 'x mandatory';
-                });
-
-                slider.addEventListener('mouseup', () => {
-                    if (!isDown) return;
-                    isDown = false;
-                    slider.classList.remove('active');
-                    slider.style.scrollSnapType = 'x mandatory';
-                });
-
-                slider.addEventListener('mousemove', (e) => {
-                    if (!isDown) return;
-                    e.preventDefault();
-                    const x = e.clientX;
-                    const walk = (x - startX) * 1.5;
-                    slider.scrollLeft = scrollLeft - walk;
-                });
-            });
+            }, { threshold: 0.2 });
+            if(sliderWrap) promoObserver.observe(sliderWrap);
         </script>
     </section>
 
@@ -1021,8 +958,11 @@
                 menu.classList.remove('show');
             }
         });
+        let startX = 0;
+        let isDragging = false;
+        let dragOffset = 0;
 
-        function updateLayout() {
+        function updateLayout(duration = 0.8) {
             const isMobile = window.innerWidth <= 768;
             const horizontalGap = isMobile ? 85 : 110;
             const radiusY = isMobile ? 25 : 40;
@@ -1036,27 +976,90 @@
 
                 if (diff === 0) {
                     card.classList.add('active');
-                    card.style.left = '50%';
-                    card.style.top = '50%';
-                    card.style.transform = 'translate(-50%, -50%) scale(1.2)';
-                    card.style.zIndex = '500';
-                    card.style.opacity = '1';
+                    gsap.to(card, {
+                        left: '50%',
+                        top: '50%',
+                        xPercent: -50,
+                        yPercent: -50,
+                        scale: 1.2,
+                        rotation: 0,
+                        zIndex: 500,
+                        opacity: 1,
+                        duration: duration,
+                        ease: "power3.out"
+                    });
                 } else {
                     const x = 50 + (diff * (horizontalGap / 10));
                     const yOffset = absDiff * absDiff * (radiusY / 10);
 
                     const scale = 1 - (absDiff * 0.1);
                     const rotate = diff * rotationAngle;
-                    const opacity = 1 - (absDiff * 0.2);
+                    const opacity = Math.max(1 - (absDiff * 0.2), 0.4);
 
-                    card.style.left = `${x}%`;
-                    card.style.top = `calc(50% + ${yOffset}px)`;
-                    card.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotate}deg)`;
-                    card.style.zIndex = 100 - absDiff;
-                    card.style.opacity = Math.max(opacity, 0.4);
+                    gsap.to(card, {
+                        left: `${x}%`,
+                        top: `calc(50% + ${yOffset}px)`,
+                        xPercent: -50,
+                        yPercent: -50,
+                        scale: scale,
+                        rotation: rotate,
+                        zIndex: 100 - absDiff,
+                        opacity: opacity,
+                        duration: duration,
+                        ease: "power3.out"
+                    });
                 }
             });
         }
+
+        const nftContainer = document.getElementById('nftContainer');
+        if (nftContainer) {
+            const handleDragStart = (e) => {
+                isDragging = true;
+                startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                dragOffset = 0;
+                nftContainer.style.cursor = 'grabbing';
+            };
+
+            const handleDragMove = (e) => {
+                if (!isDragging) return;
+                const currentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                dragOffset = currentX - startX;
+            };
+
+            const handleDragEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                nftContainer.style.cursor = 'grab';
+
+                const threshold = 50;
+                if (dragOffset > threshold && activeIndex > 0) {
+                    activeIndex--;
+                } else if (dragOffset < -threshold && activeIndex < cards.length - 1) {
+                    activeIndex++;
+                }
+                updateLayout();
+            };
+
+            nftContainer.addEventListener('mousedown', handleDragStart);
+            window.addEventListener('mousemove', handleDragMove);
+            window.addEventListener('mouseup', handleDragEnd);
+
+            nftContainer.addEventListener('touchstart', handleDragStart, { passive: true });
+            window.addEventListener('touchmove', handleDragMove, { passive: true });
+            window.addEventListener('touchend', handleDragEnd);
+            
+            nftContainer.style.cursor = 'grab';
+        }
+
+        cards.forEach((card, index) => {
+            card.addEventListener('click', () => {
+                if (Math.abs(dragOffset) < 10) {
+                    activeIndex = index;
+                    updateLayout();
+                }
+            });
+        });
 
         function switchPage(pageId) {
             const element = document.getElementById(pageId);
@@ -1208,7 +1211,7 @@
                     
                     const wrapper = document.createElement('div');
                     wrapper.style.position = 'absolute';
-                    wrapper.style.width = '100vw';
+                    wrapper.style.width = '100%';
                     wrapper.style.height = '100vh';
                     wrapper.style.top = '0';
                     wrapper.style.left = '0';
@@ -1526,88 +1529,6 @@
 
     <!-- Animasi premium hero beranda -->
     <script src="{{ asset('js/premium-animations.js') }}"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const items = ['🧁', '🥐', '🍰', '🥨', '🎂', '🍪', '🥖', '🥞', '🍩'];
-            const bgContainer = document.getElementById('bakery-bg');
-            let parallaxLayers = [];
-
-            if(bgContainer) {
-                const isMobile = window.innerWidth <= 768;
-                const layerCount = isMobile ? 10 : 20;
-                
-                bgContainer.style.perspective = '1200px';
-                bgContainer.style.transformStyle = 'preserve-3d';
-
-                for(let i = 0; i < layerCount; i++) {
-                    const el = document.createElement('div');
-                    el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
-                    el.innerText = items[Math.floor(Math.random() * items.length)];
-                    el.style.top = (Math.random() * 90) + 'vh';
-                    el.style.animationDuration = (Math.random() * 25 + 20) + 's';
-                    el.style.animationDelay = '-' + (Math.random() * 20) + 's';
-                    el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
-                    
-                    const wrapper = document.createElement('div');
-                    wrapper.style.position = 'absolute';
-                    wrapper.style.width = '100vw';
-                    wrapper.style.height = '100vh';
-                    wrapper.style.top = '0';
-                    wrapper.style.left = '0';
-                    wrapper.style.pointerEvents = 'none';
-                    wrapper.style.transformStyle = 'preserve-3d';
-                    wrapper.style.willChange = 'transform';
-                    
-                    const depth = Math.random() * 200 - 100;
-                    wrapper.dataset.depthZ = depth;
-                    
-                    wrapper.appendChild(el);
-                    bgContainer.appendChild(wrapper);
-                    parallaxLayers.push(wrapper);
-                }
-
-                let targetX = 0, targetY = 0;
-                let currentX = 0, currentY = 0;
-                let rafId = null;
-                let isIdle = true;
-
-                document.addEventListener("mousemove", (e) => {
-                    targetX = (e.clientX - window.innerWidth / 2) * 0.08;
-                    targetY = (e.clientY - window.innerHeight / 2) * 0.08;
-                    if (isIdle) {
-                        isIdle = false;
-                        if (!rafId) rafId = requestAnimationFrame(animate3D);
-                    }
-                });
-
-                function animate3D() {
-                    const dx = targetX - currentX;
-                    const dy = targetY - currentY;
-                    
-                    currentX += dx * 0.05;
-                    currentY += dy * 0.05;
-
-                    bgContainer.style.transform = `scale(1.1) rotateX(${-currentY * 0.2}deg) rotateY(${currentX * 0.2}deg)`;
-
-                    parallaxLayers.forEach((layer) => {
-                        const z = parseFloat(layer.dataset.depthZ);
-                        const moveX = currentX * (z / 80); 
-                        const moveY = currentY * (z / 80);
-                        layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
-                    });
-
-                    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
-                        isIdle = true;
-                        rafId = null;
-                        return;
-                    }
-
-                    rafId = requestAnimationFrame(animate3D);
-                }
-                
-                rafId = requestAnimationFrame(animate3D);
-            }
-        });
     </script>
 </body>
 </html>
