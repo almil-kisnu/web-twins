@@ -72,6 +72,16 @@
         [data-theme="light"] .walking-cake {
             opacity: 0.22;
         }
+
+        /* Full Width Force */
+        html, body {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+            position: relative;
+        }
     </style>
     
 <body class="hide-overflow">
@@ -125,14 +135,26 @@
                 </button>
                 <div class="user-dropdown-menu" id="userMenu">
                     @auth
+                        <div class="user-menu-header" style="padding: 12px 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 5px;">
+                            <span style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color);">{{ Auth::user()->name }}</span>
+                            <span style="display: block; font-size: 0.75rem; color: var(--sub-text);">{{ Auth::user()->email }}</span>
+                        </div>
                         @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
-                            <button onclick="location.href='/dashboard'">Dashboard</button>
+                            <button onclick="location.href='/dashboard'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                </svg>
+                                Dashboard
+                            </button>
                         @endif
-                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-mobile">
+                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-header">
                             @csrf
                         </form>
-                        <button onclick="document.getElementById('logout-form-mobile').submit();" style="display: flex; align-items: center; gap: 8px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <button onclick="document.getElementById('logout-form-header').submit();" style="display: flex; align-items: center; color: #ef4444;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                                 <polyline points="16 17 21 12 16 7"></polyline>
                                 <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -161,34 +183,12 @@
                 </div>
             </div>
 
-            @if (Route::has('login'))
-                @auth
-                    <a href="{{ (auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko') ? url('/dashboard') : '#' }}" class="user-profile-link">
-                        <div class="user-initial">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                        </div>
-                        <span class="user-name">{{ Auth::user()->name }}</span>
-                    </a>
-                    <form method="POST" action="{{ route('logout') }}" id="logout-form-desktop" style="display: none;">
-                        @csrf
-                    </form>
-                    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-desktop').submit();" 
-                       class="logout-icon-desktop"
-                       title="Logout">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" class="btn-outline" style="text-decoration: none;">Login</a>
-
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="btn-fill" style="text-decoration: none;">Register</a>
-                    @endif
-                @endauth
-            @endif
+            @guest
+                <a href="{{ route('login') }}" class="btn-outline desktop-only" style="text-decoration: none;">Login</a>
+                @if (Route::has('register'))
+                    <a href="{{ route('register') }}" class="btn-fill desktop-only" style="text-decoration: none;">Register</a>
+                @endif
+            @endguest
         </div>
     </header>
 
@@ -280,13 +280,16 @@
                 /* Kenapa Belanja di Twins Mobile Fix */
                 .product-features-section .grid-container { 
                     display: grid !important; 
-                    grid-template-columns: 1fr 100px 1fr !important; 
+                    grid-template-columns: 1fr 80px 1fr !important; 
                     gap: 15px !important; 
                     align-items: center !important;
+                    width: 100% !important;
+                    padding: 0 15px !important;
+                    box-sizing: border-box !important;
                 }
-                .product-features-section .feature-list { gap: 25px !important; }
-                .product-features-section .feature-title { font-size: 11px !important; margin-bottom: 3px !important; }
-                .product-features-section .feature-description { font-size: 9px !important; line-height: 1.3 !important; }
+                .product-features-section .feature-list { gap: 15px !important; }
+                .product-features-section .feature-title { font-size: 0.7rem !important; margin-bottom: 2px !important; }
+                .product-features-section .feature-description { font-size: 0.6rem !important; line-height: 1.2 !important; }
                 .product-features-section .feature-icon { 
                     width: 32px !important; 
                     height: 32px !important; 
@@ -294,18 +297,42 @@
                     display: flex !important;
                     align-items: center !important;
                     justify-content: center !important;
-                    padding: 0 !important;
-                    overflow: visible !important;
                 }
-                .product-features-section .feature-icon svg { 
-                    width: 16px !important; 
-                    height: 16px !important; 
-                    display: block !important;
-                }
-                .product-image-container { order: 0 !important; width: 100px !important; display: flex !important; justify-content: center !important; }
-                .featured-product-image { height: auto !important; max-height: 150px !important; width: 100px !important; }
+                .product-features-section .feature-icon svg { width: 16px !important; height: 16px !important; }
+                .product-image-container { order: 0 !important; width: 80px !important; display: flex !important; justify-content: center !important; }
+                .featured-product-image { height: auto !important; max-height: 120px !important; width: 80px !important; }
                 .product-features-section .left-side { text-align: right !important; }
                 .product-features-section .right-side { text-align: left !important; }
+
+                /* Header Mobile Full Width Fix */
+                header, #mainHeader {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    margin: 0 !important;
+                    border-radius: 0 !important;
+                    padding: 0 15px !important;
+                    box-sizing: border-box !important;
+                    position: sticky !important;
+                }
+                .nav-btns { gap: 12px !important; }
+                .theme-btn { padding: 6px 10px !important; font-size: 0.8rem !important; }
+                .desktop-only { display: none !important; }
+
+                /* Outlet Section Mobile Fix */
+                .explore-section { padding: 40px 0 !important; width: 100% !important; overflow: hidden !important; }
+                .explore-section h2 { padding: 0 15px !important; font-size: 1.8rem !important; text-align: left !important; width: 100% !important; }
+                .nft-grid { padding: 20px 15px !important; gap: 15px !important; width: 100% !important; display: flex !important; overflow-x: auto !important; }
+                .nft-item { flex: 0 0 280px !important; }
+
+                /* Fix for blue area on right */
+                .animated-bg, .light-rays-container, #bakery-bg, .glow-sphere {
+                    width: 100vw !important;
+                    left: 0 !important;
+                }
+
+
             }
         </style>
 
@@ -389,7 +416,7 @@
     </section>
 
     <section id="outlet" class="explore-section">
-        <h2 id="outletTitle" data-split-text>Pilih Cabang<span>Terdekatmu</span></h2>
+        <h2 id="outletTitle" data-split-text>Pilih Cabang <span>Terdekatmu</span></h2>
 
         <div class="nft-grid" data-stagger-grid>
             @foreach($outlets as $index => $outlet)
@@ -771,17 +798,16 @@
                 </div>
                 <p class="footer-desc">Solusi terpercaya untuk kebutuhan bahan kue dan sembako berkualitas. Kami hadir di berbagai cabang untuk melayani kebutuhan dapur Anda dengan sepenuh hati.</p>
                 <div class="social-links">
-                    <a href="#" class="social-icon" title="Facebook">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-                    </a>
-                    <a href="#" class="social-icon" title="Twitter">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>
-                    </a>
-                    <a href="#" class="social-icon" title="Instagram">
+                    <a href="https://www.instagram.com/sweetbake.official?igsh=MTl3dW5pY3J6aHEyYg==" target="_blank" class="social-icon" title="Instagram">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                     </a>
-                    <a href="#" class="social-icon" title="Youtube">
+                    <a href="#" target="_blank" class="social-icon" title="Youtube">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.11 1 12 1 12s0 3.89.4 5.58a2.78 2.78 0 0 0 1.94 2c1.71.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.89 23 12 23 12s0-3.89-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
+                    </a>
+                    <a href="https://wa.me/6282330755390" target="_blank" class="social-icon" title="WhatsApp">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .004 5.411.002 12.046c0 2.121.54 4.192 1.566 6.033L0 24l6.135-1.61a11.81 11.81 0 005.911 1.569h.005c6.632 0 12.042-5.411 12.045-12.047a11.812 11.812 0 00-3.576-8.514z"/>
+                        </svg>
                     </a>
                 </div>
             </div>
@@ -799,17 +825,6 @@
                 </ul>
             </div>
 
-            <!-- Col 3: Quick Links -->
-            <div class="footer-col">
-                <h4>Tautan Cepat</h4>
-                <ul class="footer-links">
-                    <li><a href="#">FAQ</a></li>
-                    <li><a href="#">Hubungi Kami</a></li>
-                    <li><a href="#">Mitra Kami</a></li>
-                    <li><a href="#">Karir</a></li>
-                    <li><a href="#">Lokasi Galeri</a></li>
-                </ul>
-            </div>
         </div>
 
         <div class="footer-bottom">

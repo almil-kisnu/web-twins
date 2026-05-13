@@ -170,13 +170,102 @@
             animation: swalPremiumOut 0.2s cubic-bezier(0.19, 1, 0.22, 1) forwards !important;
         }
 
-        @media (max-width: 850px) {
-            .address-popup-layout {
-                flex-direction: column;
+            .stars-gold {
+                color: #f59e0b;
+                display: flex;
+                gap: 2px;
             }
 
-            .address-popup-left {
-                min-width: 100%;
+                .back-btn-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--text-color);
+                margin-right: 15px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                border: 1px solid var(--card-border);
+                text-decoration: none;
+            }
+
+            .back-btn-icon:hover {
+                background: var(--accent-purple);
+                color: white !important;
+                transform: translateX(-3px);
+                box-shadow: var(--glow);
+                border-color: transparent;
+            }
+
+            /* Full Width Force */
+        html, body {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+            position: relative;
+        }
+
+        #mainHeader {
+            width: 100% !important;
+            max-width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            box-sizing: border-box !important;
+            padding: 0 15px !important;
+        }
+
+        .container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px 15px !important;
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .main-content {
+                padding: 0 !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .promo-banner {
+                padding: 25px 20px !important;
+                border-radius: 20px !important;
+                margin: 0 0 25px 0 !important;
+                min-height: auto !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+            }
+            .promo-banner h1 {
+                font-size: 1.4rem !important;
+                line-height: 1.2 !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                white-space: normal !important;
+                margin: 10px 0 !important;
+            }
+            .promo-banner p {
+                font-size: 0.8rem !important;
+                white-space: normal !important;
+                margin-bottom: 15px !important;
+            }
+            .cart-panel {
+                width: 100% !important;
+                border-radius: 0 !important;
+                border-top-left-radius: 20px !important;
+                border-top-right-radius: 20px !important;
             }
         }
     </style>
@@ -195,6 +284,12 @@
     </div>
     <header id="mainHeader">
         <div class="logo">
+            <a href="{{ route('home') }}" class="back-btn-icon" title="Kembali ke Daftar Outlet">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </a>
             <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-img">
             <span class="logo-text">TWINS</span>
         </div>
@@ -216,14 +311,18 @@
                 </button>
                 <div class="user-dropdown-menu" id="userMenu">
                     @auth
+                        <div class="user-menu-header" style="padding: 12px 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 5px;">
+                            <span style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color);">{{ Auth::user()->name }}</span>
+                            <span style="display: block; font-size: 0.75rem; color: var(--sub-text);">{{ Auth::user()->email }}</span>
+                        </div>
                         @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
                             <button onclick="location.href='/dashboard'">Dashboard</button>
                         @endif
-                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-mobile">
+                        <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-user-page">
                             @csrf
                         </form>
-                        <button onclick="document.getElementById('logout-form-mobile').submit();" style="display: flex; align-items: center; gap: 8px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <button onclick="document.getElementById('logout-form-user-page').submit();" style="display: flex; align-items: center; color: #ef4444;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                                 <polyline points="16 17 21 12 16 7"></polyline>
                                 <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -254,36 +353,9 @@
                     <button onclick="setTheme('forest')" data-theme-val="forest">🍂 Autumn (Orange)</button>
                 </div>
             </div>
-            @if (Route::has('login'))
-                @auth
-                    <a href="{{ (auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko') ? url('/dashboard') : '#' }}" class="user-profile-link">
-                        <div class="user-initial">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                        </div>
-                        <span class="user-name">{{ Auth::user()->name }}</span>
-                    </a>
-                    <form method="POST" action="{{ route('logout') }}" id="logout-form-desktop" style="display: none;">
-                        @csrf
-                    </form>
-                    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-desktop').submit();" 
-                       class="logout-icon-desktop"
-                       title="Logout">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" class="btn-outline" style="text-decoration: none;">Login</a>
-
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="btn-fill" style="text-decoration: none;">Register</a>
-                    @endif
-                @endauth
-            @endif
         </div>
     </header>
+
 
     <div class="mobile-cart-fab" id="mobileCartBtn" onclick="toggleBottomSheet()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -355,10 +427,11 @@
     <div class="container" id=
     "mainContainer">
         <main class="main-content anim-fade-up" id="homePage">
-            <div class="promo-banner float-hover" style="min-height: 280px; height: auto; padding: 40px;">
+            <div class="promo-banner float-hover">
                 <span class="badge" style="margin-bottom: 10px;">Outlet TWINS</span>
-                <h1 style="margin: 5px 0 15px 0;">{{ $outlet->nama }}</h1>
-                <p style="font-size: 1rem; opacity: 0.9; margin-bottom: 20px;">📍 {{ $outlet->alamat }}</p>
+                <h1>{{ $outlet->nama }}</h1>
+                <p>📍 {{ $outlet->alamat }}</p>
+
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <span class="badge"
                         style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">🕒
@@ -526,7 +599,18 @@
                     <h3>Ulasan & Rating Toko</h3>
                     <div class="avg-stats">
                         <span class="avg-val">{{ number_format($outlet->rating, 1) }}</span>
-                        <span class="stars">★★★★★</span>
+                        <div class="stars-gold">
+                            @for ($i = 1; $i <= 5; $i++)
+                                @if ($i <= floor($outlet->rating))
+                                    ★
+                                @elseif ($i == ceil($outlet->rating) && $outlet->rating - floor($outlet->rating) > 0)
+                                    {{-- Bisa pakai ikon half star jika ada, tapi sementara kita pakai bintang penuh/kosong --}}
+                                    ★
+                                @else
+                                    ☆
+                                @endif
+                            @endfor
+                        </div>
                     </div>
                 </div>
 
@@ -1763,6 +1847,9 @@
                     image: pInfo ? pInfo.img : '',
                     displayPrice,
                     subtotal: displayPrice * item.qty,
+                    original_price: pInfo ? pInfo.original_price : item.price,
+                    is_discount: pInfo ? pInfo.is_discount : false,
+                    discount_label: pInfo ? pInfo.discount_label : ''
                 };
             });
         }
@@ -1770,13 +1857,24 @@
         function calculateCartSummary() {
             const pricedItems = getCartPricedItems();
             const subtotal = pricedItems.reduce((acc, item) => acc + item.subtotal, 0);
+            
+            // Calculate total from original prices to get total product discount
+            const originalSubtotal = pricedItems.reduce((acc, item) => acc + (item.original_price * item.qty), 0);
+            const productDiscountAmount = originalSubtotal - subtotal;
+            
             const shippingFee = calculateTemporaryShippingFee(deliveryDistanceKm);
-            const discountedSubtotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
+            const promoDiscountAmount = subtotal > 0 ? subtotal * discountPercent : 0;
+            const discountedSubtotal = subtotal - promoDiscountAmount;
+            
+            const totalDiscountAmount = productDiscountAmount + promoDiscountAmount;
             const total = discountedSubtotal + shippingFee;
 
             return {
-                subtotal,
-                discountedSubtotal,
+                originalSubtotal,
+                subtotal, // Subtotal after product discount, before promo
+                productDiscountAmount,
+                promoDiscountAmount,
+                totalDiscountAmount,
                 shippingFee,
                 total,
                 pricedItems,
@@ -2047,12 +2145,10 @@
         }
 
         function checkout() {
-            /*
             if (isStoreClosedNow()) {
                 showStoreClosedNotification();
                 return;
             }
-                */
 
             if (cart.length === 0) return;
 
@@ -2112,13 +2208,21 @@
             const visibleItems = summary.pricedItems.slice(0, 5);
             const hiddenItemCount = Math.max(0, summary.pricedItems.length - visibleItems.length);
             const itemListHtml = visibleItems.map(i => `
-                <div style="display:flex; justify-content:space-between; gap:10px; font-size:0.82rem; padding:6px 0; border-bottom:1px dashed rgba(148,163,184,0.25);">
-                    <span style="color:var(--text-color); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(i.qty)}x ${escapeHtml(i.name)}</span>
-                    <span style="color:var(--orange-brand); font-weight:700; white-space:nowrap;">${escapeHtml(formatRupiah(i.subtotal))}</span>
+                <div style="display:flex; justify-content:space-between; gap:10px; font-size:0.82rem; padding:8px 0; border-bottom:1px dashed rgba(148,163,184,0.25);">
+                    <div style="flex:1; min-width:0;">
+                        <span style="color:var(--text-color); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(i.qty)}x ${escapeHtml(i.name)}</span>
+                        ${i.is_discount ? `
+                            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                                <span style="font-size:0.7rem; text-decoration:line-through; color:var(--sub-text);">${escapeHtml(formatRupiah(i.original_price * i.qty))}</span>
+                                <span style="font-size:0.7rem; color:#10b981; font-weight:700;">Diskon Produk</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <span style="color:var(--orange-brand); font-weight:700; white-space:nowrap; align-self:center;">${escapeHtml(formatRupiah(i.subtotal))}</span>
                 </div>
             `).join('');
 
-            const discountLabel = discountPercent > 0 ? `-${(discountPercent * 100).toFixed(0)}%` : '0%';
+            const totalDiscountFormatted = summary.totalDiscountAmount > 0 ? `- ${formatRupiah(summary.totalDiscountAmount)}` : 'Rp 0';
             const estimatedArrivalMinutes = Math.max(10, Math.round(Number(deliveryDistanceKm || 0) * 4));
 
             Swal.fire({
@@ -2151,8 +2255,8 @@
                                 <span style="font-size:0.68rem; padding:4px 8px; border-radius:999px; border:1px solid rgba(16,185,129,0.4); color:#10b981; font-weight:700;">MIDTRANS</span>
                             </div>
                             <div style="display:grid; gap:5px; font-size:0.8rem;">
-                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Subtotal</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.subtotal))}</span></div>
-                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Diskon</span><span style="font-weight:700; color:#10b981;">${escapeHtml(discountLabel)}</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Subtotal</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.originalSubtotal))}</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Diskon</span><span style="font-weight:700; color:#10b981;">${escapeHtml(totalDiscountFormatted)}</span></div>
                                 <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Ongkir</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.shippingFee))}</span></div>
                             </div>
                         </div>
