@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TWINS Dashboard - Sidebar & Topbar</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{{ asset('css/menu.css') }}">
     <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" crossorigin="anonymous"></script>
@@ -21,39 +23,43 @@
         </div>
 
         <nav class="menu-nav">
-            @if(Auth::user()->operator->hasFeature(1))
-                <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(1))
+                <a href="{{ route('dashboard') }}"
+                    class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:widget-4-bold-duotone"></iconify-icon>
                     <span>Dashboard</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(2))
-                <a href="{{ url('/products') }}" class="menu-item {{ (request()->routeIs('products.*') || request()->is('products*')) ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(2))
+                <a href="{{ url('/products') }}"
+                    class="menu-item {{ request()->routeIs('products.*') || request()->is('products*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
                     <span>Manajemen Produk</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(3))
-                <a href="{{ url('/transaksi') }}" class="menu-item {{ (request()->is('transaksi') || request()->is('transaksi/*')) ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(3))
+                <a href="{{ url('/transaksi') }}"
+                    class="menu-item {{ request()->is('transaksi') || request()->is('transaksi/*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
                     <span>Transaksi & Diskon</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(4))
-                <a href="{{ route('keuangan.index') }}" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(4))
+                <a href="{{ route('keuangan.index') }}"
+                    class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
                     <span>Keuangan</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(5))
+            @if (Auth::user()->operator->hasFeature(5))
                 <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
@@ -61,7 +67,7 @@
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(6))
+            @if (Auth::user()->operator->hasFeature(6))
                 <a href="{{ url('/outlet') }}" class="menu-item {{ request()->is('outlet*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
@@ -69,32 +75,36 @@
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(7))
-                <a href="{{ route('kontak.index') }}" class="menu-item {{ request()->routeIs('kontak.*') ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(7))
+                <a href="{{ route('kontak.index') }}"
+                    class="menu-item {{ request()->routeIs('kontak.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:phone-calling-bold-duotone"></iconify-icon>
                     <span>Kelola Kontak</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(8))
-                <a href="{{ route('keuangan.transaksi') }}" class="menu-item {{ request()->is('buku-kas*') ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(8))
+                <a href="{{ route('keuangan.transaksi') }}"
+                    class="menu-item {{ request()->is('buku-kas*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
                     <span>Buku Kas</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(9))
-                <a href="{{ route('laporan.index') }}" class="menu-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(9))
+                <a href="{{ route('laporan.index') }}"
+                    class="menu-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                     <span>Laporan</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature(10))
-                <a href="{{ route('absensi.index') }}" class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+            @if (Auth::user()->operator->hasFeature(10))
+                <a href="{{ route('absensi.index') }}"
+                    class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:calendar-date-bold-duotone"></iconify-icon>
                     <span>Absensi</span>
@@ -107,7 +117,7 @@
     <div class="page-container">
         <header class="topbar">
             <div class="topbar-left">
-                @if(request()->routeIs('dashboard'))
+                @if (request()->routeIs('dashboard'))
                     <i id="topbar-icon" data-lucide="layout-grid"></i>
                     <h2 id="topbar-title">Dashboard</h2>
                 @elseif(request()->is('products*'))
@@ -121,9 +131,16 @@
                         $tab = request('tab', 'cashbox');
                         $icon = 'trending-up';
                         $title = 'Keuangan';
-                        if($tab == 'cashbox') { $icon = 'wallet'; $title = 'Cashbox'; }
-                        elseif($tab == 'arus-uang') { $icon = 'arrow-left-right'; $title = 'Arus Uang'; }
-                        elseif($tab == 'pemindahan-saldo') { $icon = 'move'; $title = 'Pemindahan Saldo'; }
+                        if ($tab == 'cashbox') {
+                            $icon = 'wallet';
+                            $title = 'Cashbox';
+                        } elseif ($tab == 'arus-uang') {
+                            $icon = 'arrow-left-right';
+                            $title = 'Arus Uang';
+                        } elseif ($tab == 'pemindahan-saldo') {
+                            $icon = 'move';
+                            $title = 'Pemindahan Saldo';
+                        }
                     @endphp
                     <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
                     <h2 id="topbar-title">{{ $title }}</h2>
@@ -132,10 +149,19 @@
                         $tab = request('tab', 'pengeluaran');
                         $icon = 'trending-up';
                         $title = 'Buku Kas';
-                        if($tab == 'pengeluaran') { $icon = 'round-arrow-left-down'; $title = 'Pengeluaran'; }
-                        elseif($tab == 'pemasukan') { $icon = 'round-arrow-right-up'; $title = 'Pemasukan'; }
-                        elseif($tab == 'hutang') { $icon = 'wallet-money'; $title = 'Hutang'; }
-                        elseif($tab == 'piutang') { $icon = 'hand-money'; $title = 'Piutang'; }
+                        if ($tab == 'pengeluaran') {
+                            $icon = 'round-arrow-left-down';
+                            $title = 'Pengeluaran';
+                        } elseif ($tab == 'pemasukan') {
+                            $icon = 'round-arrow-right-up';
+                            $title = 'Pemasukan';
+                        } elseif ($tab == 'hutang') {
+                            $icon = 'wallet-money';
+                            $title = 'Hutang';
+                        } elseif ($tab == 'piutang') {
+                            $icon = 'hand-money';
+                            $title = 'Piutang';
+                        }
                     @endphp
                     <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
                     <h2 id="topbar-title">{{ $title }}</h2>
@@ -199,9 +225,16 @@
 
         function updateDateTime() {
             const now = new Date();
-            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const optionsDate = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
             const dateStr = now.toLocaleDateString('id-ID', optionsDate);
-            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+            const timeStr = now.toLocaleTimeString('id-ID', {
+                hour12: false
+            });
 
             const dateEl = document.getElementById('date-text');
             const timeEl = document.getElementById('time-text');
@@ -239,7 +272,7 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            @if(session('success'))
+            @if (session('success'))
                 Swal.fire({
                     title: 'Berhasil!',
                     text: "{{ session('success') }}",
@@ -250,7 +283,7 @@
                 });
             @endif
 
-            @if(session('error'))
+            @if (session('error'))
                 Swal.fire({
                     title: 'Oops!',
                     text: "{{ session('error') }}",
