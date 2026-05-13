@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Shift extends Model
 {
@@ -14,7 +16,20 @@ class Shift extends Model
     public $incrementing = false;
     public $timestamps = false;
 
-    protected $fillable = ['uuid', 'store_id', 'nama', 'waktu_mulai', 'waktu_selesai'];
+    protected $fillable = ['uuid', 'nama', 'waktu_mulai', 'waktu_selesai'];
 
-    public function store() { return $this->belongsTo(Outlet::class, 'store_id', 'uuid'); }
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
+
+    public function jadwals()
+    {
+        return $this->hasMany(Jadwal::class, 'shift_id', 'uuid');
+    }
 }

@@ -156,7 +156,7 @@
                     <h2 id="topbar-title">Laporan Keseluruhan</h2>
                 @elseif(request()->routeIs('absensi.*'))
                     <i id="topbar-icon" data-lucide="calendar-check"></i>
-                    <h2 id="topbar-title">Absensi Kehadiran</h2>
+                    <h2 id="topbar-title">Kelola Jadwal & Absensi</h2>
                 @else
                     <i id="topbar-icon" data-lucide="layers"></i>
                     <h2 id="topbar-title">Web Twins</h2>

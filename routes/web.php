@@ -150,12 +150,19 @@ Route::get('/laporan', [LaporanController::class, 'index'])
 
 Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [AbsensiController::class, 'index'])->name('absensi.index');
+
+    // Master Shift
     Route::post('/shift', [AbsensiController::class, 'storeShift'])->name('absensi.shift.store');
     Route::put('/shift/{uuid}', [AbsensiController::class, 'updateShift'])->name('absensi.shift.update');
     Route::delete('/shift/{uuid}', [AbsensiController::class, 'deleteShift'])->name('absensi.shift.destroy');
-    Route::post('/penugasan', [AbsensiController::class, 'storePenugasan'])->name('absensi.penugasan.store');
-    Route::put('/penugasan/{id}', [AbsensiController::class, 'updatePenugasan'])->name('absensi.penugasan.update');
-    Route::delete('/penugasan/{id}', [AbsensiController::class, 'deletePenugasan'])->name('absensi.penugasan.destroy');
+
+    // Jadwal Karyawan
+    Route::post('/jadwal', [AbsensiController::class, 'storeJadwal'])->name('absensi.jadwal.store');
+    Route::put('/jadwal/{uuid}', [AbsensiController::class, 'updateJadwal'])->name('absensi.jadwal.update');
+    Route::delete('/jadwal/{uuid}', [AbsensiController::class, 'deleteJadwal'])->name('absensi.jadwal.destroy');
+
+    // Riwayat Absensi — Update Status
+    Route::put('/riwayat/{uuid}/status', [AbsensiController::class, 'updateAbsensiStatus'])->name('absensi.riwayat.update-status');
 });
 
 
