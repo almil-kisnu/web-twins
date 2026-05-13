@@ -66,7 +66,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
 
 
 
-Route::get('/products/restok/{uuid}', [ProductController::class, 'viewPurchaseDetail'])->name('products.restok.detail');
+    Route::get('/products/restok/{uuid}', [ProductController::class, 'viewPurchaseDetail'])->name('products.restok.detail');
     Route::get('/transfer', [ProductController::class, 'transfer'])->name('products.transfer');
     Route::get('/products/by-store/{store_id}', [ProductController::class, 'getProductsByStore'])->name('products.by_store');
     Route::post('/transfer', [ProductController::class, 'storeTransfer'])->name('products.transfer.store');
@@ -132,12 +132,16 @@ Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_to
     Route::get('/piutang', [BukuKasController::class, 'piutang'])->name('keuangan.piutang');
     Route::get('/export', [BukuKasController::class, 'export'])->name('keuangan.export');
     Route::post('/cashflow', [BukuKasController::class, 'storeCashFlow'])->name('keuangan.cashflow.store');
-    Route::get('/cashflow', function() { return redirect()->route('keuangan.transaksi', ['active_tab' => 'pengeluaran']); });
+    Route::get('/cashflow', function () {
+        return redirect()->route('keuangan.transaksi', ['active_tab' => 'pengeluaran']);
+    });
     Route::put('/cashflow/{id}', [BukuKasController::class, 'updateCashFlow'])->name('keuangan.cashflow.update');
     Route::delete('/cashflow/{id}', [BukuKasController::class, 'deleteCashFlow'])->name('keuangan.cashflow.destroy');
 
     Route::post('/debt', [BukuKasController::class, 'storeDebt'])->name('keuangan.debt.store');
-    Route::get('/debt', function() { return redirect()->route('keuangan.transaksi', ['active_tab' => 'hutang']); });
+    Route::get('/debt', function () {
+        return redirect()->route('keuangan.transaksi', ['active_tab' => 'hutang']);
+    });
     Route::put('/debt/{id}', [BukuKasController::class, 'updateDebt'])->name('keuangan.debt.update');
     Route::post('/debt/{id}/pay', [BukuKasController::class, 'payDebt'])->name('keuangan.debt.pay');
     Route::delete('/debt/{id}', [BukuKasController::class, 'deleteDebt'])->name('keuangan.debt.destroy');
@@ -147,6 +151,25 @@ Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_to
 Route::get('/laporan', [LaporanController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('laporan.index');
+
+Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('laporan/export')->group(function () {
+    Route::get('/excel', [LaporanController::class, 'exportExcel'])->name('laporan.export.excel');
+    Route::get('/pdf', [LaporanController::class, 'exportPdf'])->name('laporan.export.pdf');
+});
+
+Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('laporan/api')->group(function () {
+    Route::get('/daily/summary', [LaporanController::class, 'dailySummary'])->name('laporan.api.daily.summary');
+    Route::get('/daily/operators', [LaporanController::class, 'dailyOperators'])->name('laporan.api.daily.operators');
+    Route::get('/daily/cashbox', [LaporanController::class, 'dailyCashbox'])->name('laporan.api.daily.cashbox');
+    Route::get('/daily/online', [LaporanController::class, 'dailyOnlineTransactions'])->name('laporan.api.daily.online');
+    Route::get('/monthly/summary', [LaporanController::class, 'monthlySummary'])->name('laporan.api.monthly.summary');
+    Route::get('/monthly/operators', [LaporanController::class, 'monthlyOperators'])->name('laporan.api.monthly.operators');
+    Route::get('/monthly/daily', [LaporanController::class, 'monthlyDaily'])->name('laporan.api.monthly.daily');
+    Route::get('/annual/summary', [LaporanController::class, 'annualSummary'])->name('laporan.api.annual.summary');
+    Route::get('/annual/operators', [LaporanController::class, 'annualOperators'])->name('laporan.api.annual.operators');
+    Route::get('/annual/monthly', [LaporanController::class, 'annualMonthly'])->name('laporan.api.annual.monthly');
+    Route::get('/annual/cashbox', [LaporanController::class, 'annualCashbox'])->name('laporan.api.annual.cashbox');
+});
 
 Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [AbsensiController::class, 'index'])->name('absensi.index');

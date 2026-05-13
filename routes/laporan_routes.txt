@@ -1,0 +1,11 @@
+Route::get('/laporan', [LaporanController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('laporan.index');
+
+Route::middleware(['auth', 'verified'])->prefix('laporan/api')->group(function () {
+    Route::get('/daily/summary', [LaporanController::class, 'dailySummary'])->name('laporan.api.daily.summary');
+    Route::get('/daily/operators', [LaporanController::class, 'dailyOperators'])->name('laporan.api.daily.operators');
+    Route::get('/monthly/summary', [LaporanController::class, 'monthlySummary'])->name('laporan.api.monthly.summary');
+    Route::get('/monthly/operators', [LaporanController::class, 'monthlyOperators'])->name('laporan.api.monthly.operators');
+    Route::get('/monthly/daily', [LaporanController::class, 'monthlyDaily'])->name('laporan.api.monthly.daily');
+});
