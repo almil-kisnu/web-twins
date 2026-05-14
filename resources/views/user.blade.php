@@ -57,6 +57,19 @@
             min-width: 0;
         }
 
+        @media (max-width: 768px) {
+            .address-popup-layout {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .address-popup-left,
+            .address-popup-right {
+                width: 100%;
+                min-width: 0;
+            }
+        }
+
         .address-popup-left label {
             display: block;
             margin-bottom: 8px;
@@ -119,7 +132,11 @@
             background: rgba(15, 23, 42, 0.6) !important;
         }
 
-        /* Global SweetAlert2 Glassmorphism */
+        /* Global SweetAlert2 Z-Index & Glassmorphism */
+        .swal2-container {
+            z-index: 10000 !important;
+        }
+
         .swal2-popup {
             backdrop-filter: blur(15px) !important;
             -webkit-backdrop-filter: blur(15px) !important;
@@ -223,13 +240,13 @@
         .container {
             width: 100% !important;
             max-width: 100% !important;
-            padding: 0 !important;
+            padding: 110px 4% 30px !important;
             margin: 0 !important;
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px 15px !important;
+                padding: 90px 20px 30px !important;
                 display: block !important;
                 width: 100% !important;
                 box-sizing: border-box !important;
@@ -383,6 +400,13 @@
                     <button onclick="setTheme('forest')" data-theme-val="forest">🍂 Autumn (Orange)</button>
                 </div>
             </div>
+
+            @guest
+                <a href="{{ route('login') }}" class="btn-outline desktop-only" style="text-decoration: none;">Login</a>
+                @if (Route::has('register'))
+                    <a href="{{ route('register') }}" class="btn-fill desktop-only" style="text-decoration: none;">Register</a>
+                @endif
+            @endguest
         </div>
     </header>
 
@@ -1323,7 +1347,7 @@
                 confirmButtonText: 'Simpan Lokasi',
                 cancelButtonText: 'Batal',
                 confirmButtonColor: 'var(--orange-brand)',
-                width: 'min(980px, 96vw)',
+                width: window.innerWidth > 768 ? '950px' : '96vw',
                 customClass: {
                     popup: 'address-modal-custom'
                 },
@@ -1813,44 +1837,51 @@
                 card.className = `food-card anim-zoom-in ${isOutOfStock ? 'out-of-stock' : ''}`;
 
                 card.innerHTML = `
-                    <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 18px; margin-bottom: 15px; position: relative; background: #fff;">
-                        <img src="${product.img}" class="food-img" style="filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
+                    <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 14px; margin-bottom: 8px; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; padding: 6px;">
+                        <img src="${product.img}" class="food-img" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
 
                         ${product.is_discount && !isOutOfStock ? `
-                                                                                    <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
-                                                                                        -${product.discount_label}
-                                                                                    </div>
-                                                                                ` : ''}
+                            <div style="position: absolute; top: 4px; right: 4px; background: #ef4444; color: white; padding: 2px 5px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; z-index: 2; box-shadow: 0 2px 4px rgba(239,68,68,0.3);">
+                                -${product.discount_label}
+                            </div>
+                        ` : ''}
 
                         ${isOutOfStock ? `
-                                                                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
-                                                                                ` : ''}
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; z-index: 2; backdrop-filter: blur(4px);">HABIS</div>
+                        ` : ''}
                     </div>
-                    <h4 style="font-size: 0.9rem; color: var(--text-color); font-weight: 700; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; height: 2.4em;">${product.name}</h4>
+                    
+                    <div style="display: flex; flex-direction: column; flex-grow: 1; min-height: 0;">
+                        <h4 style="font-size: 0.72rem; color: var(--text-color); font-weight: 700; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; height: 2.5em; min-height: 2.5em;">${product.name}</h4>
 
-                    ${!isOutOfStock ? `
-                                                                                <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
-                                                                            ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
-
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
-                        <div>
-                            ${product.is_discount && !isOutOfStock ? `
-                                                                                        <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
-                                                                                            ${formatRupiah(product.original_price)}
-                                                                                        </span>
-                                                                                    ` : ''}
-                            <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 0.95rem;">
-                                ${formatRupiah(product.price).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}
-                            </span>
+                        <div style="height: 1em; margin-bottom: 6px; display: flex; align-items: center;">
+                            ${!isOutOfStock ? `
+                                <p style="color: #10b981; font-size: 0.58rem; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Stok: ${product.stok}</p>
+                            ` : ''}
                         </div>
-                        <button class="add-btn"
-                                data-name="${product.name}"
-                                data-price="${product.price}"
-                                data-stock="${product.stok}"
-                                onclick="addToCartFromEl(this)"
-                                style="width: 38px; height: 38px; border-radius: 12px; background: ${isOutOfStock ? 'rgba(255,255,255,0.1)' : 'var(--btn-grad)'}; color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: ${isOutOfStock ? 'none' : 'var(--glow)'};">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
+
+                        <div style="margin-top: auto;">
+                            <div style="height: 0.9rem; margin-bottom: 0px; display: flex; align-items: flex-end;">
+                                ${product.is_discount && !isOutOfStock ? `
+                                    <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.65rem; line-height: 1;">
+                                        ${formatRupiah(product.original_price)}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+                                <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 0.8rem; white-space: nowrap;">
+                                    ${formatRupiah(product.price).replace('Rp', '<span style="font-size: 0.75em;">Rp</span>')}
+                                </span>
+                                <button class="add-btn"
+                                        data-name="${product.name}"
+                                        data-price="${product.price}"
+                                        data-stock="${product.stok}"
+                                        onclick="addToCartFromEl(this)"
+                                        style="width: 28px; height: 28px; border-radius: 8px; background: ${isOutOfStock ? 'rgba(255,255,255,0.1)' : 'var(--btn-grad)'}; color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: transform 0.2s; box-shadow: ${isOutOfStock ? 'none' : 'var(--glow)'};">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
                 productGrid.appendChild(card);
@@ -2149,7 +2180,11 @@
                 const mobHistory = document.getElementById('mob-history');
                 if (mobHistory) mobHistory.classList.add('active');
                 mainContainer.classList.remove('has-sidebar');
-                fetchHistoryFromServer().then(() => renderHistory());
+                if (isAuthenticated) {
+                    fetchHistoryFromServer().then(() => renderHistory());
+                } else {
+                    renderHistory();
+                }
             }
         }
 
@@ -2960,7 +2995,6 @@
                         Swal.showLoading();
                     }
                 });
-
                 const syncUrl = document.querySelector('meta[name="sync-payment-url"]').content;
                 fetch(syncUrl, {
                     method: 'POST',
@@ -2975,23 +3009,23 @@
                 .then(res => res.json())
                 .then(data => {
                     Swal.close();
-                    // Clean up URL without refreshing
                     const newUrl = window.location.pathname;
                     window.history.replaceState({}, document.title, newUrl);
-                    fetchHistoryFromServer();
+                    if (isAuthenticated) fetchHistoryFromServer();
                 })
                 .catch(err => {
                     console.error('Auto-sync failed:', err);
                     Swal.close();
-                    fetchHistoryFromServer();
+                    if (isAuthenticated) fetchHistoryFromServer();
                 });
             } else {
-                fetchHistoryFromServer();
+                if (isAuthenticated) fetchHistoryFromServer();
             }
 
             renderProducts();
         });
         async function fetchHistoryFromServer() {
+            if (!isAuthenticated) return;
             const historyUrl = document.querySelector('meta[name="user-history-url"]').content;
             try {
                 const response = await fetch(historyUrl, {
@@ -3017,6 +3051,28 @@
             }
         }
     </script>
+
+    <nav class="mobile-nav">
+        <div id="mob-home" class="mob-nav-item active" onclick="switchPage('home')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Beranda</span>
+        </div>
+
+        <div id="mob-cat" class="mob-nav-item" onclick="scrollToCategory()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <span>Kategori</span>
+        </div>
+
+        <div id="mob-history" class="mob-nav-item" onclick="switchPage('history')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Riwayat</span>
+        </div>
+
+        <div id="mob-chat" class="mob-nav-item" onclick="goToWhatsApp()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <span>Chat</span>
+        </div>
+    </nav>
 </body>
 
 </html>
