@@ -110,6 +110,15 @@
                     <span>Absensi</span>
                 </a>
             @endif
+
+            @if (Auth::user()->operator->hasFeature(11))
+                <a href="{{ route('perilaku.index') }}"
+                    class="menu-item {{ request()->is('perilaku*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:graph-new-bold-duotone"></iconify-icon>
+                    <span>Perilaku</span>
+                </a>
+            @endif
         </nav>
 
     </aside>
@@ -183,6 +192,9 @@
                 @elseif(request()->routeIs('absensi.*'))
                     <i id="topbar-icon" data-lucide="calendar-check"></i>
                     <h2 id="topbar-title">Kelola Jadwal & Absensi</h2>
+                @elseif(request()->is('perilaku*'))
+                    <i id="topbar-icon" data-lucide="bar-chart-3"></i>
+                    <h2 id="topbar-title">Perilaku Customer & Produk</h2>
                 @else
                     <i id="topbar-icon" data-lucide="layers"></i>
                     <h2 id="topbar-title">Web Twins</h2>

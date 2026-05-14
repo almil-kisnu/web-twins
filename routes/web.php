@@ -11,6 +11,7 @@ use App\Http\Controllers\BukuKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\KeuanganController;
+use App\Http\Controllers\PerilakuController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
@@ -188,6 +189,19 @@ Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_tok
     Route::put('/riwayat/{uuid}/status', [AbsensiController::class, 'updateAbsensiStatus'])->name('absensi.riwayat.update-status');
 });
 
+Route::prefix('perilaku')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
+    Route::get('/', [PerilakuController::class, 'index'])->name('perilaku.index');
+    Route::get('/customer/{contact_id}', [PerilakuController::class, 'detailCustomer'])->name('perilaku.customer.detail');
+    Route::get('/produk/{product_id}', [PerilakuController::class, 'detailProduk'])->name('perilaku.produk.detail');
+
+    // API endpoints (AJAX)
+    Route::get('/api/customer/yearly', [PerilakuController::class, 'customerYearly'])->name('perilaku.api.customer.yearly');
+    Route::get('/api/customer/daily', [PerilakuController::class, 'customerDaily'])->name('perilaku.api.customer.daily');
+    Route::get('/api/customer/history', [PerilakuController::class, 'customerHistory'])->name('perilaku.api.customer.history');
+    Route::get('/api/product/yearly', [PerilakuController::class, 'productYearly'])->name('perilaku.api.product.yearly');
+    Route::get('/api/product/daily', [PerilakuController::class, 'productDaily'])->name('perilaku.api.product.daily');
+    Route::get('/api/product/history', [PerilakuController::class, 'productHistory'])->name('perilaku.api.product.history');
+});
 
 Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
     ->name('midtrans.webhook');
