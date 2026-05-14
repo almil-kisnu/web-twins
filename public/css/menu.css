@@ -3,13 +3,13 @@
 :root {
     --background: #0477bf;
     --dark-bg: #012340;
-    --bg-light: #e5e5e5;
+    --bg-light: #f8fafc;
     --white: #FFFFFF;
     --red-logout: #D94335;
     --sidebar-collapsed: 85px;
     --sidebar-expanded: 300px;
     --transition-speed: 0.4s;
-    --content-area-bg: #e5e5e5;
+    --content-area-bg: #f8fafc;
     --dark-green: #012340;
 }
 
