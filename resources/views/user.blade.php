@@ -25,8 +25,8 @@
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
     @if (config('services.midtrans.client_key'))
         <script
@@ -292,6 +292,11 @@
 </script>
 
 <body id="body">
+    <div id="global-page-loader" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color, #0f172a); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999999; transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s;">
+        <div style="width: 50px; height: 50px; border: 4px solid var(--card-border, rgba(255,255,255,0.1)); border-top-color: var(--orange-brand, #f97316); border-radius: 50%; animation: globalSpin 1s linear infinite; margin-bottom: 20px;"></div>
+        <style>@keyframes globalSpin { to { transform: rotate(360deg); } }</style>
+        <div id="global-page-loader-text" style="color: var(--text-color, #ffffff); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px;">Memuat TWINS...</div>
+    </div>
     <div class="animated-bg"></div>
     <div class="light-rays-container">
         <div class="god-ray ray1"></div>
@@ -429,9 +434,9 @@
             <div class="white-card hidden address-section"
                 style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h4 style="font-size: 0.95rem;">Delivery Address</h4>
+                    <h4 style="font-size: 0.95rem;">Alamat Pengiriman</h4>
                     <a href="#" onclick="openAddressPopup(event)"
-                        style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
+                        style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Ubah</a>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
                     <span style="font-size: 1.2rem;">📍</span>
@@ -449,22 +454,38 @@
 
             <div class="white-card hidden discount-section"
                 style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
+                <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Kode Promo</h4>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="promoInputMobile" placeholder="TWINS20"
                         style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.05); color: var(--text-color); font-size: 0.8rem;">
                     <button onclick="applyPromo('mobile')"
-                        style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
+                        style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Terapkan</button>
                 </div>
                 <p class="promoMessage" style="font-size: 0.7rem; margin-top: 8px; display: none;"></p>
             </div>
 
             <div class="white-card hidden order-section"
                 style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 12px; border-radius: 15px; margin-bottom: 15px;">
-                <h4 style="margin-bottom: 12px; font-size: 0.85rem;">Order Menu</h4>
+                <h4 style="margin-bottom: 12px; font-size: 0.85rem;">Menu Pesanan</h4>
                 <div class="cart-items-container"></div>
                 <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 12px 0;">
                 <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--sub-text);">Harga Awal</span>
+                        <span class="originalSubtotalDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--sub-text);">Diskon</span>
+                        <span class="totalDiscountDisplay" style="font-size: 0.8rem; font-weight: 700; color: #10b981;">Rp 0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--sub-text);">Harga Setelah Diskon</span>
+                        <span class="discountedSubtotalDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir (sementara)</span>
+                        <span class="shippingFeeDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
+                    </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; font-size: 0.8rem;">Total</span>
                         <span class="totalPriceDisplay"
@@ -532,7 +553,9 @@
                                             style="width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: white; position: relative;">
                                             <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url) }}"
                                                 class="{{ $isOutOfStock ? 'img-out-of-stock' : '' }}"
-                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                                style="width: 100%; height: 100%; object-fit: cover;"
+                                                crossorigin="anonymous"
+                                                referrerpolicy="no-referrer-when-downgrade">
                                             <div
                                                 style="position: absolute; top: 8px; left: 8px; background: #ff4d4d; color: white; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; z-index: 3;">
                                                 -{{ $tipeDiskon == 'persen' ? $nilaiDiskon . '%' : 'Rp' . number_format($nilaiDiskon / 1000, 0) . 'k' }}
@@ -736,9 +759,9 @@
                     style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h4 style="font-size: 0.95rem;">Delivery Address</h4>
+                        <h4 style="font-size: 0.95rem;">Alamat Pengiriman</h4>
                         <a href="#" onclick="openAddressPopup(event)"
-                            style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
+                            style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Ubah</a>
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 10px;">
                         <span style="font-size: 1.2rem;">📍</span>
@@ -756,22 +779,34 @@
 
                 <div class="white-card hidden discount-section"
                     style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
+                    <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Kode Promo</h4>
                     <div style="display: flex; gap: 8px;">
                         <input type="text" id="promoInput" placeholder="TWINS20"
                             style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.05); color: var(--text-color); font-size: 0.8rem;">
                         <button onclick="applyPromo()"
-                            style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
+                            style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Terapkan</button>
                     </div>
                     <p id="promoMessage" style="font-size: 0.7rem; margin-top: 8px; display: none;"></p>
                 </div>
 
                 <div class="white-card hidden order-section"
                     style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 12px; border-radius: 15px; margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 12px; font-size: 0.85rem;">Order Menu</h4>
+                    <h4 style="margin-bottom: 12px; font-size: 0.85rem;">Menu Pesanan</h4>
                     <div class="cart-items-container"></div>
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 12px 0;">
                     <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.75rem; color: var(--sub-text);">Harga Awal</span>
+                            <span class="originalSubtotalDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.75rem; color: var(--sub-text);">Diskon</span>
+                            <span class="totalDiscountDisplay" style="font-size: 0.8rem; font-weight: 700; color: #10b981;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.75rem; color: var(--sub-text);">Harga Setelah Diskon</span>
+                            <span class="discountedSubtotalDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
+                        </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir (sementara)</span>
                             <span class="shippingFeeDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
@@ -1217,7 +1252,7 @@
             outletGeocodeTried = true;
 
             return fetch(
-                    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(outletAddress)}`
+                    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(outletAddress)}`
                 )
                 .then(response => response.ok ? response.json() : [])
                 .then(results => {
@@ -1402,7 +1437,7 @@
                         outletGeocodeTried = true;
 
                         return fetch(
-                                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(outletAddress)}`
+                                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(outletAddress)}`
                             )
                             .then(response => response.ok ? response.json() : [])
                             .then(results => {
@@ -1540,7 +1575,7 @@
                             `Koordinat dipilih: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`);
 
                         fetch(
-                                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latlng.lat}&lon=${latlng.lng}`
+                                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`
                             )
                             .then(response => response.ok ? response.json() : null)
                             .then(data => {
@@ -1568,7 +1603,7 @@
                         const currentToken = geocodeRequestToken;
 
                         fetch(
-                                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`
+                                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`
                             )
                             .then(response => response.ok ? response.json() : [])
                             .then(results => {
@@ -1838,7 +1873,7 @@
 
                 card.innerHTML = `
                     <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 14px; margin-bottom: 8px; position: relative; background: #fff; display: flex; align-items: center; justify-content: center; padding: 6px;">
-                        <img src="${product.img}" class="food-img" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
+                        <img src="${product.img}" class="food-img" style="max-width: 100%; max-height: 100%; object-fit: contain; filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}" crossorigin="anonymous" referrerpolicy="no-referrer-when-downgrade">
 
                         ${product.is_discount && !isOutOfStock ? `
                             <div style="position: absolute; top: 4px; right: 4px; background: #ef4444; color: white; padding: 2px 5px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; z-index: 2; box-shadow: 0 2px 4px rgba(239,68,68,0.3);">
@@ -1933,6 +1968,7 @@
             return {
                 originalSubtotal,
                 subtotal, // Subtotal after product discount, before promo
+                discountedSubtotal,
                 productDiscountAmount,
                 promoDiscountAmount,
                 totalDiscountAmount,
@@ -2038,7 +2074,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
                             <div style="width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: white; flex-shrink: 0;">
-                                <img src="${pInfo ? pInfo.img : ''}" style="width: 100%; height: 100%; object-fit: cover;">
+                                <img src="${pInfo ? pInfo.img : ''}" style="width: 100%; height: 100%; object-fit: cover;" crossorigin="anonymous" referrerpolicy="no-referrer-when-downgrade">
                             </div>
                             <div style="flex: 1;">
                                 <h5 style="font-size: 0.85rem;">${item.name}</h5>
@@ -2050,6 +2086,7 @@
                             </div>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right;">
+                            ${item.displayPrice < item.price ? `<span style="color: var(--sub-text); font-size: 0.65rem; text-decoration: line-through;">${formatRupiah(item.price * item.qty)}</span>` : ''}
                             <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.75rem;">${formatRupiah(item.subtotal).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}</span>
                             ${item.displayPrice < item.price ? `<span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">Hemat Grosir!</span>` : ''}
                             <button class="delete-item-btn" onclick="removeFromCart(${index})">🗑️</button>
@@ -2060,8 +2097,38 @@
 
             const formattedTotal = formatRupiah(summary.total);
 
+            document.querySelectorAll('.originalSubtotalDisplay').forEach(el => {
+                el.innerText = formatRupiah(summary.originalSubtotal);
+            });
+
+            document.querySelectorAll('.discountedSubtotalDisplay').forEach(el => {
+                el.innerText = formatRupiah(summary.discountedSubtotal);
+            });
+
             document.querySelectorAll('.shippingFeeDisplay').forEach(el => {
                 el.innerText = formatRupiah(summary.shippingFee);
+            });
+
+            const hasDiscount = summary.totalDiscountAmount > 0;
+
+            ['.originalSubtotalDisplay', '.totalDiscountDisplay'].forEach(selector => {
+                document.querySelectorAll(selector).forEach(el => {
+                    if (el.parentElement) {
+                        el.parentElement.style.display = hasDiscount ? 'flex' : 'none';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.discountedSubtotalDisplay').forEach(el => {
+                const labelSpan = el.parentElement.querySelector('span:first-child');
+                if (labelSpan) {
+                    labelSpan.innerText = hasDiscount ? 'Harga Setelah Diskon' : 'Harga Produk';
+                }
+                el.innerText = formatRupiah(summary.discountedSubtotal);
+            });
+
+            document.querySelectorAll('.totalDiscountDisplay').forEach(el => {
+                el.innerText = hasDiscount ? "- " + formatRupiah(summary.totalDiscountAmount) : "Rp 0";
             });
 
             document.querySelectorAll('.totalPriceDisplay').forEach(el => {
@@ -2143,19 +2210,33 @@
             });
         }
 
-        function applyPromo() {
-            const input = document.getElementById('promoInput').value.trim().toUpperCase();
-            const message = document.getElementById('promoMessage');
-            if (input === 'TWINS20') {
+        function applyPromo(target = 'desktop') {
+            const inputId = target === 'mobile' ? 'promoInputMobile' : 'promoInput';
+            const msgId = target === 'mobile' ? '.promoMessage' : '#promoMessage';
+            
+            const inputEl = document.getElementById(inputId);
+            if (!inputEl) return;
+            
+            const code = inputEl.value.trim().toUpperCase();
+            const messageEls = target === 'mobile' ? document.querySelectorAll('.promoMessage') : [document.getElementById('promoMessage')];
+            
+            if (code === 'TWINS20') {
                 discountPercent = 0.20;
-                message.innerText = "Promo TWINS20 applied! (20% Off)";
-                message.style.color = "#10b981";
+                messageEls.forEach(el => {
+                    if (!el) return;
+                    el.innerText = "Promo TWINS20 applied! (20% Off)";
+                    el.style.color = "#10b981";
+                    el.style.display = 'block';
+                });
             } else {
                 discountPercent = 0;
-                message.innerText = input === "" ? "" : "Invalid promo code.";
-                message.style.color = "#ef4444";
+                messageEls.forEach(el => {
+                    if (!el) return;
+                    el.innerText = code === "" ? "" : "Invalid promo code.";
+                    el.style.color = "#ef4444";
+                    el.style.display = code === "" ? 'none' : 'block';
+                });
             }
-            message.style.display = 'block';
             renderCart();
         }
 
@@ -2317,11 +2398,15 @@
                                     <p style="margin:0; font-size:0.75rem; letter-spacing:0.04em; color:var(--sub-text);">TOTAL PEMBAYARAN</p>
                                     <p style="margin:4px 0 0 0; font-size:1.22rem; font-weight:800; color:var(--orange-brand);">${escapeHtml(formatRupiah(summary.total))}</p>
                                 </div>
-                                <span style="font-size:0.68rem; padding:4px 8px; border-radius:999px; border:1px solid rgba(16,185,129,0.4); color:#10b981; font-weight:700;">MIDTRANS</span>
                             </div>
                             <div style="display:grid; gap:5px; font-size:0.8rem;">
-                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Subtotal</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.originalSubtotal))}</span></div>
-                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Diskon</span><span style="font-weight:700; color:#10b981;">${escapeHtml(totalDiscountFormatted)}</span></div>
+                                ${summary.totalDiscountAmount > 0 ? `
+                                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Harga Awal</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.originalSubtotal))}</span></div>
+                                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Diskon</span><span style="font-weight:700; color:#10b981;">${escapeHtml(totalDiscountFormatted)}</span></div>
+                                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Harga Setelah Diskon</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.discountedSubtotal))}</span></div>
+                                ` : `
+                                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Harga Produk</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.discountedSubtotal))}</span></div>
+                                `}
                                 <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Ongkir</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.shippingFee))}</span></div>
                             </div>
                         </div>
@@ -2340,6 +2425,13 @@
                     const popup = Swal.getPopup();
                     if (popup) {
                         popup.style.borderRadius = '20px';
+                    }
+                    const htmlContainer = Swal.getHtmlContainer();
+                    if (htmlContainer) {
+                        htmlContainer.style.maxHeight = '70vh';
+                        htmlContainer.style.overflowY = 'auto';
+                        htmlContainer.style.overflowX = 'hidden';
+                        htmlContainer.style.paddingRight = '4px';
                     }
                 },
                 preConfirm: () => {
@@ -2366,7 +2458,8 @@
                                     product_id: i.product_id,
                                     name: i.name,
                                     qty: i.qty,
-                                    unit_price: i.displayPrice
+                                    unit_price: i.original_price,
+                                    discount_amount: (i.original_price - i.displayPrice) * i.qty
                                 }))
                             })
                         })
@@ -2399,7 +2492,12 @@
                             product_id: i.product_id
                         })),
                         total: summary.total,
+                        subtotal_amount: summary.originalSubtotal,
                         shipping_fee: summary.shippingFee,
+                        meta: JSON.stringify({
+                            item_discount_total: summary.productDiscountAmount,
+                            global_discount_amount: summary.promoDiscountAmount
+                        }),
                         recipient_name: recipientName,
                         recipient_phone: recipientPhone,
                         address,
@@ -2414,8 +2512,21 @@
                     cart = [];
                     discountPercent = 0;
                     savePersistence();
-                    renderCart();
-                    switchPage('history');
+                    
+                    // Reload otomatis ke halaman riwayat
+                    localStorage.setItem('open_history_on_load', 'true');
+                    
+                    const loader = document.getElementById('global-page-loader');
+                    if (loader) {
+                        const loaderText = document.getElementById('global-page-loader-text');
+                        if (loaderText) loaderText.innerText = 'Sinkronisasi Pesanan...';
+                        loader.style.visibility = 'visible';
+                        loader.style.opacity = '1';
+                    }
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 150);
                 };
 
                 const syncPaymentStatus = (orderId) => {
@@ -2491,20 +2602,24 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Pembayaran Gagal',
-                            text: 'Transaksi gagal diproses. Silakan coba lagi.',
+                            text: 'Transaksi gagal diproses. Silakan coba lagi nanti melalui Riwayat.',
                             background: 'var(--bg-color)',
                             color: 'var(--text-color)',
                             confirmButtonColor: 'var(--orange-brand)'
+                        }).then(() => {
+                            finalizeOrder('failed', null);
                         });
                     },
                     onClose: function() {
                         Swal.fire({
-                            icon: 'warning',
-                            title: 'Pembayaran Dibatalkan',
-                            text: 'Anda menutup popup pembayaran sebelum menyelesaikan transaksi.',
+                            icon: 'info',
+                            title: 'Pembayaran Tertunda',
+                            text: 'Anda belum menyelesaikan pembayaran. Pesanan telah disimpan di Riwayat.',
                             background: 'var(--bg-color)',
                             color: 'var(--text-color)',
                             confirmButtonColor: 'var(--orange-brand)'
+                        }).then(() => {
+                            finalizeOrder('pending', null);
                         });
                     }
                 });
@@ -2666,7 +2781,10 @@
                                     <div style="font-size:0.8rem; color:var(--sub-text);">${it.quantity} × ${formatRupiah(it.unit_price)}</div>
                                     ${it.discount_amount > 0 ? `<div style="font-size:0.8rem; color:#10b981;">Diskon: ${formatRupiah(it.discount_amount)}</div>` : ''}
                                 </div>
-                                <div style="text-align:right; font-weight:700;">${formatRupiah(it.final_price)}</div>
+                                <div style="text-align:right;">
+                                    ${it.discount_amount > 0 ? `<div style="font-size:0.65rem; color:var(--sub-text); text-decoration:line-through;">${formatRupiah(Number(it.unit_price) * Number(it.quantity))}</div>` : ''}
+                                    <div style="font-weight:700;">${formatRupiah(it.final_price)}</div>
+                                </div>
                             </div>
                         `).join('');
 
@@ -2707,10 +2825,27 @@
                                     </div>
 
                                     <div style="margin-top:20px; background: rgba(249, 115, 22, 0.05); padding: 12px; border-radius: 12px; font-size:0.9rem;">
-                                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>Subtotal</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div>
-                                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>Diskon Total</span><strong>${formatRupiah((meta.item_discount_total || 0) + (meta.global_discount_amount || 0))}</strong></div>
-                                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>Ongkir</span><strong>${formatRupiah(order.shipping_fee || 0)}</strong></div>
-                                        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:1.1rem; color: var(--orange-brand);"><span>Total</span><strong>${formatRupiah(order.total_amount)}</strong></div>
+                                        ${(() => {
+                                            let meta = {};
+                                            try { meta = typeof order.meta === 'string' ? JSON.parse(order.meta) : (order.meta || {}); } catch(e) {}
+                                            const itemDisc = Number(meta.item_discount_total) || 0;
+                                            const globalDisc = Number(meta.global_discount_amount) || 0;
+                                            const totalDisc = itemDisc + globalDisc;
+                                            const originalSubtotal = Number(order.subtotal_amount) + itemDisc;
+
+                                            const formattedDisc = totalDisc > 0 ? `- ${formatRupiah(totalDisc)}` : 'Rp 0';
+                                            return `
+                                                ${totalDisc > 0 ? `
+                                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Harga Awal</span><strong>${formatRupiah(originalSubtotal)}</strong></div>
+                                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Diskon</span><strong style="color: #10b981;">${formattedDisc}</strong></div>
+                                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Harga Setelah Diskon</span><strong>${formatRupiah(Number(order.subtotal_amount) - globalDisc)}</strong></div>
+                                                ` : `
+                                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Harga Produk</span><strong>${formatRupiah(Number(order.subtotal_amount))}</strong></div>
+                                                `}
+                                                <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Ongkir</span><strong>${formatRupiah(order.shipping_fee || 0)}</strong></div>
+                                                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:1.1rem; color: var(--orange-brand);"><span>Total</span><strong>${formatRupiah(order.total_amount)}</strong></div>
+                                            `;
+                                        })()}
                                     </div>
 
                                     <div style="margin-top: 25px; display: grid; gap: 10px;">
@@ -2725,6 +2860,19 @@
                             confirmButtonColor: 'var(--orange-brand)',
                             background: 'var(--bg-color)',
                             color: 'var(--text-color)',
+                            didOpen: () => {
+                                const popup = Swal.getPopup();
+                                if (popup) {
+                                    popup.style.borderRadius = '20px';
+                                }
+                                const htmlContainer = Swal.getHtmlContainer();
+                                if (htmlContainer) {
+                                    htmlContainer.style.maxHeight = '70vh';
+                                    htmlContainer.style.overflowY = 'auto';
+                                    htmlContainer.style.overflowX = 'hidden';
+                                    htmlContainer.style.paddingRight = '4px';
+                                }
+                            }
                         });
                     })
                     .catch(() => {
@@ -2966,6 +3114,14 @@
 
         // --- DASHBOARD PREMIUM HEADER ANIMATION ---
         document.addEventListener('DOMContentLoaded', () => {
+            const globalLoader = document.getElementById('global-page-loader');
+            if (globalLoader) {
+                setTimeout(() => {
+                    globalLoader.style.opacity = '0';
+                    globalLoader.style.visibility = 'hidden';
+                }, 400);
+            }
+
             if (typeof gsap !== 'undefined') {
                 gsap.set("#mainHeader", {
                     y: -100,
@@ -3020,6 +3176,12 @@
                 });
             } else {
                 if (isAuthenticated) fetchHistoryFromServer();
+            }
+
+            // Buka riwayat jika ada flag auto-reload setelah checkout
+            if (localStorage.getItem('open_history_on_load') === 'true') {
+                localStorage.removeItem('open_history_on_load');
+                setTimeout(() => { switchPage('history'); }, 100);
             }
 
             renderProducts();

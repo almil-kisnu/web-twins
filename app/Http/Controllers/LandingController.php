@@ -682,7 +682,9 @@ class LandingController extends Controller
                         ];
                     }),
                     'total' => (float) $order->total_amount,
+                    'subtotal_amount' => (float) $order->subtotal_amount,
                     'shipping_fee' => (float) $order->shipping_fee,
+                    'meta' => $order->meta,
                     'recipient_name' => $order->recipient_name,
                     'recipient_phone' => $order->recipient_phone,
                     'address' => $order->delivery_address,
