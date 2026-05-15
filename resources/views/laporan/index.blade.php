@@ -2,6 +2,24 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
+    <style>
+        .dropdown-content a.active {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 12px !important;
+        }
+
+        .dropdown-content a.active::after {
+            content: '✓';
+            font-weight: bold;
+            color: #0369a1;
+            font-size: 16px;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -28,10 +46,12 @@
                                 aria-label="Pilih Outlet Twins" title="Filter Toko">
                                 <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"></iconify-icon>
                             </button>
-                            <div class="dropdown-content">
-                                <a href="#" data-store-id="" onclick="selectStore(event)">Semua Outlet</a>
+                            <div class="dropdown-content" id="outlet-dropdown">
+                                <a href="#" data-store-id="" onclick="selectStore(event)" class="outlet-item">Semua
+                                    Outlet</a>
                                 @foreach ($outlets as $outlet)
-                                    <a href="#" data-store-id="{{ $outlet->uuid }}" onclick="selectStore(event)">
+                                    <a href="#" data-store-id="{{ $outlet->uuid }}" onclick="selectStore(event)"
+                                        class="outlet-item">
                                         {{ $outlet->nama }}
                                     </a>
                                 @endforeach
@@ -94,8 +114,22 @@
             </div>
         </header>
 
-        <section x-show="tab === 'harian'" x-transition.opacity aria-live="polite">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <section x-show="tab === 'harian'" x-transition.opacity aria-live="polite" class="space-y-8 relative">
+            <div id="daily-loading-overlay"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/75 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 ease-out">
+                <div class="flex items-center gap-3 rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-lg">
+                    <svg class="h-5 w-5 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                            stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <div>
+                        <div class="text-sm font-semibold text-gray-800">Memuat laporan harian</div>
+                        <div class="text-xs text-gray-500">Menyiapkan ringkasan, cashbox, dan operator...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <article
                     class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-blue-200">
                     <div class="flex items-center gap-3 mb-6">
@@ -104,7 +138,9 @@
                         </div>
                         <h2 class="text-blue-100 font-medium">Total Omset Hari Ini</h2>
                     </div>
-                    <p class="text-4xl font-bold tracking-tight" id="omset-value" aria-label="Nominal Omset">Rp 0</p>
+                    <p class="text-4xl font-bold tracking-tight" id="omset-value" aria-label="Nominal Omset">
+                        Rp
+                        0</p>
                     <div
                         class="mt-6 pt-6 border-t border-white/10 flex justify-between items-center text-sm text-blue-100">
                         <span>Laba Kotor</span>
@@ -113,20 +149,26 @@
                 </article>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <article class="bg-emerald-500 rounded-3xl p-6 text-white shadow-lg shadow-emerald-100">
-                        <p class="text-xs text-emerald-100 font-medium mb-1">Pemasukan Tunai</p>
-                        <p class="text-xl font-bold" id="pemasukan-value">Rp 0</p>
-                        <iconify-icon icon="solar:wad-of-money-bold" class="text-4xl mt-4 opacity-30"></iconify-icon>
+                    <article
+                        class="bg-emerald-500 rounded-[1.75rem] p-6 text-white shadow-lg shadow-emerald-100/60 border border-white/10">
+                        <p class="text-xs text-emerald-100/90 font-medium mb-1 uppercase tracking-[0.18em]">Pemasukan</p>
+                        <p class="text-2xl font-bold" id="pemasukan-value">Rp 0</p>
+                        <div class="mt-4 flex justify-end">
+                            <iconify-icon icon="solar:wad-of-money-bold" class="text-4xl opacity-25"></iconify-icon>
+                        </div>
                     </article>
-                    <article class="bg-amber-500 rounded-3xl p-6 text-white shadow-lg shadow-amber-100">
-                        <p class="text-xs text-amber-100 font-medium mb-1">Pemasukan Non-Tunai</p>
-                        <p class="text-xl font-bold" id="pengeluaran-value">Rp 0</p>
-                        <iconify-icon icon="solar:card-transfer-bold" class="text-4xl mt-4 opacity-30"></iconify-icon>
+                    <article
+                        class="bg-amber-500 rounded-[1.75rem] p-6 text-white shadow-lg shadow-amber-100/60 border border-white/10">
+                        <p class="text-xs text-amber-100/90 font-medium mb-1 uppercase tracking-[0.18em]">Pengeluaran</p>
+                        <p class="text-2xl font-bold" id="pengeluaran-value">Rp 0</p>
+                        <div class="mt-4 flex justify-end">
+                            <iconify-icon icon="solar:card-transfer-bold" class="text-4xl opacity-25"></iconify-icon>
+                        </div>
                     </article>
                 </div>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
                     <div>
                         <h3 class="font-bold text-gray-800">Distribusi Cashbox</h3>
@@ -136,148 +178,180 @@
                 </div>
                 <div class="p-6">
                     <div id="daily-cashbox-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="rounded-2xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">Memuat data
-                            cashbox...</div>
+                        <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                            Memuat data cashbox...</div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
                     <div>
                         <h3 class="font-bold text-gray-800">Aktivitas per Operator</h3>
                         <p class="text-xs text-gray-500 mt-1">Uang di laci dan info stok per operator</p>
                     </div>
-                    <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">Daftar Laci
-                        Aktif</span>
+                    <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">Laci & Stok</span>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50/50 text-gray-500 font-semibold text-xs uppercase">
-                            <tr>
-                                <th class="px-6 py-4">Nama Operator</th>
-                                <th class="px-6 py-4">Penjualan</th>
-                                <th class="px-6 py-4">Pemasukan Kas</th>
-                                <th class="px-6 py-4">Pengeluaran Kas</th>
-                                <th class="px-6 py-4 text-right">Net Laci</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-50" id="operator-table-body">
-                            <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Memuat data
-                                    operator...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="p-6">
+                    <div id="operator-list" class="space-y-4">
+                        <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                            Memuat data operator...
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
                     <div>
                         <h3 class="font-bold text-gray-800">Transaksi Online</h3>
                         <p class="text-xs text-gray-500 mt-1">Pesanan yang masuk dari kanal online</p>
                     </div>
-                    <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">Online</span>
+                    <span class="px-3 py-1 bg-sky-50 text-sky-600 text-xs font-bold rounded-full">Online</span>
                 </div>
                 <div class="overflow-hidden">
                     <div id="daily-online-list" class="divide-y divide-gray-100">
-                        <div class="px-6 py-4 text-sm text-gray-500">Memuat transaksi online...</div>
+                        <div class="px-6 py-5 text-sm text-gray-500">Memuat transaksi online...</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section x-show="tab === 'bulanan' || tab === 'tahunan'" x-transition.opacity style="display: none;">
-            <div x-show="tab === 'bulanan'" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <article
-                    class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-blue-200">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="p-3 bg-white/20 rounded-2xl">
-                            <iconify-icon icon="solar:money-bag-bold" class="text-2xl"></iconify-icon>
-                        </div>
-                        <h2 class="text-blue-100 font-medium">Total Omset Bulan Ini</h2>
+        <section x-show="tab === 'bulanan' || tab === 'tahunan'" x-transition.opacity style="display: none;"
+            class="relative">
+            <div id="monthly-loading-overlay"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/75 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 ease-out">
+                <div class="flex items-center gap-3 rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-lg">
+                    <svg class="h-5 w-5 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none"
+                        aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                            stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <div>
+                        <div class="text-sm font-semibold text-gray-800">Memuat laporan bulanan</div>
+                        <div class="text-xs text-gray-500">Menghitung ringkasan dan rincian bulan ini...</div>
                     </div>
-                    <p class="text-4xl font-bold tracking-tight" id="monthly-omset-value"
-                        aria-label="Nominal Omset Bulanan">Rp 0</p>
-                    <div
-                        class="mt-6 pt-6 border-t border-white/10 flex justify-between items-center text-sm text-blue-100">
-                        <span>Laba Kotor</span>
-                        <span class="font-bold" id="monthly-laba-kotor-value">Rp 0</span>
+                </div>
+            </div>
+            <div id="annual-loading-overlay"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/75 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 ease-out">
+                <div class="flex items-center gap-3 rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-lg">
+                    <svg class="h-5 w-5 animate-spin text-slate-800" viewBox="0 0 24 24" fill="none"
+                        aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                            stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <div>
+                        <div class="text-sm font-semibold text-gray-800">Memuat laporan tahunan</div>
+                        <div class="text-xs text-gray-500">Menyusun ringkasan dan tren tahunan...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="tab === 'bulanan'" class="space-y-8 mb-8">
+                <article
+                    class="overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-900 text-white shadow-2xl shadow-blue-200">
+                    <div class="p-8 md:p-10">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-2xl bg-white/15 p-3">
+                                    <iconify-icon icon="solar:calendar-mark-bold" class="text-2xl"></iconify-icon>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-blue-100/80">Laporan Bulanan</p>
+                                    <h2 class="mt-1 text-2xl font-bold md:text-3xl">Ringkasan Keuangan Bulanan</h2>
+                                </div>
+                            </div>
+                            <div class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-right">
+                                <div class="text-[11px] uppercase tracking-[0.2em] text-white/70">Laba Bersih</div>
+                                <div id="monthly-laba-bersih-badge" class="mt-1 text-xl font-bold">Rp 0</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                                <div class="text-xs uppercase tracking-[0.18em] text-white/70">Penjualan Toko</div>
+                                <div id="monthly-offline-omset-value" class="mt-2 text-xl font-bold">Rp 0</div>
+                            </div>
+                            <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                                <div class="text-xs uppercase tracking-[0.18em] text-white/70">Penjualan Online</div>
+                                <div id="monthly-online-omset-value" class="mt-2 text-xl font-bold">Rp 0</div>
+                            </div>
+                            <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                                <div class="text-xs uppercase tracking-[0.18em] text-white/70">Total Omset</div>
+                                <div id="monthly-total-omset-value" class="mt-2 text-xl font-bold">Rp 0</div>
+                            </div>
+                            <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                                <div class="text-xs uppercase tracking-[0.18em] text-white/70">HPP</div>
+                                <div id="monthly-hpp-value" class="mt-2 text-xl font-bold">Rp 0</div>
+                            </div>
+                            <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                                <div class="text-xs uppercase tracking-[0.18em] text-white/70">Pemasukan</div>
+                                <div id="monthly-pemasukan-value" class="mt-2 text-xl font-bold">Rp 0</div>
+                            </div>
+                            <div class="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                                <div class="text-xs uppercase tracking-[0.18em] text-white/70">Pengeluaran</div>
+                                <div id="monthly-pengeluaran-value" class="mt-2 text-xl font-bold">Rp 0</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 flex flex-wrap items-center gap-3 text-sm text-blue-100/80">
+                            <span class="rounded-full bg-white/10 px-3 py-1">Laba Kotor: <strong id="monthly-laba-kotor-value" class="text-white">Rp 0</strong></span>
+                            <span class="rounded-full bg-white/10 px-3 py-1">Laba Bersih: <strong id="monthly-laba-bersih-value" class="text-white">Rp 0</strong></span>
+                            <span class="rounded-full bg-white/10 px-3 py-1">Rugi: <strong id="monthly-rugi-value" class="text-white">Rp 0</strong></span>
+                        </div>
                     </div>
                 </article>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <article class="bg-emerald-500 rounded-3xl p-6 text-white shadow-lg shadow-emerald-100">
-                        <p class="text-xs text-emerald-100 font-medium mb-1">Pemasukan</p>
-                        <p class="text-xl font-bold" id="monthly-pemasukan-value">Rp 0</p>
-                        <iconify-icon icon="solar:wad-of-money-bold" class="text-4xl mt-4 opacity-30"></iconify-icon>
-                    </article>
-                    <article class="bg-rose-500 rounded-3xl p-6 text-white shadow-lg shadow-rose-100">
-                        <p class="text-xs text-rose-100 font-medium mb-1">HPP</p>
-                        <p class="text-xl font-bold" id="monthly-hpp-value">Rp 0</p>
-                        <iconify-icon icon="solar:cart-bold" class="text-4xl mt-4 opacity-30"></iconify-icon>
-                    </article>
-                </div>
-            </div>
+                <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    <section class="overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-gray-50 px-6 py-5">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Data Operator</h3>
+                                <p class="mt-1 text-xs text-gray-500">Total uang masuk dan keluar per operator</p>
+                            </div>
+                            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">Data Function Supabase</span>
+                        </div>
+                        <div class="p-6" id="monthly-operator-list">
+                            <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Pilih outlet dan bulan untuk memuat data</div>
+                        </div>
+                    </section>
 
-            <div x-show="tab === 'bulanan'"
-                class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-                <div class="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
-                    <h3 class="font-bold text-gray-800">Aktivitas per Operator Bulanan</h3>
-                    <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">Data Function
-                        Supabase</span>
+                    <section class="overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-gray-50 px-6 py-5">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Data Hutang & Piutang</h3>
+                                <p class="mt-1 text-xs text-gray-500">Total yang belum lunas secara keseluruhan</p>
+                            </div>
+                            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600">Debt Summary</span>
+                        </div>
+                        <div class="p-6">
+                            <div id="monthly-debt-list" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Pilih outlet untuk memuat data</div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50/50 text-gray-500 font-semibold text-xs uppercase">
-                            <tr>
-                                <th class="px-6 py-4">Nama Operator</th>
-                                <th class="px-6 py-4">Pemasukan</th>
-                                <th class="px-6 py-4 text-right">Pengeluaran</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-50" id="monthly-operator-table-body">
-                            <tr>
-                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Pilih outlet dan
-                                    bulan untuk memuat data</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
-            <div x-show="tab === 'bulanan'"
-                class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-                <div class="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
-                    <h3 class="font-bold text-gray-800">Rincian Harian Bulanan</h3>
-                    <span
-                        class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">get_monthly_transaction_daily</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50 text-gray-500 font-semibold text-xs uppercase">
-                            <tr>
-                                <th class="px-6 py-4">Tanggal</th>
-                                <th class="px-6 py-4">Jenis</th>
-                                <th class="px-6 py-4">Total</th>
-                                <th class="px-6 py-4">Laba</th>
-                                <th class="px-6 py-4 text-right">Frekuensi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-50" id="monthly-daily-table-body">
-                            <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Pilih outlet dan
-                                    bulan untuk memuat data</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <section class="overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm">
+                    <div class="flex items-center justify-between border-b border-gray-50 px-6 py-5">
+                        <div>
+                            <h3 class="font-bold text-gray-800">Data Transaksi</h3>
+                            <p class="mt-1 text-xs text-gray-500">Rincian transaksi bulanan per jenis</p>
+                        </div>
+                        <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-600">Breakdown Bulanan</span>
+                    </div>
+                    <div class="p-6" id="monthly-transaction-list">
+                        <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Pilih outlet dan bulan untuk memuat data</div>
+                    </div>
+                </section>
             </div>
 
             <div x-show="tab === 'tahunan'" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <article
-                    class="bg-gradient-to-br from-slate-900 to-slate-700 rounded-3xl p-8 text-white shadow-xl shadow-slate-200">
+                    class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-blue-200">
                     <div class="flex items-center gap-3 mb-6">
                         <div class="p-3 bg-white/10 rounded-2xl">
                             <iconify-icon icon="solar:money-bag-bold" class="text-2xl"></iconify-icon>
@@ -428,9 +502,21 @@
             }).format(value);
         }
 
+        function setLoadingState(scope, isLoading) {
+            const overlay = document.getElementById(`${scope}-loading-overlay`);
+            if (overlay) {
+                overlay.classList.toggle('opacity-0', !isLoading);
+                overlay.classList.toggle('opacity-100', isLoading);
+                overlay.classList.toggle('pointer-events-none', !isLoading);
+                overlay.classList.toggle('pointer-events-auto', isLoading);
+            }
+        }
+
         async function fetchDailyData() {
             const storeId = document.getElementById('store-id-hidden').value;
             const date = document.getElementById('date-selector').value;
+
+            setLoadingState('daily', true);
 
             try {
                 const response = await fetch(`/laporan/api/daily/summary?store_id=${storeId}&date=${date}`);
@@ -447,12 +533,16 @@
                 document.getElementById('pengeluaran-value').textContent = formatCurrency(data.pengeluaran || 0);
 
                 // Fetch dan update operator data
-                fetchOperatorData(storeId, date);
-                fetchDailyCashbox(storeId, date);
-                fetchDailyOnline(storeId, date);
+                await Promise.all([
+                    fetchOperatorData(storeId, date),
+                    fetchDailyCashbox(storeId, date),
+                    fetchDailyOnline(storeId, date),
+                ]);
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error mengambil data laporan');
+            } finally {
+                setLoadingState('daily', false);
             }
         }
 
@@ -531,15 +621,44 @@
             const storeId = document.getElementById('store-id-hidden').value;
             const monthValue = document.getElementById('month-selector').value;
 
+            setLoadingState('monthly', true);
+
+            const monthlyResetValueIds = [
+                'monthly-offline-omset-value',
+                'monthly-online-omset-value',
+                'monthly-total-omset-value',
+                'monthly-hpp-value',
+                'monthly-laba-kotor-value',
+                'monthly-laba-bersih-value',
+                'monthly-laba-bersih-badge',
+                'monthly-pemasukan-value',
+                'monthly-pengeluaran-value',
+                'monthly-rugi-value',
+            ];
+
+            monthlyResetValueIds.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = 'Rp 0';
+            });
+
+            const operatorList = document.getElementById('monthly-operator-list');
+            const debtList = document.getElementById('monthly-debt-list');
+            const transactionList = document.getElementById('monthly-transaction-list');
+
+            if (operatorList) {
+                operatorList.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Pilih outlet dan bulan untuk memuat data</div>';
+            }
+
+            if (debtList) {
+                debtList.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Pilih outlet untuk memuat data</div>';
+            }
+
+            if (transactionList) {
+                transactionList.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Pilih outlet dan bulan untuk memuat data</div>';
+            }
+
             if (!monthValue) {
-                document.getElementById('monthly-omset-value').textContent = 'Rp 0';
-                document.getElementById('monthly-laba-kotor-value').textContent = 'Rp 0';
-                document.getElementById('monthly-pemasukan-value').textContent = 'Rp 0';
-                document.getElementById('monthly-hpp-value').textContent = 'Rp 0';
-                document.getElementById('monthly-operator-table-body').innerHTML =
-                    '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Pilih outlet dan bulan untuk memuat data</td></tr>';
-                document.getElementById('monthly-daily-table-body').innerHTML =
-                    '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Pilih outlet dan bulan untuk memuat data</td></tr>';
+                setLoadingState('monthly', false);
                 return;
             }
 
@@ -547,33 +666,66 @@
 
             try {
                 const summaryResponse = await fetch(
-                    `/laporan/api/monthly/summary?store_id=${storeId}&month=${month}&year=${year}`);
+                    `/laporan/api/monthly/summary?store_id=${storeId}&month=${month}&year=${year}`
+                );
                 if (!summaryResponse.ok) throw new Error('Gagal fetch summary bulanan');
                 const summaryData = await summaryResponse.json();
 
-                document.getElementById('monthly-omset-value').textContent = formatCurrency(summaryData.omset || 0);
-                document.getElementById('monthly-laba-kotor-value').textContent = formatCurrency(summaryData
-                    .laba_kotor || 0);
-                document.getElementById('monthly-pemasukan-value').textContent = formatCurrency(summaryData.pemasukan ||
-                    0);
-                document.getElementById('monthly-hpp-value').textContent = formatCurrency(summaryData.hpp || 0);
+                const offlineOmset = Number(summaryData.omset || 0);
+                const onlineOmset = Number(summaryData.penjualan_online || 0);
+                const totalOmset = offlineOmset + onlineOmset;
+                const hpp = Number(summaryData.hpp || 0);
+                const labaKotor = Number(summaryData.laba_kotor ?? (totalOmset - hpp));
+                const pemasukan = Number(summaryData.pemasukan || 0);
+                const pengeluaran = Number(summaryData.pengeluaran || 0);
+                const rugi = Number(summaryData.rugi || 0);
+                const labaBersih = Number(summaryData.laba_bersih ?? ((labaKotor + pemasukan) - (pengeluaran + rugi)));
+
+                const setValue = (id, value, negative = false) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = negative && value > 0 ? `-${formatCurrency(value)}` : formatCurrency(value);
+                    el.classList.toggle('text-red-300', negative && value > 0);
+                    el.classList.toggle('text-white', !(negative && value > 0));
+                };
+
+                setValue('monthly-offline-omset-value', offlineOmset);
+                setValue('monthly-online-omset-value', onlineOmset);
+                setValue('monthly-total-omset-value', totalOmset);
+                setValue('monthly-hpp-value', hpp);
+                setValue('monthly-laba-kotor-value', labaKotor);
+                setValue('monthly-laba-bersih-value', labaBersih, labaBersih < 0);
+                setValue('monthly-laba-bersih-badge', labaBersih, labaBersih < 0);
+                setValue('monthly-pemasukan-value', pemasukan);
+                setValue('monthly-pengeluaran-value', pengeluaran);
+                setValue('monthly-rugi-value', rugi, true);
 
                 const operatorsResponse = await fetch(
-                    `/laporan/api/monthly/operators?store_id=${storeId}&month=${month}&year=${year}`);
-                if (operatorsResponse.ok) {
-                    const operatorsData = await operatorsResponse.json();
-                    renderMonthlyOperators(operatorsData.operators || []);
-                }
-
+                    `/laporan/api/monthly/operators?store_id=${storeId}&month=${month}&year=${year}`
+                );
+                const debtResponse = await fetch(`/laporan/api/monthly/debt-summary?store_id=${storeId}`);
                 const dailyResponse = await fetch(
-                    `/laporan/api/monthly/daily?store_id=${storeId}&month=${month}&year=${year}`);
-                if (dailyResponse.ok) {
-                    const dailyData = await dailyResponse.json();
-                    renderMonthlyDaily(dailyData.daily || []);
-                }
+                    `/laporan/api/monthly/daily?store_id=${storeId}&month=${month}&year=${year}`
+                );
+
+                const operatorsPromise = operatorsResponse.ok
+                    ? operatorsResponse.json().then((operatorsData) => renderMonthlyOperators(operatorsData.operators || []))
+                    : Promise.resolve();
+
+                const debtPromise = debtResponse.ok
+                    ? debtResponse.json().then((debtData) => renderMonthlyDebtSummary(debtData.items || []))
+                    : Promise.resolve();
+
+                const dailyPromise = dailyResponse.ok
+                    ? dailyResponse.json().then((dailyData) => renderMonthlyTransactions(dailyData.daily || []))
+                    : Promise.resolve();
+
+                await Promise.all([operatorsPromise, debtPromise, dailyPromise]);
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error mengambil data laporan bulanan');
+            } finally {
+                setLoadingState('monthly', false);
             }
         }
 
@@ -617,6 +769,8 @@
             const storeId = document.getElementById('store-id-hidden').value;
             const year = document.getElementById('year-selector').value;
 
+            setLoadingState('annual', true);
+
             if (!year) {
                 document.getElementById('annual-omset-value').textContent = 'Rp 0';
                 document.getElementById('annual-laba-kotor-value').textContent = 'Rp 0';
@@ -628,6 +782,7 @@
                     '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Pilih outlet dan tahun untuk memuat data</td></tr>';
                 document.getElementById('annual-cashbox-list').innerHTML =
                     '<div class="rounded-2xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">Pilih outlet dan tahun untuk memuat data</div>';
+                setLoadingState('annual', false);
                 return;
             }
 
@@ -644,21 +799,24 @@
                 document.getElementById('annual-hpp-value').textContent = formatCurrency(summaryData.hpp || 0);
 
                 const operatorsResponse = await fetch(`/laporan/api/annual/operators?store_id=${storeId}&year=${year}`);
-                if (operatorsResponse.ok) {
-                    const operatorsData = await operatorsResponse.json();
-                    renderAnnualOperators(operatorsData.operators || []);
-                }
+                const operatorsPromise = operatorsResponse.ok ?
+                    operatorsResponse.json().then((operatorsData) => renderAnnualOperators(operatorsData.operators ||
+                    [])) :
+                    Promise.resolve();
 
                 const monthlyResponse = await fetch(`/laporan/api/annual/monthly?store_id=${storeId}&year=${year}`);
-                if (monthlyResponse.ok) {
-                    const monthlyData = await monthlyResponse.json();
-                    renderAnnualMonthly(monthlyData.monthly || []);
-                }
+                const monthlyPromise = monthlyResponse.ok ?
+                    monthlyResponse.json().then((monthlyData) => renderAnnualMonthly(monthlyData.monthly || [])) :
+                    Promise.resolve();
 
-                fetchAnnualCashbox(storeId, year);
+                const cashboxPromise = fetchAnnualCashbox(storeId, year);
+
+                await Promise.all([operatorsPromise, monthlyPromise, cashboxPromise]);
             } catch (error) {
                 console.error('Error annual:', error);
                 alert('Error mengambil data laporan tahunan');
+            } finally {
+                setLoadingState('annual', false);
             }
         }
 
@@ -779,6 +937,145 @@
             loadActiveTabData();
         }
 
+        function getDailyOperatorJenisLabel(jenis) {
+            switch (jenis) {
+                case 'penjualan':
+                    return 'Penjualan';
+                case 'pembelian':
+                    return 'Pembelian';
+                case 'transfer':
+                    return 'Transfer';
+                case 'pemasukan':
+                    return 'Pemasukan';
+                case 'pengeluaran':
+                    return 'Pengeluaran';
+                case 'pelunasan_piutang':
+                    return 'Pelunasan Piutang';
+                case 'pembayaran_hutang':
+                    return 'Pembayaran Hutang';
+                case 'retur':
+                    return 'Retur';
+                case 'rugi':
+                    return 'Produk Rugi';
+                default:
+                    return jenis || '-';
+            }
+        }
+
+        function isDailyOperatorStokJenis(jenis) {
+            return ['retur', 'rugi'].includes(jenis);
+        }
+
+        function isDailyOperatorNegativeJenis(jenis) {
+            return ['pembelian', 'pengeluaran', 'pembayaran_hutang', 'rugi'].includes(jenis);
+        }
+
+        function getDailyOperatorJenisOrder(jenis) {
+            const order = ['penjualan', 'pembelian', 'transfer', 'pelunasan_piutang', 'pembayaran_hutang', 'pemasukan',
+                'pengeluaran'
+            ];
+            const stokOrder = ['retur', 'rugi'];
+            const idx = order.indexOf(jenis);
+            if (idx >= 0) return idx;
+            const stokIdx = stokOrder.indexOf(jenis);
+            return stokIdx >= 0 ? 100 + stokIdx : 999;
+        }
+
+        function renderDailyOperatorCards(rows) {
+            const list = document.getElementById('operator-list');
+            const grouped = new Map();
+
+            rows.forEach((row) => {
+                const name = row.name || 'Unknown';
+                const jenis = row.jenis || '';
+                const total = Number(row.total || 0);
+
+                if (!grouped.has(name)) {
+                    grouped.set(name, {
+                        name,
+                        items: []
+                    });
+                }
+
+                grouped.get(name).items.push({
+                    jenis,
+                    total
+                });
+            });
+
+            if (grouped.size === 0) {
+                list.innerHTML =
+                    '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Belum ada data operator hari ini</div>';
+                return;
+            }
+
+            list.innerHTML = Array.from(grouped.values()).map((group) => {
+                const items = group.items.slice().sort((a, b) => getDailyOperatorJenisOrder(a.jenis) -
+                    getDailyOperatorJenisOrder(b.jenis));
+                const laciItems = items.filter((item) => !isDailyOperatorStokJenis(item.jenis));
+                const stokItems = items.filter((item) => isDailyOperatorStokJenis(item.jenis));
+                const netLaci = laciItems.reduce((sum, item) => {
+                    const amount = Number(item.total || 0);
+                    return sum + (isDailyOperatorNegativeJenis(item.jenis) ? -amount : amount);
+                }, 0);
+
+                const renderItem = (item) => {
+                    const label = getDailyOperatorJenisLabel(item.jenis);
+                    const amount = Number(item.total || 0);
+                    const displayAmount = isDailyOperatorNegativeJenis(item.jenis) ?
+                        `-${formatCurrency(amount)}` : formatCurrency(amount);
+                    const amountClass = isDailyOperatorNegativeJenis(item.jenis) ? 'text-red-500' : (item
+                        .jenis === 'retur' ? 'text-amber-600' : 'text-emerald-600');
+
+                    return `
+                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-gray-50 px-4 py-3">
+                            <div class="min-w-0">
+                                <div class="font-semibold text-gray-900">${label}</div>
+                                <div class="text-xs text-gray-500">${item.jenis || '-'}</div>
+                            </div>
+                            <div class="font-bold whitespace-nowrap ${amountClass}">${displayAmount}</div>
+                        </div>
+                    `;
+                };
+
+                return `
+                    <article class="rounded-[1.5rem] border border-gray-100 bg-white shadow-sm overflow-hidden">
+                        <div class="px-5 py-4 border-b border-gray-50 flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 font-bold uppercase">${(group.name || '?').charAt(0)}</div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-gray-900 truncate">${group.name || 'Unknown'}</div>
+                                <div class="text-xs text-gray-500">Aktivitas transaksi harian</div>
+                            </div>
+                        </div>
+                        <div class="p-5 space-y-4">
+                            <div>
+                                <div class="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                    <span>Uang di Laci</span>
+                                    <span>${laciItems.length} item</span>
+                                </div>
+                                <div class="space-y-2">
+                                    ${laciItems.length > 0 ? laciItems.map(renderItem).join('') : '<div class="rounded-2xl border border-dashed border-gray-200 p-3 text-sm text-gray-500">Tidak ada data laci</div>'}
+                                </div>
+                                <div class="mt-3 flex items-center justify-between rounded-2xl bg-blue-50 px-4 py-3">
+                                    <span class="font-semibold text-gray-700">Net Laci</span>
+                                    <span class="font-bold text-blue-600">${formatCurrency(netLaci)}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                    <span>Info Stok</span>
+                                    <span>${stokItems.length} item</span>
+                                </div>
+                                <div class="space-y-2">
+                                    ${stokItems.length > 0 ? stokItems.map(renderItem).join('') : '<div class="rounded-2xl border border-dashed border-gray-200 p-3 text-sm text-gray-500">Tidak ada info stok</div>'}
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
         function toggleDropdown(event) {
             event.stopPropagation();
             const dropdown = event.currentTarget.nextElementSibling;
@@ -793,48 +1090,204 @@
         }
 
         function renderMonthlyOperators(operators) {
-            const tbody = document.getElementById('monthly-operator-table-body');
-            tbody.innerHTML = '';
+            const list = document.getElementById('monthly-operator-list');
+            if (!list) return;
 
             if (operators.length === 0) {
-                tbody.innerHTML =
-                    '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">Tidak ada data</td></tr>';
+                list.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Tidak ada data operator bulan ini</div>';
                 return;
             }
 
-            operators.forEach((op) => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50 transition cursor-pointer">
-                        <td class="px-6 py-4 font-bold text-gray-900">${op.name || 'Unknown'}</td>
-                        <td class="px-6 py-4 text-emerald-600 font-semibold">${formatCurrency(op.masuk || 0)}</td>
-                        <td class="px-6 py-4 text-right text-red-500 font-semibold">${formatCurrency(op.keluar || 0)}</td>
-                    </tr>
-                `;
-            });
+            const totalMasuk = operators.reduce((sum, op) => sum + Number(op.masuk || 0), 0);
+            const totalKeluar = operators.reduce((sum, op) => sum + Number(op.keluar || 0), 0);
+
+            list.innerHTML = `
+                <div class="overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-sm">
+                    <div class="border-b border-gray-50 px-5 py-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div class="font-bold text-gray-900">Daftar Operator</div>
+                                <div class="mt-1 text-xs text-gray-500">Ringkasan transaksi masuk dan keluar per operator</div>
+                            </div>
+                            <div class="flex gap-2 text-xs font-semibold">
+                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">Masuk ${formatCurrency(totalMasuk)}</span>
+                                <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-600">Keluar ${formatCurrency(totalKeluar)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50/70 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                <tr>
+                                    <th class="px-5 py-3">Nama Operator</th>
+                                    <th class="px-5 py-3">Masuk</th>
+                                    <th class="px-5 py-3 text-right">Keluar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${operators.map((op) => `
+                                    <tr class="hover:bg-gray-50/70 transition">
+                                        <td class="px-5 py-4 font-bold text-gray-900">${op.name || 'Unknown'}</td>
+                                        <td class="px-5 py-4 font-semibold text-emerald-600">${formatCurrency(op.masuk || 0)}</td>
+                                        <td class="px-5 py-4 text-right font-semibold text-rose-500">${formatCurrency(op.keluar || 0)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
         }
 
-        function renderMonthlyDaily(daily) {
-            const tbody = document.getElementById('monthly-daily-table-body');
-            tbody.innerHTML = '';
+        function renderMonthlyDebtSummary(items) {
+            const list = document.getElementById('monthly-debt-list');
+            if (!list) return;
+
+            let hutang = 0;
+            let piutang = 0;
+
+            items.forEach((item) => {
+                if ((item.tipe || '').toLowerCase() === 'utang') hutang = Number(item.total_belum_lunas || 0);
+                if ((item.tipe || '').toLowerCase() === 'piutang') piutang = Number(item.total_belum_lunas || 0);
+            });
+
+            list.innerHTML = `
+                <div class="rounded-[1.5rem] border border-rose-100 bg-rose-50/60 p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-2xl bg-rose-500/10 p-3 text-rose-600">
+                            <iconify-icon icon="solar:money-bag-bold" class="text-2xl"></iconify-icon>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-rose-700">Hutang</div>
+                            <div class="text-xs text-rose-600/80">Total kewajiban yang belum lunas</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-2xl font-bold text-rose-600">${formatCurrency(hutang)}</div>
+                </div>
+                <div class="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/60 p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-2xl bg-emerald-500/10 p-3 text-emerald-600">
+                            <iconify-icon icon="solar:wallet-money-bold" class="text-2xl"></iconify-icon>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-emerald-700">Piutang</div>
+                            <div class="text-xs text-emerald-600/80">Total dana pelanggan yang belum lunas</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-2xl font-bold text-emerald-600">${formatCurrency(piutang)}</div>
+                </div>
+            `;
+        }
+
+        function getMonthlyTransactionLabel(jenis) {
+            switch (jenis) {
+                case 'penjualan':
+                    return 'Penjualan Toko';
+                case 'penjualan_online':
+                    return 'Penjualan Online';
+                case 'pembelian':
+                    return 'Pembelian';
+                case 'transfer':
+                    return 'Transfer';
+                case 'retur':
+                    return 'Retur';
+                case 'rugi':
+                    return 'Produk Rugi';
+                default:
+                    return jenis || '-';
+            }
+        }
+
+        function isMonthlyTransactionNegative(jenis) {
+            return ['pembelian', 'rugi'].includes(jenis);
+        }
+
+        function renderMonthlyTransactions(daily) {
+            const list = document.getElementById('monthly-transaction-list');
+            if (!list) return;
 
             if (daily.length === 0) {
-                tbody.innerHTML =
-                    '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Tidak ada data</td></tr>';
+                list.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Tidak ada data transaksi bulan ini</div>';
                 return;
             }
 
+            const grouped = {
+                penjualan: [],
+                penjualan_online: [],
+                pembelian: [],
+                transfer: [],
+                retur: [],
+                rugi: [],
+            };
+
             daily.forEach((row) => {
-                const tanggal = row.tanggal ? new Date(row.tanggal).toLocaleDateString('id-ID') : '-';
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50 transition cursor-pointer">
-                        <td class="px-6 py-4 font-medium text-gray-900">${tanggal}</td>
-                        <td class="px-6 py-4 text-gray-700">${row.jenis || '-'}</td>
-                        <td class="px-6 py-4 font-semibold text-gray-900">${formatCurrency(row.total || 0)}</td>
-                        <td class="px-6 py-4 text-emerald-600 font-semibold">${formatCurrency(row.laba || 0)}</td>
-                        <td class="px-6 py-4 text-right text-gray-600">${row.frekuensi || 0} trx</td>
-                    </tr>
-                `;
+                if (Object.prototype.hasOwnProperty.call(grouped, row.jenis)) {
+                    grouped[row.jenis].push(row);
+                }
             });
+
+            const order = ['penjualan', 'penjualan_online', 'pembelian', 'transfer', 'retur', 'rugi'];
+
+            list.innerHTML = order
+                .map((jenis) => {
+                    const rows = grouped[jenis] || [];
+                    if (!rows.length) return '';
+
+                    const label = getMonthlyTransactionLabel(jenis);
+                    const showLaba = ['penjualan', 'penjualan_online'].includes(jenis);
+                    const total = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
+                    const laba = rows.reduce((sum, row) => sum + Number(row.laba || 0), 0);
+                    const freq = rows.reduce((sum, row) => sum + Number(row.frekuensi || 0), 0);
+                    const negative = isMonthlyTransactionNegative(jenis);
+
+                    return `
+                        <details class="group overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-sm" ${showLaba ? 'open' : ''}>
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900">${label}</div>
+                                    <div class="mt-1 text-xs text-gray-500">${rows.length} entri harian</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-bold ${negative ? 'text-rose-600' : 'text-gray-900'}">${negative ? '-' : ''}${formatCurrency(total)}</div>
+                                    ${showLaba ? `<div class="text-xs font-semibold text-emerald-600">Laba ${formatCurrency(laba)}</div>` : ''}
+                                    <div class="text-xs text-gray-500">${freq} trx</div>
+                                </div>
+                            </summary>
+                            <div class="border-t border-gray-100 px-5 py-4">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm">
+                                        <thead class="text-xs uppercase tracking-wide text-gray-500">
+                                            <tr>
+                                                <th class="py-2 pr-4">Tanggal</th>
+                                                <th class="py-2 pr-4">Total</th>
+                                                ${showLaba ? '<th class="py-2 pr-4">Laba</th>' : ''}
+                                                <th class="py-2 text-right">Frekuensi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            ${rows.map((row) => {
+                                                const tanggal = row.tanggal ? new Date(row.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-';
+                                                const rowTotal = Number(row.total || 0);
+                                                const rowLaba = Number(row.laba || 0);
+                                                const rowFreq = Number(row.frekuensi || 0);
+                                                return `
+                                                    <tr>
+                                                        <td class="py-3 pr-4 font-medium text-gray-900">${tanggal}</td>
+                                                        <td class="py-3 pr-4 font-semibold ${negative ? 'text-rose-600' : 'text-gray-900'}">${negative ? '-' : ''}${formatCurrency(rowTotal)}</td>
+                                                        ${showLaba ? `<td class="py-3 pr-4 font-semibold text-emerald-600">${formatCurrency(rowLaba)}</td>` : ''}
+                                                        <td class="py-3 text-right text-gray-600">${rowFreq} trx</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </details>
+                    `;
+                })
+                .filter(Boolean)
+                .join('');
         }
 
         async function fetchOperatorData(storeId, date) {
@@ -843,26 +1296,7 @@
                 if (!response.ok) throw new Error('Gagal fetch data operator');
 
                 const data = await response.json();
-                const tbody = document.getElementById('operator-table-body');
-                tbody.innerHTML = '';
-
-                if (data.operators && data.operators.length > 0) {
-                    data.operators.forEach(op => {
-                        const row = `
-                            <tr class="hover:bg-gray-50 transition cursor-pointer">
-                                <td class="px-6 py-4 font-bold text-gray-900">${op.name}</td>
-                                <td class="px-6 py-4">${formatCurrency(op.penjualan || 0)}</td>
-                                <td class="px-6 py-4 text-emerald-600">${formatCurrency(op.pemasukan || 0)}</td>
-                                <td class="px-6 py-4 text-red-500">${formatCurrency(op.pengeluaran || 0)}</td>
-                                <td class="px-6 py-4 text-right font-black text-gray-900">${formatCurrency((op.penjualan || 0) + (op.pemasukan || 0) - (op.pengeluaran || 0))}</td>
-                            </tr>
-                        `;
-                        tbody.innerHTML += row;
-                    });
-                } else {
-                    tbody.innerHTML =
-                        '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Tidak ada data</td></tr>';
-                }
+                renderDailyOperatorCards(data.operators || []);
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -875,6 +1309,13 @@
             const storeId = event.currentTarget.dataset.storeId || '';
             document.getElementById('store-id-hidden').value = storeId;
             updateStoreLabel(storeId);
+
+            // Update active state in outlet dropdown
+            document.querySelectorAll('.outlet-item').forEach((item) => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
             document.querySelectorAll('.dropdown-content').forEach((dropdown) => dropdown.classList.remove('show'));
             loadActiveTabData();
         }
@@ -890,6 +1331,24 @@
         document.getElementById('date-selector').addEventListener('change', fetchDailyData);
         document.getElementById('month-selector').addEventListener('change', fetchMonthlyData);
         document.getElementById('year-selector').addEventListener('change', fetchAnnualData);
+
+        // Initialize active outlet on page load
+        window.addEventListener('load', function() {
+            const currentStoreId = document.getElementById('store-id-hidden').value || '';
+
+            // Update UI to show active outlet
+            document.querySelectorAll('.outlet-item').forEach((item) => {
+                const itemStoreId = item.dataset.storeId || '';
+                if (itemStoreId === currentStoreId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Update store label display
+            updateStoreLabel(currentStoreId);
+        });
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {

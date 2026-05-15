@@ -165,6 +165,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('lapor
     Route::get('/daily/online', [LaporanController::class, 'dailyOnlineTransactions'])->name('laporan.api.daily.online');
     Route::get('/monthly/summary', [LaporanController::class, 'monthlySummary'])->name('laporan.api.monthly.summary');
     Route::get('/monthly/operators', [LaporanController::class, 'monthlyOperators'])->name('laporan.api.monthly.operators');
+    Route::get('/monthly/debt-summary', [LaporanController::class, 'monthlyDebtSummary'])->name('laporan.api.monthly.debt-summary');
     Route::get('/monthly/daily', [LaporanController::class, 'monthlyDaily'])->name('laporan.api.monthly.daily');
     Route::get('/annual/summary', [LaporanController::class, 'annualSummary'])->name('laporan.api.annual.summary');
     Route::get('/annual/operators', [LaporanController::class, 'annualOperators'])->name('laporan.api.annual.operators');
