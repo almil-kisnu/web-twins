@@ -457,7 +457,6 @@
                 </div>
             </div>
         </div>
-    @endif
     <!-- Top Row Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Total Transaksi -->
@@ -808,9 +807,197 @@
                 @endforelse
             </div>
         </div>
-    </div>
+    @else
+        <!-- Premium Dashboard for Kepala Toko / Staff -->
+        <div class="welcome-section">
+            <div>
+                <h1 class="welcome-title">
+                    Dashboard {{ ucfirst(Auth::user()->role) }}
+                    <span class="waving-hand">👋</span>
+                </h1>
+                <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin-top: 2px;">
+                    Mengelola outlet: <span style="color: #0477bf;">{{ Auth::user()->store->nama ?? 'Semua Outlet' }}</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- 5-Column Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- Total Transaksi -->
+            <div class="stat-card" style="background: #ffffff; border-radius: 20px; padding: 1.25rem;">
+                <div class="stat-header">
+                    <div class="icon-box" style="background: #f0f7ff; color: #3b82f6; border-radius: 12px;">
+                        <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="font-size: 0.65rem; color: #94a3b8;">Total Transaksi</div>
+                        <div class="text-[10px] font-bold text-slate-400">Hari Ini</div>
+                    </div>
+                </div>
+                <div class="stat-value" style="font-size: 1.5rem; margin: 0.5rem 0;">{{ number_format($total_transaksi) }}</div>
+                <div class="stat-trend {{ $diff_transaksi >= 0 ? 'trend-up' : 'trend-down' }}" style="justify-content: flex-start;">
+                    <iconify-icon icon="{{ $diff_transaksi >= 0 ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold' }}"></iconify-icon>
+                    {{ abs($diff_transaksi) }}% dari kemarin
+                </div>
+            </div>
+
+            <!-- Pendapatan -->
+            <div class="stat-card" style="background: #ffffff; border-radius: 20px; padding: 1.25rem;">
+                <div class="stat-header">
+                    <div class="icon-box" style="background: #f0fdf4; color: #10b981; border-radius: 12px;">
+                        <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="font-size: 0.65rem; color: #94a3b8;">Pendapatan</div>
+                        <div class="text-[10px] font-bold text-slate-400">Hari Ini</div>
+                    </div>
+                </div>
+                <div class="stat-value" style="font-size: 1.25rem; margin: 0.5rem 0;">Rp {{ number_format($total_pendapatan, 0, ',', '.') }}</div>
+                <div class="stat-trend {{ $diff_pendapatan >= 0 ? 'trend-up' : 'trend-down' }}" style="justify-content: flex-start;">
+                    <iconify-icon icon="{{ $diff_pendapatan >= 0 ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold' }}"></iconify-icon>
+                    {{ abs($diff_pendapatan) }}% dari kemarin
+                </div>
+            </div>
+
+            <!-- Produk Terjual -->
+            <div class="stat-card" style="background: #ffffff; border-radius: 20px; padding: 1.25rem;">
+                <div class="stat-header">
+                    <div class="icon-box" style="background: #fffaf0; color: #f97316; border-radius: 12px;">
+                        <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="font-size: 0.65rem; color: #94a3b8;">Produk Terjual</div>
+                        <div class="text-[10px] font-bold text-slate-400">Hari Ini</div>
+                    </div>
+                </div>
+                <div class="stat-value" style="font-size: 1.5rem; margin: 0.5rem 0;">{{ number_format($total_produk_terjual) }}</div>
+                <div class="stat-trend {{ $diff_produk_terjual >= 0 ? 'trend-up' : 'trend-down' }}" style="justify-content: flex-start;">
+                    <iconify-icon icon="{{ $diff_produk_terjual >= 0 ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold' }}"></iconify-icon>
+                    {{ abs($diff_produk_terjual) }}% dari kemarin
+                </div>
+            </div>
+
+            <!-- Stok Menipis -->
+            <div class="stat-card" style="background: #ffffff; border-radius: 20px; padding: 1.25rem;">
+                <div class="stat-header">
+                    <div class="icon-box" style="background: #fef2f2; color: #ef4444; border-radius: 12px;">
+                        <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="font-size: 0.65rem; color: #94a3b8;">Stok Menipis</div>
+                        <div class="text-[10px] font-bold text-slate-400">Hari Ini</div>
+                    </div>
+                </div>
+                <div class="stat-value" style="font-size: 1.5rem; margin: 0.5rem 0;">{{ number_format($low_stock_count) }}</div>
+                <a href="{{ url('/products?tab=stok') }}" style="font-size: 0.7rem; color: #3b82f6; font-weight: 700; text-decoration: underline;">Lihat detail</a>
+            </div>
+
+            <!-- Karyawan Aktif -->
+            <div class="stat-card" style="background: #ffffff; border-radius: 20px; padding: 1.25rem;">
+                <div class="stat-header">
+                    <div class="icon-box" style="background: #f5f3ff; color: #8b5cf6; border-radius: 12px;">
+                        <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="font-size: 0.65rem; color: #94a3b8;">Karyawan Aktif</div>
+                        <div class="text-[10px] font-bold text-slate-400">Hari Ini</div>
+                    </div>
+                </div>
+                <div class="stat-value" style="font-size: 1.5rem; margin: 0.5rem 0;">{{ $active_employees }} <span style="font-size: 0.8rem; color: #94a3b8;">/ {{ $total_employees }}</span></div>
+                <a href="{{ url('/users') }}" style="font-size: 0.7rem; color: #3b82f6; font-weight: 700; text-decoration: underline;">Lihat detail</a>
+            </div>
+        </div>
+
+        <!-- Sales Chart -->
+        <div class="card mt-6" style="border-radius: 24px; padding: 1.5rem; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid rgba(226, 232, 240, 0.8);">
+            <div class="card-header">
+                <h3 class="card-title">Penjualan Hari Ini</h3>
+                <div class="flex items-center gap-2">
+                    <select class="chart-select" onchange="updateMainChart(this.value)" style="padding: 6px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.75rem; font-weight: 700; color: #475569; outline: none; cursor: pointer;">
+                        <option value="harian">Per Jam</option>
+                        <option value="mingguan">Per Hari</option>
+                        <option value="bulanan">Per Bulan</option>
+                        <option value="tahunan">Per Tahun</option>
+                    </select>
+                    <div id="year-range-picker" class="hidden flex items-center gap-2">
+                        <input type="number" id="year-from" value="{{ date('Y')-4 }}" class="w-16 p-1 text-[10px] border rounded">
+                        <span class="text-[10px]">-</span>
+                        <input type="number" id="year-to" value="{{ date('Y') }}" class="w-16 p-1 text-[10px] border rounded">
+                        <button onclick="applyYearRange()" class="p-1 bg-blue-500 text-white rounded"><iconify-icon icon="solar:check-read-bold"></iconify-icon></button>
+                    </div>
+                </div>
+            </div>
+            <div id="mainSalesChart" style="min-height: 300px;"></div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="grid grid-cols-12 gap-6 mt-6">
+            <!-- Produk Terlaris -->
+            <div class="col-span-12 lg:col-span-6 card" style="border-radius: 24px; padding: 1.5rem;">
+                <div class="card-header">
+                    <h3 class="card-title">Produk Terlaris Hari Ini</h3>
+                    <a href="{{ url('/products') }}" style="font-size: 0.7rem; color: #3b82f6; font-weight: 700;">Lihat semua</a>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">#</th>
+                            <th>Produk</th>
+                            <th style="text-align: center;">Terjual</th>
+                            <th style="text-align: right;">Pendapatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($topProducts as $index => $tp)
+                        <tr>
+                            <td class="font-bold text-slate-400">{{ $index + 1 }}</td>
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <img src="{{ $tp->product->resolved_image_url ?? '' }}" class="product-img w-8 h-8" style="border-radius: 8px;">
+                                    <span class="font-bold text-xs">{{ $tp->product->nama_produk ?? 'Unknown' }}</span>
+                                </div>
+                            </td>
+                            <td style="text-align: center;" class="font-extrabold">{{ $tp->total_qty }}</td>
+                            <td style="text-align: right;" class="font-extrabold text-blue-600">Rp {{ number_format($tp->total_revenue, 0, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Aktivitas Karyawan -->
+            <div class="col-span-12 lg:col-span-6 card" style="border-radius: 24px; padding: 1.5rem;">
+                <div class="card-header">
+                    <h3 class="card-title">Aktivitas Karyawan Hari Ini</h3>
+                    <a href="#" style="font-size: 0.7rem; color: #3b82f6; font-weight: 700;">Lihat semua</a>
+                </div>
+                <div class="activity-feed">
+                    @forelse($activities as $act)
+                    <div class="activity-item" style="margin-bottom: 1rem;">
+                        <div class="activity-icon" style="background: #f1f5f9; border-radius: 50%;">
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($act['user']) }}&background=random" class="w-full h-full rounded-full">
+                        </div>
+                        <div class="activity-content">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="activity-user" style="margin-bottom: 0;">{{ $act['user'] }}</p>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase">{{ $act['role'] }}</p>
+                                </div>
+                                <span class="activity-time">{{ $act['time'] }}</span>
+                            </div>
+                            <p class="activity-text" style="margin-top: 2px;">{{ $act['action'] }}</p>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="text-center py-8 text-slate-400">Belum ada aktivitas.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 
+@if(Auth::user()->role === 'owner' || Auth::user()->role === 'kepala toko')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     const datasets = {
@@ -850,7 +1037,12 @@
         },
         yaxis: {
             labels: {
-                formatter: function (val) { return "Rp " + (val / 1000) + "k" },
+                formatter: function (val) { 
+                    if (val >= 1000000) return "Rp " + (val / 1000000).toFixed(1) + "jt";
+                    if (val >= 1000) return "Rp " + (val / 1000).toFixed(0) + "rb";
+                    if (val === 0) return "Rp 0";
+                    return "Rp " + val;
+                },
                 style: { colors: '#94a3b8', fontWeight: 600 }
             }
         },
@@ -986,5 +1178,6 @@
         btn.classList.add('active');
         document.getElementById('tab-' + tabId).classList.add('active');
     }
+    @endif
 </script>
 @endsection
