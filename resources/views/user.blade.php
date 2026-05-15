@@ -327,7 +327,7 @@
                 <div class="user-premium-card desktop-only">
                     <span class="user-name-text">{{ Auth::user()->name }}</span>
                     
-                    @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                    @if(auth()->user()->canAccessAdmin())
                         <a href="/dashboard" class="nav-action-btn" title="Dashboard">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7"></rect>
@@ -362,7 +362,7 @@
                             <span style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color);">{{ Auth::user()->name }}</span>
                             <span style="display: block; font-size: 0.75rem; color: var(--sub-text);">{{ Auth::user()->email }}</span>
                         </div>
-                        @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                        @if(auth()->user()->canAccessAdmin())
                             <button onclick="location.href='/dashboard'">Dashboard</button>
                         @endif
                         <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-user-page-mob">

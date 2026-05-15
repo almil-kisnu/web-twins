@@ -9,6 +9,32 @@ class OutletController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+        
+        $parentFitur = \App\Models\Fitur::where('nama', 'Operasional Outlet')->first();
+        $sub_menus = $parentFitur ? \App\Models\Fitur::where('parent_id', $parentFitur->id)->orderBy('id')->get() : collect();
+
+        $hasDataOutlet = false;
+        $hasKinerjaOutlet = false;
+        $hasRiwayatStok = false;
+
+        foreach($sub_menus as $sm) {
+            if ($sm->nama == 'Data Outlet' && $user->hasFeature($sm->id)) $hasDataOutlet = true;
+            if ($sm->nama == 'Kinerja Outlet' && $user->hasFeature($sm->id)) $hasKinerjaOutlet = true;
+            if ($sm->nama == 'Riwayat Stok' && $user->hasFeature($sm->id)) $hasRiwayatStok = true;
+        }
+
+        $activeTab = $request->query('active_tab', 'data');
+        if ($activeTab == 'data' && !$hasDataOutlet) $activeTab = '';
+        if ($activeTab == 'kinerja' && !$hasKinerjaOutlet) $activeTab = '';
+        if ($activeTab == 'riwayat' && !$hasRiwayatStok) $activeTab = '';
+
+        if (!$activeTab) {
+            if ($hasDataOutlet) $activeTab = 'data';
+            elseif ($hasKinerjaOutlet) $activeTab = 'kinerja';
+            elseif ($hasRiwayatStok) $activeTab = 'riwayat';
+        }
+
         $outlets = Outlet::with(['users.operator'])->get();
         
         // Fetch Performance Data per Outlet
@@ -158,7 +184,11 @@ class OutletController extends Controller
             return view('outlet.index', [
                 'outlets' => $outlets,
                 'stockHistory' => $stockHistory,
-                'active_tab' => 'riwayat'
+                'active_tab' => 'riwayat',
+                'hasDataOutlet' => $hasDataOutlet,
+                'hasKinerjaOutlet' => $hasKinerjaOutlet,
+                'hasRiwayatStok' => $hasRiwayatStok,
+                'sub_menus' => $sub_menus
             ])->fragment('stock-history-table');
         }
 
@@ -167,7 +197,11 @@ class OutletController extends Controller
             'active_tab' => $activeTab,
             'performanceData' => $performanceData,
             'topProductsAll' => $top3All,
-            'stockHistory' => $stockHistory
+            'stockHistory' => $stockHistory,
+            'hasDataOutlet' => $hasDataOutlet,
+            'hasKinerjaOutlet' => $hasKinerjaOutlet,
+            'hasRiwayatStok' => $hasRiwayatStok,
+            'sub_menus' => $sub_menus
         ]);
     }
 

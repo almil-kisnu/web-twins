@@ -26,8 +26,35 @@ class BukuKasController extends Controller
 
     private function prepareData(Request $request, $active_tab)
     {
-        $active_tab = session('active_tab') ?: $active_tab;
         $user = auth()->user();
+        
+        $parentFitur = \App\Models\Fitur::where('nama', 'Buku Kas')->first();
+        $sub_menus = $parentFitur ? \App\Models\Fitur::where('parent_id', $parentFitur->id)->orderBy('id')->get() : collect();
+
+        $hasPengeluaran = false;
+        $hasPemasukan = false;
+        $hasHutang = false;
+        $hasPiutang = false;
+
+        foreach($sub_menus as $sm) {
+            if ($sm->nama == 'Pengeluaran' && $user->hasFeature($sm->id)) $hasPengeluaran = true;
+            if ($sm->nama == 'Pemasukan Lainnya' && $user->hasFeature($sm->id)) $hasPemasukan = true;
+            if ($sm->nama == 'Hutang' && $user->hasFeature($sm->id)) $hasHutang = true;
+            if ($sm->nama == 'Piutang' && $user->hasFeature($sm->id)) $hasPiutang = true;
+        }
+
+        $active_tab = session('active_tab') ?: $active_tab;
+        if ($active_tab == 'pengeluaran' && !$hasPengeluaran) $active_tab = '';
+        if ($active_tab == 'pemasukan' && !$hasPemasukan) $active_tab = '';
+        if ($active_tab == 'hutang' && !$hasHutang) $active_tab = '';
+        if ($active_tab == 'piutang' && !$hasPiutang) $active_tab = '';
+
+        if (!$active_tab) {
+            if ($hasPengeluaran) $active_tab = 'pengeluaran';
+            elseif ($hasPemasukan) $active_tab = 'pemasukan';
+            elseif ($hasHutang) $active_tab = 'hutang';
+            elseif ($hasPiutang) $active_tab = 'piutang';
+        }
         
         $outlets = collect();
         if ($user->role === 'owner') {
@@ -128,6 +155,11 @@ class BukuKasController extends Controller
             'totalPemasukan' => $totalPemasukan,
             'totalPengeluaran' => $totalPengeluaran,
             'saldoKasBersih' => $saldoKasBersih,
+            'hasPengeluaran' => $hasPengeluaran,
+            'hasPemasukan' => $hasPemasukan,
+            'hasHutang' => $hasHutang,
+            'hasPiutang' => $hasPiutang,
+            'sub_menus' => $sub_menus
         ];
     }
 

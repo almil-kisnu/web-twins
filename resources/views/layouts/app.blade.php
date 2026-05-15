@@ -23,7 +23,7 @@
         </div>
 
         <nav class="menu-nav">
-            @if (Auth::user()->operator->hasFeature(1))
+            @if (Auth::user()->hasFeature(1))
                 <a href="{{ route('dashboard') }}"
                     class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -32,7 +32,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(2))
+            @if (Auth::user()->hasFeature(2))
                 <a href="{{ url('/products') }}"
                     class="menu-item {{ request()->routeIs('products.*') || request()->is('products*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -41,7 +41,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(3))
+            @if (Auth::user()->hasFeature(3))
                 <a href="{{ url('/transaksi') }}"
                     class="menu-item {{ request()->is('transaksi') || request()->is('transaksi/*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -50,7 +50,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(4))
+            @if (Auth::user()->hasFeature(4))
                 <a href="{{ route('keuangan.index') }}"
                     class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -59,7 +59,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(5))
+            @if (Auth::user()->hasFeature(5))
                 <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
@@ -67,7 +67,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(6))
+            @if (Auth::user()->hasFeature(6))
                 <a href="{{ url('/outlet') }}" class="menu-item {{ request()->is('outlet*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
@@ -75,7 +75,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(7))
+            @if (Auth::user()->hasFeature(7))
                 <a href="{{ route('kontak.index') }}"
                     class="menu-item {{ request()->routeIs('kontak.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -84,7 +84,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(8))
+            @if (Auth::user()->hasFeature(8))
                 <a href="{{ route('keuangan.transaksi') }}"
                     class="menu-item {{ request()->is('buku-kas*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -93,7 +93,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(9))
+            @if (Auth::user()->hasFeature(9))
                 <a href="{{ route('laporan.index') }}"
                     class="menu-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -102,7 +102,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(10))
+            @if (Auth::user()->hasFeature(10))
                 <a href="{{ route('absensi.index') }}"
                     class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
@@ -111,7 +111,7 @@
                 </a>
             @endif
 
-            @if (Auth::user()->operator->hasFeature(11))
+            @if (Auth::user()->hasFeature(11))
                 <a href="{{ route('perilaku.index') }}"
                     class="menu-item {{ request()->is('perilaku*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <meta name="session-success" content="{{ session('success') ?? '' }}">
     <meta name="session-error" content="{{ session('error') ?? '' }}">
+    <meta name="session-error-role" content="{{ session('error_role') ?? '' }}">
     <title>TWINS - ahlinya belanja sembako</title>
 
     <link rel="stylesheet" href="{{ asset('css/home.css') }}?v={{ time() }}">
@@ -150,7 +151,7 @@
                 <div class="user-premium-card desktop-only">
                     <span class="user-name-text">{{ Auth::user()->name }}</span>
                     
-                    @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                    @if(auth()->user()->canAccessAdmin())
                         <a href="/dashboard" class="nav-action-btn" title="Dashboard">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7"></rect>
@@ -185,7 +186,7 @@
                             <span style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-color);">{{ Auth::user()->name }}</span>
                             <span style="display: block; font-size: 0.75rem; color: var(--sub-text);">{{ Auth::user()->email }}</span>
                         </div>
-                        @if(auth()->user()->role === 'owner' || auth()->user()->role === 'kepala_toko')
+                        @if(auth()->user()->canAccessAdmin())
                             <button onclick="location.href='/dashboard'">Dashboard</button>
                         @endif
                         <form method="POST" action="{{ route('logout') }}" style="display: none;" id="logout-form-header-mob">
@@ -1413,6 +1414,7 @@
         // SweetAlert2 Session Messages
         const _sessionSuccess = document.querySelector('meta[name="session-success"]')?.content || null;
         const _sessionError   = document.querySelector('meta[name="session-error"]')?.content || null;
+        const _sessionErrorRole = document.querySelector('meta[name="session-error-role"]')?.content || null;
 
         document.addEventListener('DOMContentLoaded', () => {
             if (_sessionSuccess) {
@@ -1436,6 +1438,17 @@
                     background: 'var(--bg-color)',
                     color: 'var(--text-color)',
                     confirmButtonColor: 'var(--accent-pink)',
+                });
+            }
+
+            if (_sessionErrorRole) {
+                Swal.fire({
+                    title: 'Akses Dibatasi',
+                    text: _sessionErrorRole,
+                    icon: 'warning',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--accent-purple)',
                 });
             }
 

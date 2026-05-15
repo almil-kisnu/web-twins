@@ -11,6 +11,28 @@ class KontakController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+        
+        $parentFitur = \App\Models\Fitur::where('nama', 'Kelola Kontak')->first();
+        $sub_menus = $parentFitur ? \App\Models\Fitur::where('parent_id', $parentFitur->id)->orderBy('id')->get() : collect();
+
+        $hasPelanggan = false;
+        $hasSupplier = false;
+
+        foreach($sub_menus as $sm) {
+            if ($sm->nama == 'Pelanggan' && $user->hasFeature($sm->id)) $hasPelanggan = true;
+            if ($sm->nama == 'Supplier' && $user->hasFeature($sm->id)) $hasSupplier = true;
+        }
+
+        $active_tab = $request->query('active_tab', 'pelanggan');
+        if ($active_tab == 'pelanggan' && !$hasPelanggan) $active_tab = '';
+        if ($active_tab == 'supplier' && !$hasSupplier) $active_tab = '';
+
+        if (!$active_tab) {
+            if ($hasPelanggan) $active_tab = 'pelanggan';
+            elseif ($hasSupplier) $active_tab = 'supplier';
+        }
+
         $sort = $request->get('sort', 'terbaru');
         $order = $sort == 'terlama' ? 'asc' : 'desc';
         
@@ -99,7 +121,7 @@ class KontakController extends Controller
             ->count('user_id');
         $topSpender = $pelanggan->sortByDesc('total_transaksi')->first();
 
-        return view('kontak.index', compact('pelanggan', 'supplier', 'orders', 'sort', 'users', 'totalPelanggan', 'aktifBulanIni', 'topSpender'));
+        return view('kontak.index', compact('pelanggan', 'supplier', 'orders', 'sort', 'users', 'totalPelanggan', 'aktifBulanIni', 'topSpender', 'hasPelanggan', 'hasSupplier', 'sub_menus', 'active_tab'));
     }
 
     public function store(Request $request)

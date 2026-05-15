@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
         $user->update(['last_login_at' => now()]);
 
-        if ($user->role === 'owner' || $user->role === 'kepala_toko') {
+        if ($user->isOwner()) {
             return redirect()->route('dashboard')->with('success', 'Login Berhasil! Selamat datang kembali, ' . $user->name);
         }
         return redirect('/')->with('success', 'Login Berhasil! Selamat belanja di TWINS.');

@@ -202,7 +202,7 @@ header.scrolled,
 .logo-img {
     height: 44px;
     width: 44px;
-    border-radius: 12px;
+    border-radius: 50%;
     object-fit: contain;
     background: white;
     padding: 5px;

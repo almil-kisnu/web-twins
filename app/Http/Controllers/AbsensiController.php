@@ -32,7 +32,34 @@ class AbsensiController extends Controller
         $defaultStore = $user->role === 'owner' ? 'all' : ($user->outlet_id ?? ($outlets->first()->uuid ?? null));
         $store_id = $request->input('store_id', $defaultStore);
         $shift_id = $request->input('shift_id', 'all');
-        $active_tab = $request->input('active_tab', session('active_tab', 'shift'));
+        
+        $parentFitur = \App\Models\Fitur::where('nama', 'Absensi')->first();
+        $sub_menus = $parentFitur ? \App\Models\Fitur::where('parent_id', $parentFitur->id)->orderBy('id')->get() : collect();
+
+        $hasShift = false;
+        $hasJadwal = false;
+        $hasRiwayat = false;
+        $hasRekap = false;
+
+        foreach($sub_menus as $sm) {
+            if ($sm->nama == 'Master Shift' && $user->hasFeature($sm->id)) $hasShift = true;
+            if ($sm->nama == 'Jadwal Karyawan' && $user->hasFeature($sm->id)) $hasJadwal = true;
+            if ($sm->nama == 'Riwayat Absensi' && $user->hasFeature($sm->id)) $hasRiwayat = true;
+            if ($sm->nama == 'Rekap Absensi' && $user->hasFeature($sm->id)) $hasRekap = true;
+        }
+
+        $active_tab = $request->input('active_tab', session('active_tab'));
+        if ($active_tab == 'shift' && !$hasShift) $active_tab = '';
+        if ($active_tab == 'jadwal' && !$hasJadwal) $active_tab = '';
+        if ($active_tab == 'riwayat' && !$hasRiwayat) $active_tab = '';
+        if ($active_tab == 'rekap' && !$hasRekap) $active_tab = '';
+
+        if (!$active_tab) {
+            if ($hasShift) $active_tab = 'shift';
+            elseif ($hasJadwal) $active_tab = 'jadwal';
+            elseif ($hasRiwayat) $active_tab = 'riwayat';
+            elseif ($hasRekap) $active_tab = 'rekap';
+        }
 
         // ─── TAB 1: MASTER SHIFT (global, not per-store) ───
         $shifts = Shift::orderBy('waktu_mulai', 'asc')->get();
@@ -109,6 +136,11 @@ class AbsensiController extends Controller
             'active_tab'    => $active_tab,
             'filterBulan'   => $filterBulan,
             'filterKaryawan' => $filterKaryawan,
+            'hasShift'      => $hasShift,
+            'hasJadwal'     => $hasJadwal,
+            'hasRiwayat'    => $hasRiwayat,
+            'hasRekap'      => $hasRekap,
+            'sub_menus'     => $sub_menus,
             'jadwalListJson' => $jadwals->map(function($j) {
                 return [
                     'user_id' => $j->user_id,

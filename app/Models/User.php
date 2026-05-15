@@ -59,8 +59,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getRoleAttribute()
     {
+        if ($this->isOwner()) {
+            return 'owner';
+        }
         if ($this->operator) {
-            return str_replace(' ', '_', strtolower($this->operator->nama));
+            return str_replace(' ', '_', strtolower(trim($this->operator->nama)));
         }
         return 'user';
     }
@@ -93,7 +96,25 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isOwner(): bool
     {
-        return in_array($this->role, ['Owner', 'owner']);
+        // Trim dan cast ke string untuk menangani spasi atau data non-null tapi kosong
+        return empty(trim((string)$this->operator_id));
+    }
+
+    /**
+     * Check if user can access administrative area
+     */
+    public function canAccessAdmin(): bool
+    {
+        // Hanya Owner (operator_id null) yang boleh akses area admin/dashboard
+        return $this->isOwner();
+    }
+
+    public function hasFeature($featureId): bool
+    {
+        if ($this->isOwner()) {
+            return true;
+        }
+        return $this->operator ? $this->operator->hasFeature($featureId) : false;
     }
 
     public function isKepalaToko(): bool
