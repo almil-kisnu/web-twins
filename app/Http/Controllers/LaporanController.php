@@ -42,22 +42,33 @@ class LaporanController extends Controller
     {
         $store = $request->query('store_id');
         $date = $request->query('date', date('Y-m-d'));
+        $paidStatuses = ['paid', 'settlement', 'success', 'capture'];
 
         $hppSubQuery = DB::table('transaction_detail')
             ->select('transaction_id', DB::raw('COALESCE(SUM(harga_modal * jmlh), 0) as total_hpp'))
             ->groupBy('transaction_id');
 
-        $omsetQuery = DB::table('transactions')
+        $offlineOmsetQuery = DB::table('transactions')
             ->where('jenis', 'penjualan')
             ->whereDate('tanggal', $date);
 
         if ($store !== null && $store !== '') {
-            $omsetQuery->where('store_id', $store);
+            $offlineOmsetQuery->where('store_id', $store);
         }
 
-        $omset = (float) $omsetQuery->sum('total');
+        $offlineOmset = (float) $offlineOmsetQuery->sum('total');
 
-        $hppQuery = DB::table('transactions as t')
+        $onlineOmsetQuery = DB::table('payment_orders')
+            ->whereDate('created_at', $date)
+            ->whereIn('payment_status', $paidStatuses);
+
+        if ($store !== null && $store !== '') {
+            $onlineOmsetQuery->whereRaw('CAST(outlet_id AS TEXT) = ?', [$store]);
+        }
+
+        $onlineOmset = (float) $onlineOmsetQuery->sum('total_amount');
+
+        $offlineHppQuery = DB::table('transactions as t')
             ->leftJoinSub($hppSubQuery, 'hpp', function ($join) {
                 $join->on('hpp.transaction_id', '=', 't.uuid');
             })
@@ -65,29 +76,94 @@ class LaporanController extends Controller
             ->whereDate('t.tanggal', $date);
 
         if ($store !== null && $store !== '') {
-            $hppQuery->where('t.store_id', $store);
+            $offlineHppQuery->where('t.store_id', $store);
         }
 
-        $hpp = (float) ($hppQuery->selectRaw('COALESCE(SUM(hpp.total_hpp), 0) as total_hpp')->value('total_hpp') ?? 0);
+        $offlineHpp = (float) ($offlineHppQuery->selectRaw('COALESCE(SUM(hpp.total_hpp), 0) as total_hpp')->value('total_hpp') ?? 0);
 
-        $laba_kotor = (float) $omset - (float) $hpp;
-
-        $cashFlowQuery = DB::table('cash_flows')
+        $pembelian = (float) DB::table('transactions')
+            ->where('jenis', 'pembelian')
             ->whereDate('tanggal', $date)
-            ->selectRaw("COALESCE(SUM(CASE WHEN jenis = 'pemasukan' THEN nominal ELSE 0 END), 0) as pemasukan");
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('store_id', $store);
+            })
+            ->sum('total');
 
-        if ($store !== null && $store !== '') {
-            $cashFlowQuery->where('store_id', $store);
-        }
+        $retur = (float) DB::table('transactions')
+            ->where('jenis', 'retur')
+            ->whereDate('tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('store_id', $store);
+            })
+            ->sum('total');
 
-        $cashFlows = $cashFlowQuery->first();
+        $rugi = (float) DB::table('transactions')
+            ->where('jenis', 'rugi')
+            ->whereDate('tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('store_id', $store);
+            })
+            ->sum('total');
+
+        $transfer = (float) DB::table('transactions')
+            ->where('jenis', 'transfer')
+            ->whereDate('tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('store_id', $store);
+            })
+            ->sum('total');
+
+        $pemasukanCashFlow = (float) DB::table('cash_flows')
+            ->where('jenis', 'pemasukan')
+            ->whereDate('tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('store_id', $store);
+            })
+            ->sum('nominal');
+
+        $pemasukanPiutang = (float) DB::table('detail_debts as dd')
+            ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
+            ->where('d.tipe', 'piutang')
+            ->whereDate('dd.tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('d.store_id', $store);
+            })
+            ->sum('dd.bayar');
+
+        $pengeluaranCashFlow = (float) DB::table('cash_flows')
+            ->where('jenis', 'pengeluaran')
+            ->whereDate('tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('store_id', $store);
+            })
+            ->sum('nominal');
+
+        $pengeluaranUtang = (float) DB::table('detail_debts as dd')
+            ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
+            ->where('d.tipe', 'utang')
+            ->whereDate('dd.tanggal', $date)
+            ->when($store !== null && $store !== '', function ($query) use ($store) {
+                $query->where('d.store_id', $store);
+            })
+            ->sum('dd.bayar');
+
+        $omset = $offlineOmset + $onlineOmset;
+        $hpp = $offlineHpp;
+        $laba_kotor = (float) $omset - (float) $hpp;
+        $pemasukan = $pemasukanCashFlow + $pemasukanPiutang;
+        $pengeluaran = $pengeluaranCashFlow + $pengeluaranUtang;
 
         return response()->json([
             'omset' => $omset,
             'hpp' => $hpp,
             'laba_kotor' => $laba_kotor,
-            'pemasukan' => (float) ($cashFlows->pemasukan ?? 0),
-            'pengeluaran' => 0,
+            'pemasukan' => $pemasukan,
+            'pengeluaran' => $pengeluaran,
+            'omset_online' => $onlineOmset,
+            'pembelian' => $pembelian,
+            'retur' => $retur,
+            'rugi' => $rugi,
+            'transfer' => $transfer,
         ]);
     }
 
@@ -96,27 +172,96 @@ class LaporanController extends Controller
     {
         $store = $request->query('store_id');
         $date = $request->query('date', date('Y-m-d'));
+        $transactionStoreClause = $store !== null && $store !== '' ? ' AND t.store_id = ?' : '';
+        $cashFlowStoreClause = $store !== null && $store !== '' ? ' AND cf.store_id = ?' : '';
+        $debtStoreClause = $store !== null && $store !== '' ? ' AND d.store_id = ?' : '';
 
-        $operatorsQuery = DB::table('transactions')
-            ->leftJoin('users', 'transactions.user_id', '=', 'users.uuid')
-            ->whereDate('transactions.tanggal', $date)
-            ->selectRaw('COALESCE(users.username, \'Unknown\') as name, COALESCE(SUM(transactions.total),0) as penjualan, COUNT(transactions.uuid) as frekuensi')
-            ->groupBy('transactions.user_id', 'users.username');
+        $sql = <<<SQL
+                        SELECT nama_operator, jenis, SUM(total) AS total
+            FROM (
+                SELECT
+                    COALESCE(u.username, 'Unknown') AS nama_operator,
+                                        t.jenis AS jenis,
+                                        COALESCE(SUM(CASE WHEN t.kembalian < 0 THEN 0 ELSE t.total END), 0) AS total
+                FROM transactions t
+                LEFT JOIN users u ON u.uuid = t.user_id
+                WHERE date(t.tanggal) = ?
+                                    AND t.jenis IN ('penjualan', 'pembelian', 'retur', 'rugi', 'transfer')
+                  {$transactionStoreClause}
+                                GROUP BY t.user_id, u.username, t.jenis
 
+                UNION ALL
+
+                SELECT
+                    COALESCE(u.username, 'Unknown') AS nama_operator,
+                                        cf.jenis AS jenis,
+                                        COALESCE(SUM(cf.nominal), 0) AS total
+                FROM cash_flows cf
+                LEFT JOIN users u ON u.uuid = cf.user_id
+                WHERE date(cf.tanggal) = ?
+                                    AND cf.jenis IN ('pemasukan', 'pengeluaran')
+                  {$cashFlowStoreClause}
+                                GROUP BY cf.user_id, u.username, cf.jenis
+
+                UNION ALL
+
+                SELECT
+                    COALESCE(u.username, 'Unknown') AS nama_operator,
+                                        'pelunasan_piutang' AS jenis,
+                                        COALESCE(SUM(dd.bayar), 0) AS total
+                FROM detail_debts dd
+                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'piutang'
+                LEFT JOIN users u ON u.uuid = dd.user_id
+                WHERE date(dd.tanggal) = ?
+                  {$debtStoreClause}
+                GROUP BY dd.user_id, u.username
+
+                UNION ALL
+
+                SELECT
+                    COALESCE(u.username, 'Unknown') AS nama_operator,
+                                        'pembayaran_hutang' AS jenis,
+                                        COALESCE(SUM(dd.bayar), 0) AS total
+                FROM detail_debts dd
+                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'utang'
+                LEFT JOIN users u ON u.uuid = dd.user_id
+                WHERE date(dd.tanggal) = ?
+                  {$debtStoreClause}
+                GROUP BY dd.user_id, u.username
+            ) aggregated
+                        GROUP BY nama_operator, jenis
+                        ORDER BY nama_operator ASC, jenis ASC
+        SQL;
+
+        $bindings = [$date];
         if ($store !== null && $store !== '') {
-            $operatorsQuery->where('transactions.store_id', $store);
+            $bindings[] = $store;
         }
 
-        $operators = $operatorsQuery->get();
+        $bindings[] = $date;
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
 
-        $data = $operators->map(function ($op) {
+        $bindings[] = $date;
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $bindings[] = $date;
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $rows = DB::select($sql, $bindings);
+
+        $data = array_map(function ($row) {
             return [
-                'name' => $op->name ?? 'Unknown',
-                'penjualan' => (float) $op->penjualan,
-                'pemasukan' => (float) $op->penjualan,
-                'pengeluaran' => 0,
+                'name' => $row->nama_operator ?? 'Unknown',
+                'jenis' => $row->jenis ?? '',
+                'total' => (float) ($row->total ?? 0),
             ];
-        });
+        }, $rows);
 
         return response()->json([
             'operators' => $data
@@ -137,49 +282,66 @@ class LaporanController extends Controller
         $cashFlowStoreCondition = $store !== null && $store !== '' ? 'WHERE store_id = ? AND date(tanggal) = ?' : 'WHERE date(tanggal) = ?';
         $cashFlowBindings = $store !== null && $store !== '' ? [$store, $date] : [$date];
 
+        $paymentOrderCondition = $store !== null && $store !== ''
+            ? 'WHERE CAST(outlet_id AS TEXT) = ? AND date(created_at) = ? AND payment_status IN (\'paid\', \'settlement\', \'success\', \'capture\')'
+            : 'WHERE date(created_at) = ? AND payment_status IN (\'paid\', \'settlement\', \'success\', \'capture\')';
+        $paymentOrderBindings = $store !== null && $store !== '' ? [$store, $date] : [$date];
+
         $sql = <<<'SQL'
-            SELECT pm.nama_metode AS nama_metode, COALESCE(SUM(unioned.amount), 0) AS total
-            FROM payment_methods pm
-            LEFT JOIN (
-                SELECT metode_pembayaran, CASE jenis
-                    WHEN 'pembelian' THEN -(CASE WHEN kembalian < 0 THEN 0 ELSE total END)
-                    ELSE (CASE WHEN kembalian < 0 THEN 0 ELSE total END)
-                END AS amount
-                FROM transactions
-                %TRANSACTION_WHERE%
+            SELECT nama_metode, total
+            FROM (
+                SELECT pm.nama_metode AS nama_metode, COALESCE(SUM(unioned.amount), 0) AS total
+                FROM payment_methods pm
+                LEFT JOIN (
+                    SELECT metode_pembayaran, CASE jenis
+                        WHEN 'pembelian' THEN -(CASE WHEN kembalian < 0 THEN 0 ELSE total END)
+                        ELSE (CASE WHEN kembalian < 0 THEN 0 ELSE total END)
+                    END AS amount
+                    FROM transactions
+                    %TRANSACTION_WHERE%
+
+                    UNION ALL
+
+                    SELECT dd.metode_pembayaran, CASE d.tipe
+                        WHEN 'piutang' THEN dd.bayar
+                        WHEN 'utang' THEN -dd.bayar
+                        ELSE 0
+                    END AS amount
+                    FROM detail_debts dd
+                    INNER JOIN debts d ON d.uuid = dd.debts_id
+                    %DEBT_WHERE%
+
+                    UNION ALL
+
+                    SELECT metode_pembayaran, CASE jenis
+                        WHEN 'pemasukan' THEN nominal
+                        WHEN 'pengeluaran' THEN -nominal
+                        ELSE 0
+                    END AS amount
+                    FROM cash_flows
+                    %CASHFLOW_WHERE%
+                ) unioned ON unioned.metode_pembayaran = pm.uuid
+                GROUP BY pm.uuid, pm.nama_metode
 
                 UNION ALL
 
-                SELECT dd.metode_pembayaran, CASE d.tipe
-                    WHEN 'piutang' THEN dd.bayar
-                    WHEN 'utang' THEN -dd.bayar
-                    ELSE 0
-                END AS amount
-                FROM detail_debts dd
-                INNER JOIN debts d ON d.uuid = dd.debts_id
-                %DEBT_WHERE%
-
-                UNION ALL
-
-                SELECT metode_pembayaran, CASE jenis
-                    WHEN 'pemasukan' THEN nominal
-                    WHEN 'pengeluaran' THEN -nominal
-                    ELSE 0
-                END AS amount
-                FROM cash_flows
-                %CASHFLOW_WHERE%
-            ) unioned ON unioned.metode_pembayaran = pm.uuid
-            GROUP BY pm.uuid, pm.nama_metode
+                SELECT 'Online' AS nama_metode, COALESCE(SUM(total_amount), 0) AS total
+                FROM payment_orders
+                %PAYMENT_ORDER_WHERE%
+            ) cashbox
             ORDER BY total DESC
         SQL;
 
         $sql = str_replace(
-            ['%TRANSACTION_WHERE%', '%DEBT_WHERE%', '%CASHFLOW_WHERE%'],
-            [$transactionStoreCondition, $debtStoreCondition, $cashFlowStoreCondition],
+            ['%TRANSACTION_WHERE%', '%DEBT_WHERE%', '%CASHFLOW_WHERE%', '%PAYMENT_ORDER_WHERE%'],
+            [$transactionStoreCondition, $debtStoreCondition, $cashFlowStoreCondition, $paymentOrderCondition],
             $sql
         );
 
-        $items = DB::select($sql, array_merge($transactionBindings, $debtBindings, $cashFlowBindings));
+        $items = DB::select(
+            $sql,
+            array_merge($transactionBindings, $debtBindings, $cashFlowBindings, $paymentOrderBindings)
+        );
 
         $data = array_map(function ($row) {
             return [
@@ -222,10 +384,16 @@ class LaporanController extends Controller
         $store = $request->query('store_id');
         $month = (int) $request->query('month', date('m'));
         $year = (int) $request->query('year', date('Y'));
+        $paidStatuses = ['paid', 'settlement', 'success', 'capture'];
 
         $hppSubQuery = DB::table('transaction_detail')
             ->select('transaction_id', DB::raw('COALESCE(SUM(harga_modal * jmlh), 0) as total_hpp'))
             ->groupBy('transaction_id');
+
+        $onlineHppSubQuery = DB::table('payment_order_items as poi')
+            ->leftJoin('products as p', DB::raw('CAST(p.uuid AS TEXT)'), '=', 'poi.product_id')
+            ->select('poi.payment_order_id', DB::raw('COALESCE(SUM(COALESCE(p.harga_modal, 0) * poi.quantity), 0) as total_hpp'))
+            ->groupBy('poi.payment_order_id');
 
         $omsetQuery = DB::table('transactions')
             ->where('jenis', 'penjualan')
@@ -237,6 +405,17 @@ class LaporanController extends Controller
         }
 
         $omset = (float) $omsetQuery->sum('total');
+
+        $onlineOmsetQuery = DB::table('payment_orders')
+            ->whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->whereIn('payment_status', $paidStatuses);
+
+        if ($store !== null && $store !== '') {
+            $onlineOmsetQuery->whereRaw('CAST(outlet_id AS TEXT) = ?', [$store]);
+        }
+
+        $onlineOmset = (float) $onlineOmsetQuery->sum('total_amount');
 
         $hppQuery = DB::table('transactions as t')
             ->leftJoinSub($hppSubQuery, 'hpp', function ($join) {
@@ -252,6 +431,20 @@ class LaporanController extends Controller
 
         $hpp = (float) ($hppQuery->selectRaw('COALESCE(SUM(hpp.total_hpp), 0) as total_hpp')->value('total_hpp') ?? 0);
 
+        $onlineHppQuery = DB::table('payment_orders as po')
+            ->leftJoinSub($onlineHppSubQuery, 'hpp', function ($join) {
+                $join->on('hpp.payment_order_id', '=', 'po.id');
+            })
+            ->whereMonth('po.created_at', $month)
+            ->whereYear('po.created_at', $year)
+            ->whereIn('po.payment_status', $paidStatuses);
+
+        if ($store !== null && $store !== '') {
+            $onlineHppQuery->whereRaw('CAST(po.outlet_id AS TEXT) = ?', [$store]);
+        }
+
+        $onlineHpp = (float) ($onlineHppQuery->selectRaw('COALESCE(SUM(hpp.total_hpp), 0) as total_hpp')->value('total_hpp') ?? 0);
+
         $cashFlowQuery = DB::table('cash_flows')
             ->whereMonth('tanggal', $month)
             ->whereYear('tanggal', $year)
@@ -264,12 +457,57 @@ class LaporanController extends Controller
 
         $cashFlows = $cashFlowQuery->first();
 
+        $piutangQuery = DB::table('detail_debts as dd')
+            ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
+            ->where('d.tipe', 'piutang')
+            ->whereMonth('dd.tanggal', $month)
+            ->whereYear('dd.tanggal', $year);
+
+        if ($store !== null && $store !== '') {
+            $piutangQuery->where('d.store_id', $store);
+        }
+
+        $piutang = (float) $piutangQuery->sum('dd.bayar');
+
+        $utangQuery = DB::table('detail_debts as dd')
+            ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
+            ->where('d.tipe', 'utang')
+            ->whereMonth('dd.tanggal', $month)
+            ->whereYear('dd.tanggal', $year);
+
+        if ($store !== null && $store !== '') {
+            $utangQuery->where('d.store_id', $store);
+        }
+
+        $utang = (float) $utangQuery->sum('dd.bayar');
+
+        $rugiQuery = DB::table('transactions')
+            ->where('jenis', 'rugi')
+            ->whereMonth('tanggal', $month)
+            ->whereYear('tanggal', $year);
+
+        if ($store !== null && $store !== '') {
+            $rugiQuery->where('store_id', $store);
+        }
+
+        $rugi = (float) $rugiQuery->sum('total');
+
+        $pemasukan = (float) ($cashFlows->pemasukan ?? 0) + $piutang;
+        $pengeluaran = (float) ($cashFlows->pengeluaran ?? 0) + $utang;
+        $hppTotal = $hpp + $onlineHpp;
+        $omsetTotal = $omset + $onlineOmset;
+        $labaKotor = $omsetTotal - $hppTotal;
+        $labaBersih = ($labaKotor + $pemasukan) - ($pengeluaran + $rugi);
+
         $data = [
             'omset' => $omset,
-            'hpp' => $hpp,
-            'laba_kotor' => (float) $omset - (float) $hpp,
-            'pemasukan' => (float) ($cashFlows->pemasukan ?? 0),
-            'pengeluaran' => (float) ($cashFlows->pengeluaran ?? 0),
+            'penjualan_online' => $onlineOmset,
+            'hpp' => $hppTotal,
+            'laba_kotor' => $labaKotor,
+            'laba_bersih' => $labaBersih,
+            'pemasukan' => $pemasukan,
+            'pengeluaran' => $pengeluaran,
+            'rugi' => $rugi,
         ];
 
         return response()->json($data);
@@ -281,28 +519,170 @@ class LaporanController extends Controller
         $month = (int) $request->query('month', date('m'));
         $year = (int) $request->query('year', date('Y'));
 
-        $operatorsQuery = DB::table('transactions')
-            ->leftJoin('users', 'transactions.user_id', '=', 'users.uuid')
-            ->whereMonth('transactions.tanggal', $month)
-            ->whereYear('transactions.tanggal', $year)
-            ->selectRaw('COALESCE(users.username, \'Unknown\') as name, COALESCE(SUM(transactions.total),0) as masuk, 0 as keluar')
-            ->groupBy('transactions.user_id', 'users.username');
+        $storeClause = $store !== null && $store !== '' ? ' AND store_id = ?' : '';
+        $outletClause = $store !== null && $store !== '' ? ' AND CAST(po.outlet_id AS TEXT) = ?' : '';
+
+        $sql = <<<SQL
+            SELECT nama_operator, SUM(masuk) AS masuk, SUM(keluar) AS keluar
+            FROM (
+                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, COALESCE(SUM(t.total), 0) AS masuk, 0 AS keluar
+                FROM transactions t
+                LEFT JOIN users u ON u.uuid = t.user_id
+                LEFT JOIN operator o ON o.uuid = u.operator_id
+                WHERE t.jenis = 'penjualan'
+                  AND EXTRACT(MONTH FROM t.tanggal) = ?
+                  AND EXTRACT(YEAR FROM t.tanggal) = ?
+                  {$storeClause}
+                GROUP BY t.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
+
+                UNION ALL
+
+                SELECT 'Online' AS nama_operator, COALESCE(SUM(po.total_amount), 0) AS masuk, 0 AS keluar
+                FROM payment_orders po
+                WHERE EXTRACT(MONTH FROM po.created_at) = ?
+                  AND EXTRACT(YEAR FROM po.created_at) = ?
+                  AND po.payment_status IN ('paid', 'settlement', 'success', 'capture')
+                  {$outletClause}
+
+                UNION ALL
+
+                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, COALESCE(SUM(cf.nominal), 0) AS masuk, 0 AS keluar
+                FROM cash_flows cf
+                LEFT JOIN users u ON u.uuid = cf.user_id
+                LEFT JOIN operator o ON o.uuid = u.operator_id
+                WHERE cf.jenis = 'pemasukan'
+                  AND EXTRACT(MONTH FROM cf.tanggal) = ?
+                  AND EXTRACT(YEAR FROM cf.tanggal) = ?
+                  {$storeClause}
+                GROUP BY cf.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
+
+                UNION ALL
+
+                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, 0 AS masuk, COALESCE(SUM(t.total), 0) AS keluar
+                FROM transactions t
+                LEFT JOIN users u ON u.uuid = t.user_id
+                LEFT JOIN operator o ON o.uuid = u.operator_id
+                WHERE t.jenis IN ('pembelian', 'retur', 'rugi')
+                  AND EXTRACT(MONTH FROM t.tanggal) = ?
+                  AND EXTRACT(YEAR FROM t.tanggal) = ?
+                  {$storeClause}
+                GROUP BY t.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
+
+                UNION ALL
+
+                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, 0 AS masuk, COALESCE(SUM(cf.nominal), 0) AS keluar
+                FROM cash_flows cf
+                LEFT JOIN users u ON u.uuid = cf.user_id
+                LEFT JOIN operator o ON o.uuid = u.operator_id
+                WHERE cf.jenis = 'pengeluaran'
+                  AND EXTRACT(MONTH FROM cf.tanggal) = ?
+                  AND EXTRACT(YEAR FROM cf.tanggal) = ?
+                  {$storeClause}
+                GROUP BY cf.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
+
+                UNION ALL
+
+                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, COALESCE(SUM(dd.bayar), 0) AS masuk, 0 AS keluar
+                FROM detail_debts dd
+                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'piutang'
+                LEFT JOIN users u ON u.uuid = dd.user_id
+                LEFT JOIN operator o ON o.uuid = u.operator_id
+                WHERE EXTRACT(MONTH FROM dd.tanggal) = ?
+                  AND EXTRACT(YEAR FROM dd.tanggal) = ?
+                  {$storeClause}
+                GROUP BY dd.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
+
+                UNION ALL
+
+                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, 0 AS masuk, COALESCE(SUM(dd.bayar), 0) AS keluar
+                FROM detail_debts dd
+                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'utang'
+                LEFT JOIN users u ON u.uuid = dd.user_id
+                LEFT JOIN operator o ON o.uuid = u.operator_id
+                WHERE EXTRACT(MONTH FROM dd.tanggal) = ?
+                  AND EXTRACT(YEAR FROM dd.tanggal) = ?
+                  {$storeClause}
+                GROUP BY dd.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
+            ) aggregated
+            GROUP BY nama_operator
+            ORDER BY masuk DESC, keluar DESC, nama_operator ASC
+        SQL;
+
+        $bindings = [$month, $year];
 
         if ($store !== null && $store !== '') {
-            $operatorsQuery->where('transactions.store_id', $store);
+            $bindings[] = $store;
         }
 
-        $result = $operatorsQuery->get();
+        $bindings[] = $month;
+        $bindings[] = $year;
+
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $bindings[] = $month;
+        $bindings[] = $year;
+
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $bindings[] = $month;
+        $bindings[] = $year;
+
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $bindings[] = $month;
+        $bindings[] = $year;
+
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $bindings[] = $month;
+        $bindings[] = $year;
+
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $bindings[] = $month;
+        $bindings[] = $year;
+
+        if ($store !== null && $store !== '') {
+            $bindings[] = $store;
+        }
+
+        $result = DB::select($sql, $bindings);
 
         $operators = array_map(function ($row) {
             return [
-                'name' => $row->name,
+                'name' => $row->nama_operator,
                 'masuk' => (float) $row->masuk,
                 'keluar' => (float) $row->keluar,
             ];
-        }, $result->all());
+        }, $result);
 
         return response()->json(['operators' => $operators]);
+    }
+
+    public function monthlyDebtSummary(Request $request)
+    {
+        $store = $request->query('store_id');
+
+        $query = DB::table('debts')
+            ->selectRaw('tipe, COALESCE(SUM(sisa), 0) as total_belum_lunas')
+            ->where('sisa', '>', 0)
+            ->groupBy('tipe');
+
+        if ($store !== null && $store !== '') {
+            $query->where('store_id', $store);
+        }
+
+        return response()->json(['items' => $query->get()]);
     }
 
     public function monthlyDaily(Request $request)
@@ -310,10 +690,16 @@ class LaporanController extends Controller
         $store = $request->query('store_id');
         $month = (int) $request->query('month', date('m'));
         $year = (int) $request->query('year', date('Y'));
+        $paidStatuses = ['paid', 'settlement', 'success', 'capture'];
 
         $hppSubQuery = DB::table('transaction_detail')
             ->select('transaction_id', DB::raw('COALESCE(SUM(harga_modal * jmlh), 0) as total_hpp'))
             ->groupBy('transaction_id');
+
+        $onlineHppSubQuery = DB::table('payment_order_items as poi')
+            ->leftJoin('products as p', DB::raw('CAST(p.uuid AS TEXT)'), '=', 'poi.product_id')
+            ->select('poi.payment_order_id', DB::raw('COALESCE(SUM(COALESCE(p.harga_modal, 0) * poi.quantity), 0) as total_hpp'))
+            ->groupBy('poi.payment_order_id');
 
         $dailyQuery = DB::table('transactions as t')
             ->leftJoinSub($hppSubQuery, 'hpp', function ($join) {
@@ -328,6 +714,23 @@ class LaporanController extends Controller
         if ($store !== null && $store !== '') {
             $dailyQuery->where('t.store_id', $store);
         }
+
+        $onlineQuery = DB::table('payment_orders as po')
+            ->leftJoinSub($onlineHppSubQuery, 'hpp', function ($join) {
+                $join->on('hpp.payment_order_id', '=', 'po.id');
+            })
+            ->whereMonth('po.created_at', $month)
+            ->whereYear('po.created_at', $year)
+            ->whereIn('po.payment_status', $paidStatuses)
+            ->selectRaw("DATE(po.created_at) as tanggal, 'penjualan_online' as jenis, COALESCE(SUM(po.total_amount),0) as total, COALESCE(SUM(po.total_amount - COALESCE(hpp.total_hpp, 0)),0) as total_hpp, COUNT(po.id) as frekuensi")
+            ->groupBy(DB::raw('DATE(po.created_at)'))
+            ->orderBy('tanggal');
+
+        if ($store !== null && $store !== '') {
+            $onlineQuery->whereRaw('CAST(po.outlet_id AS TEXT) = ?', [$store]);
+        }
+
+        $dailyQuery = $dailyQuery->unionAll($onlineQuery);
 
         $result = $dailyQuery->get();
 
@@ -629,7 +1032,7 @@ class LaporanController extends Controller
             [
                 [
                     'title' => 'Ringkasan',
-                    'headers' => ['Periode', 'Outlet', 'Omset', 'HPP', 'Laba Kotor', 'Pemasukan'],
+                    'headers' => ['Periode', 'Outlet', 'Omset', 'HPP', 'Laba Kotor', 'Pemasukan', 'Pengeluaran'],
                     'rows' => [
                         [
                             $date,
@@ -638,6 +1041,7 @@ class LaporanController extends Controller
                             $this->formatExportCurrency($summary['hpp']),
                             $this->formatExportCurrency($summary['laba_kotor']),
                             $this->formatExportCurrency($summary['pemasukan']),
+                            $this->formatExportCurrency($summary['pengeluaran']),
                         ]
                     ],
                 ],
@@ -829,7 +1233,42 @@ class LaporanController extends Controller
 
     private function resolveDailyOperators(string $date, ?string $store): array
     {
-        return $this->dailyOperators(new Request(['date' => $date, 'store_id' => $store]))->getData(true)['operators'] ?? [];
+        $rows = $this->dailyOperators(new Request(['date' => $date, 'store_id' => $store]))->getData(true)['operators'] ?? [];
+        $grouped = [];
+
+        foreach ($rows as $row) {
+            $name = $row['name'] ?? 'Unknown';
+            $jenis = $row['jenis'] ?? '';
+            $total = (float) ($row['total'] ?? 0);
+
+            if (!isset($grouped[$name])) {
+                $grouped[$name] = [
+                    'name' => $name,
+                    'penjualan' => 0.0,
+                    'pembelian' => 0.0,
+                    'transfer' => 0.0,
+                    'pemasukan' => 0.0,
+                    'pengeluaran' => 0.0,
+                    'pelunasan_piutang' => 0.0,
+                    'pembayaran_hutang' => 0.0,
+                    'retur' => 0.0,
+                    'rugi' => 0.0,
+                    'net_laci' => 0.0,
+                ];
+            }
+
+            if (array_key_exists($jenis, $grouped[$name])) {
+                $grouped[$name][$jenis] += $total;
+            }
+        }
+
+        foreach ($grouped as &$item) {
+            $item['net_laci'] = ($item['penjualan'] + $item['transfer'] + $item['pemasukan'] + $item['pelunasan_piutang'])
+                - ($item['pembelian'] + $item['pengeluaran'] + $item['pembayaran_hutang']);
+        }
+        unset($item);
+
+        return array_values($grouped);
     }
 
     private function resolveDailyCashbox(string $date, ?string $store): array
