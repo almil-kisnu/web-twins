@@ -52,4 +52,9 @@ class PaymentOrder extends Model
     {
         return $this->hasMany(PaymentOrderItem::class, 'payment_order_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'uuid');
+    }
 }

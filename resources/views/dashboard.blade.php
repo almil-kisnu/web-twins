@@ -10,7 +10,7 @@
     }
 
     .dashboard-wrapper {
-        padding: 1.5rem;
+        padding: 0.5rem 1.5rem;
         animation: fadeIn 0.6s ease-out;
     }
 
@@ -19,17 +19,29 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Top Stats Card */
     .stat-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 0.85rem 1rem;
-        border: 1px solid #e2e8f0;
+        border-radius: 48px;
+        padding: 1.25rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        animation: fadeInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 30px -10px rgba(0, 0, 0, 0.15);
     }
 
     .icon-box {
@@ -88,10 +100,18 @@
 
     .card {
         background: #fff;
-        border-radius: 24px;
-        border: 1px solid #e2e8f0;
-        padding: 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        border-radius: 60px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        position: relative;
+    }
+
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.15);
     }
 
     .card-header {
@@ -148,6 +168,115 @@
     .badge-critical { background: #fee2e2; color: #b91c1c; }
     .badge-low { background: #ffedd5; color: #c2410c; }
 
+    /* Custom Tabs for Stock/Expired - Compact Version */
+    .stock-tabs {
+        display: flex;
+        gap: 3px;
+        background: #f1f5f9;
+        padding: 3px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        width: fit-content; /* Make it only as wide as content */
+        min-width: 250px;
+    }
+
+    .stock-tab-btn {
+        flex: 1;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #64748b;
+        border: none;
+        background: transparent;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .stock-tab-btn.active {
+        background: #0477bf;
+        color: #ffffff;
+        box-shadow: 0 2px 8px -1px rgba(4, 119, 191, 0.25);
+    }
+
+    .stock-content {
+        display: none;
+        animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stock-content.active {
+        display: block;
+    }
+
+    .scrollable-table-container {
+        max-height: 280px;
+        overflow-y: auto;
+        padding-right: 5px;
+        scrollbar-width: thin;
+        scrollbar-color: #3b82f6 #f1f5f9;
+    }
+
+    /* Modern Detail Button */
+    .btn-detail-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--btn-theme, #6366f1);
+        background: var(--btn-bg, rgba(99, 102, 241, 0.08));
+        padding: 5px 12px;
+        border-radius: 50px;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        text-decoration: none !important;
+        width: fit-content;
+        border: 1px solid var(--btn-border, rgba(99, 102, 241, 0.1));
+    }
+
+    .btn-detail-modern:hover {
+        background: var(--btn-theme, #6366f1) !important;
+        color: #fff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-detail-modern iconify-icon {
+        font-size: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-detail-modern:hover iconify-icon {
+        transform: translateX(3px);
+    }
+
+    /* Custom Scrollbar */
+    .scrollable-table-container::-webkit-scrollbar {
+        width: 4px;
+    }
+    .scrollable-table-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    .scrollable-table-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .compact-table td {
+        padding: 0.65rem 0 !important;
+        font-size: 0.8rem !important;
+    }
+
     /* Activity Feed */
     .activity-item {
         display: flex;
@@ -202,35 +331,101 @@
         cursor: pointer;
     }
 
+    /* Ultra-Clean Welcome Section */
     .welcome-section {
-        margin-bottom: 2rem;
+        margin-bottom: 0.75rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 1.5rem;
+        gap: 1rem;
+        padding: 0;
     }
 
-    .filter-group {
+    .welcome-title {
+        font-size: 1.5rem !important;
+        font-weight: 800 !important;
+        color: #0f172a;
         display: flex;
         align-items: center;
         gap: 12px;
-        background: #fff;
-        padding: 8px 16px;
-        border-radius: 50px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
     }
 
-    .outlet-select {
-        border: none;
-        background: transparent;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #0f172a;
-        cursor: pointer;
-        padding-right: 20px;
-        outline: none;
+    .user-name-gradient {
+        background: linear-gradient(135deg, #0477bf 0%, #035a91 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: inline-block;
+        position: relative;
+    }
+
+    .user-name-gradient::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 3px;
+        background: #0477bf;
+        border-radius: 50px;
+        animation: underlineIn 1s ease-out forwards;
+    }
+
+    @keyframes underlineIn {
+        from { width: 0; }
+        to { width: 100%; }
+    }
+
+    .waving-hand {
+        display: inline-block;
+        animation: wave 2.5s infinite;
+        transform-origin: 70% 70%;
+        font-size: 1.75rem;
+    }
+
+    @keyframes wave {
+        0% { transform: rotate(0deg); }
+        10% { transform: rotate(14deg); }
+        20% { transform: rotate(-8deg); }
+        30% { transform: rotate(14deg); }
+        40% { transform: rotate(-4deg); }
+        50% { transform: rotate(10deg); }
+        60% { transform: rotate(0deg); }
+        100% { transform: rotate(0deg); }
+    }
+
+    .filter-group-minimal {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 8px 20px;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+    }
+
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .filter-group-minimal:hover {
+        background: #fff;
+        border-color: #0477bf;
+        box-shadow: 0 10px 20px -5px rgba(4, 119, 191, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .filter-group-minimal:hover iconify-icon {
+        animation: bounceShop 0.6s ease infinite alternate;
+    }
+
+    @keyframes bounceShop {
+        from { transform: translateY(0); }
+        to { transform: translateY(-3px); }
     }
 </style>
 @endpush
@@ -240,15 +435,18 @@
     @if(Auth::user()->role === 'owner')
         <div class="welcome-section">
             <div>
-                <h1 class="welcome-title" style="font-size: 1.75rem; margin-bottom: 0;">Dashboard Utama</h1>
-                <p class="welcome-subtitle">Ringkasan performa bisnis TWINS.</p>
+                <h1 class="welcome-title">
+                    Selamat Datang, 
+                    <span class="user-name-gradient">{{ Auth::user()->name }}</span>
+                    <span class="waving-hand">👋</span>
+                </h1>
             </div>
             
-            <div class="flex items-center gap-4 flex-wrap">
+            <div class="flex items-center gap-3 flex-wrap">
                 <!-- Outlet Filter -->
-                <div class="filter-group">
-                    <iconify-icon icon="solar:shop-2-bold-duotone" style="color: #3b82f6; font-size: 1.25rem;"></iconify-icon>
-                    <select class="outlet-select" onchange="filterByStore(this.value)">
+                <div class="filter-group-minimal">
+                    <iconify-icon icon="solar:shop-2-bold-duotone" style="color: #0477bf; font-size: 1.25rem;"></iconify-icon>
+                    <select class="outlet-select" style="border: none; background: transparent; font-size: 0.8rem; font-weight: 700; color: #475569; outline: none; padding-right: 15px;" onchange="filterByStore(this.value)">
                         <option value="">Semua Outlet (Pusat)</option>
                         @foreach($stores ?? [] as $store)
                             <option value="{{ $store->uuid }}" {{ ($currentStoreId ?? '') == $store->uuid ? 'selected' : '' }}>
@@ -257,18 +455,13 @@
                         @endforeach
                     </select>
                 </div>
-
-                <div class="date-chip" style="background: #fff; padding: 10px 20px; border-radius: 50px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; font-weight: 700; color: #475569; font-size: 0.85rem;">
-                    <iconify-icon icon="solar:calendar-bold-duotone" style="color: #3b82f6; font-size: 1.25rem;"></iconify-icon>
-                    {{ \Carbon\Carbon::now()->isoFormat('D MMM Y') }}
-                </div>
             </div>
         </div>
     @endif
     <!-- Top Row Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Total Transaksi -->
-        <div class="stat-card">
+        <div class="stat-card" style="background: #f0f7ff; animation-delay: 0.1s;">
             <div class="stat-header">
                 <div class="icon-box" style="background: #eff6ff; color: #3b82f6;">
                     <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
@@ -282,23 +475,38 @@
             </div>
         </div>
 
-        <!-- Pendapatan -->
-        <div class="stat-card">
+        <!-- Pendapatan Offline -->
+        <div class="stat-card" style="background: #f0fdf4; animation-delay: 0.2s;">
             <div class="stat-header">
                 <div class="icon-box" style="background: #f0fdf4; color: #10b981;">
-                    <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
+                    <iconify-icon icon="solar:cart-large-minimalistic-bold"></iconify-icon>
                 </div>
-                <div class="stat-label">Pendapatan</div>
+                <div class="stat-label">Pendapatan Offline</div>
             </div>
-            <div class="stat-value">Rp {{ number_format($total_pendapatan / 1000, 0) }}k</div>
-            <div class="stat-trend {{ $diff_pendapatan >= 0 ? 'trend-up' : 'trend-down' }}">
-                <iconify-icon icon="{{ $diff_pendapatan >= 0 ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold' }}"></iconify-icon>
-                {{ abs($diff_pendapatan) }}% dari kemarin
+            <div class="stat-value">Rp {{ number_format($rev_offline / 1000, 0) }}k</div>
+            <div class="stat-trend {{ $diff_offline >= 0 ? 'trend-up' : 'trend-down' }}">
+                <iconify-icon icon="{{ $diff_offline >= 0 ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold' }}"></iconify-icon>
+                {{ abs($diff_offline) }}% dari kemarin
+            </div>
+        </div>
+
+        <!-- Pendapatan Online -->
+        <div class="stat-card" style="background: #f0f9ff; animation-delay: 0.3s;">
+            <div class="stat-header">
+                <div class="icon-box" style="background: #f0f9ff; color: #0ea5e9;">
+                    <iconify-icon icon="solar:global-bold"></iconify-icon>
+                </div>
+                <div class="stat-label">Pendapatan Online</div>
+            </div>
+            <div class="stat-value">Rp {{ number_format($rev_online / 1000, 0) }}k</div>
+            <div class="stat-trend {{ $diff_online >= 0 ? 'trend-up' : 'trend-down' }}">
+                <iconify-icon icon="{{ $diff_online >= 0 ? 'solar:alt-arrow-up-bold' : 'solar:alt-arrow-down-bold' }}"></iconify-icon>
+                {{ abs($diff_online) }}% dari kemarin
             </div>
         </div>
 
         <!-- Produk Terjual -->
-        <div class="stat-card">
+        <div class="stat-card" style="background: #fffaf0; animation-delay: 0.4s;">
             <div class="stat-header">
                 <div class="icon-box" style="background: #fff7ed; color: #f97316;">
                     <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
@@ -312,41 +520,46 @@
             </div>
         </div>
 
-        <!-- Stok Menipis -->
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="icon-box" style="background: #fff1f2; color: #f43f5e;">
-                    <iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon>
-                </div>
-                <div class="stat-label">Stok Menipis</div>
-            </div>
-            <div class="stat-value">{{ $total_stok_menipis }}</div>
-            <a href="#" class="stat-label" style="color: #3b82f6; text-decoration: underline;">Lihat detail</a>
-        </div>
-
-        <!-- Karyawan Aktif -->
-        <div class="stat-card">
+        <!-- Total Customer -->
+        <div class="stat-card" style="background: #f5f3ff; animation-delay: 0.5s;">
             <div class="stat-header">
                 <div class="icon-box" style="background: #faf5ff; color: #8b5cf6;">
-                    <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+                    <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
                 </div>
-                <div class="stat-label">Karyawan Aktif</div>
+                <div class="stat-label">Total Customer</div>
             </div>
-            <div class="stat-value">{{ $total_karyawan_aktif }}</div>
-            <a href="#" class="stat-label" style="color: #3b82f6; text-decoration: underline;">Lihat detail</a>
+            <div class="stat-value">{{ number_format($total_customers) }}</div>
+            <div style="margin-top: 10px;">
+                <a href="{{ url('/users') }}" class="btn-detail-modern" style="--btn-theme: #8b5cf6; --btn-bg: rgba(139, 92, 246, 0.08); --btn-border: rgba(139, 92, 246, 0.1);">
+                    <span>Lihat Detail</span>
+                    <iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon>
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Second Row Charts -->
     <div class="main-grid">
         <!-- Main Sales Chart -->
-        <div class="col-span-12 lg:col-span-8 card">
+        <div class="col-span-12 lg:col-span-8 card" style="background: #f0f7ff; border-color: rgba(59, 130, 246, 0.15);">
             <div class="card-header">
                 <h3 class="card-title">Penjualan Hari Ini</h3>
-                <select class="chart-select">
-                    <option>Per Jam</option>
-                    <option>Harian</option>
-                </select>
+                <div class="flex items-center gap-2">
+                    <div id="year-range-picker" class="hidden flex items-center gap-2 mr-2">
+                        <input type="number" id="year-from" class="chart-select w-20" value="{{ date('Y') - 4 }}" placeholder="Dari">
+                        <span class="text-xs font-bold">-</span>
+                        <input type="number" id="year-to" class="chart-select w-20" value="{{ date('Y') }}" placeholder="Ke">
+                        <button onclick="applyYearRange()" class="p-2 bg-blue-500 text-white rounded-lg flex items-center justify-center">
+                            <iconify-icon icon="solar:check-read-bold"></iconify-icon>
+                        </button>
+                    </div>
+                    <select class="chart-select" onchange="updateMainChart(this.value)">
+                        <option value="harian" selected>Harian</option>
+                        <option value="mingguan">Mingguan</option>
+                        <option value="bulanan">Bulanan</option>
+                        <option value="tahunan">Tahunan</option>
+                    </select>
+                </div>
             </div>
             <div id="mainSalesChart" style="min-height: 300px;"></div>
             <div class="grid grid-cols-2 mt-2 pt-4 border-t border-slate-100">
@@ -364,11 +577,14 @@
         <!-- Right Side Charts -->
         <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
             <!-- Pemasukan & Pengeluaran -->
-            <div class="card">
+            <div class="card" style="background: #f0fdf4; border-color: rgba(16, 185, 129, 0.1);">
                 <div class="card-header">
                     <h3 class="card-title" style="font-size: 0.95rem;">Pemasukan & Pengeluaran</h3>
-                    <select class="chart-select">
-                        <option>Bulan Ini</option>
+                    <select class="chart-select" onchange="updateCashFlow(this.value)">
+                        <option value="harian">Hari Ini</option>
+                        <option value="mingguan">Minggu Ini</option>
+                        <option value="bulanan" selected>Bulan Ini</option>
+                        <option value="tahunan">Tahun Ini</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -379,7 +595,7 @@
                             </div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase">Pemasukan</span>
                         </div>
-                        <p class="font-extrabold text-green-600 text-sm">Rp {{ number_format($totalPemasukanMonth / 1000, 0) }}k</p>
+                        <p class="font-extrabold text-green-600 text-sm" id="cf-total-pemasukan">Rp {{ number_format($cfBulanan['total_pemasukan'] / 1000, 0) }}k</p>
                         <div id="pemasukanChart" style="height: 60px;"></div>
                     </div>
                     <div>
@@ -389,14 +605,14 @@
                             </div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase">Pengeluaran</span>
                         </div>
-                        <p class="font-extrabold text-red-600 text-sm">Rp {{ number_format($totalPengeluaranMonth / 1000, 0) }}k</p>
+                        <p class="font-extrabold text-red-600 text-sm" id="cf-total-pengeluaran">Rp {{ number_format($cfBulanan['total_pengeluaran'] / 1000, 0) }}k</p>
                         <div id="pengeluaranChart" style="height: 60px;"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Hutang & Piutang -->
-            <div class="card flex-1">
+            <div class="card flex-1" style="background: #fef2f2; border-color: rgba(239, 68, 68, 0.1);">
                 <div class="card-header">
                     <h3 class="card-title" style="font-size: 0.95rem;">Hutang & Piutang</h3>
                     <iconify-icon icon="solar:alt-arrow-right-bold" style="color: #cbd5e1;"></iconify-icon>
@@ -426,48 +642,113 @@
 
     <!-- Third Row Tables -->
     <div class="main-grid">
-        <!-- Stok Menipis Table -->
-        <div class="col-span-12 lg:col-span-4 card">
-            <div class="card-header">
-                <h3 class="card-title">Stok Menipis</h3>
-                <a href="#" style="font-size: 0.75rem; color: #3b82f6; font-weight: 700;">Lihat semua</a>
+        <!-- Stok & Kadaluarsa Tabbed Card -->
+        <div class="col-span-12 lg:col-span-4 card" style="background: #fffaf0; border-color: rgba(249, 115, 22, 0.1);">
+            <div class="card-header" style="margin-bottom: 10px;">
+                <h3 class="card-title">Stok & Kadaluarsa</h3>
+                <a href="{{ url('/products?tab=stok') }}" class="btn-detail-modern" style="--btn-theme: #3b82f6; --btn-bg: rgba(59, 130, 246, 0.08); --btn-border: rgba(59, 130, 246, 0.1);">
+                    <span>Kelola</span>
+                    <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
+                </a>
             </div>
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Produk</th>
-                        <th style="text-align: center;">Tersedia</th>
-                        <th style="text-align: right;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($lowStockProducts as $ps)
-                    <tr>
-                        <td>
-                            <div class="flex items-center gap-3">
-                                <img src="{{ $ps->product->resolved_image_url }}" class="product-img">
-                                <span class="font-bold text-xs">{{ $ps->product->nama_produk }}</span>
-                            </div>
-                        </td>
-                        <td style="text-align: center;" class="font-extrabold">{{ $ps->stok }}</td>
-                        <td style="text-align: right;">
-                            <span class="status-badge {{ $ps->stok <= 2 ? 'badge-critical' : 'badge-low' }}">
-                                {{ $ps->stok <= 2 ? 'Kritis' : 'Rendah' }}
-                            </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="3" class="text-center py-8 text-slate-400">Semua stok aman.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+            
+            <div class="stock-tabs">
+                <button class="stock-tab-btn active" onclick="switchStockTab('stok', this)">
+                    <iconify-icon icon="solar:Box-bold-duotone"></iconify-icon>
+                    Stok Menipis
+                </button>
+                <button class="stock-tab-btn" onclick="switchStockTab('expired', this)">
+                    <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
+                    Segera Expired
+                </button>
+            </div>
+
+            <!-- Tab Stok Menipis -->
+            <div id="tab-stok" class="stock-content active">
+                <div class="scrollable-table-container">
+                    <table class="custom-table compact-table">
+                        <thead>
+                            <tr>
+                                <th>Produk</th>
+                                <th style="text-align: center;">Tersedia</th>
+                                <th style="text-align: right;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($lowStockProducts as $ps)
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <img src="{{ $ps->product->resolved_image_url }}" class="product-img w-8 h-8">
+                                        <div>
+                                            <p class="font-bold text-[11px] mb-0 line-clamp-1">{{ $ps->product->nama_produk }}</p>
+                                            <p class="text-[9px] text-slate-400 mb-0">{{ $ps->store->nama ?? '-' }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="text-align: center;" class="font-extrabold">{{ $ps->stok }}</td>
+                                <td style="text-align: right;">
+                                    <span class="status-badge {{ $ps->stok <= 2 ? 'badge-critical' : 'badge-low' }}" style="padding: 2px 6px; font-size: 0.6rem;">
+                                        {{ $ps->stok <= 2 ? 'Kritis' : 'Rendah' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="3" class="text-center py-8 text-slate-400">Semua stok aman.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Expired -->
+            <div id="tab-expired" class="stock-content">
+                <div class="scrollable-table-container">
+                    <table class="custom-table compact-table">
+                        <thead>
+                            <tr>
+                                <th>Produk</th>
+                                <th style="text-align: center;">Expired</th>
+                                <th style="text-align: right;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($expiredProducts ?? [] as $ps)
+                            @php
+                                $daysLeft = \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($ps->kadaluarsa), false);
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <img src="{{ $ps->product->resolved_image_url }}" class="product-img w-8 h-8">
+                                        <div>
+                                            <p class="font-bold text-[11px] mb-0 line-clamp-1">{{ $ps->product->nama_produk }}</p>
+                                            <p class="text-[9px] text-slate-400 mb-0">{{ $ps->store->nama ?? '-' }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="text-align: center;" class="font-extrabold text-[10px]">
+                                    {{ \Carbon\Carbon::parse($ps->kadaluarsa)->format('d/m/y') }}
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="status-badge {{ $daysLeft <= 7 ? 'badge-critical' : 'badge-low' }}" style="padding: 2px 6px; font-size: 0.6rem;">
+                                        {{ $daysLeft <= 0 ? 'Expired' : ($daysLeft <= 7 ? 'Kritis' : 'Dekat') }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="3" class="text-center py-8 text-slate-400">Tidak ada produk segera expired.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Produk Terlaris Table -->
-        <div class="col-span-12 lg:col-span-4 card">
+        <div class="col-span-12 lg:col-span-4 card" style="background: #f5f3ff; border-color: rgba(139, 92, 246, 0.1);">
             <div class="card-header">
                 <h3 class="card-title">Produk Terlaris</h3>
-                <a href="#" style="font-size: 0.75rem; color: #3b82f6; font-weight: 700;">Lihat semua</a>
             </div>
             <table class="custom-table">
                 <thead>
@@ -496,28 +777,34 @@
             </table>
         </div>
 
-        <!-- Aktivitas Karyawan Feed -->
-        <div class="col-span-12 lg:col-span-4 card">
+        <!-- Aktivitas Penjualan Feed -->
+        <div class="col-span-12 lg:col-span-4 card" style="background: #f0f4ff; border-color: rgba(99, 102, 241, 0.1);">
             <div class="card-header">
-                <h3 class="card-title">Aktivitas Karyawan</h3>
-                <a href="#" style="font-size: 0.75rem; color: #3b82f6; font-weight: 700;">Lihat semua</a>
+                <h3 class="card-title">Aktivitas Penjualan</h3>
+                <iconify-icon icon="solar:history-bold-duotone" style="color: #64748b;"></iconify-icon>
             </div>
             <div class="activity-feed">
                 @forelse($activities as $act)
                 <div class="activity-item">
-                    <div class="activity-icon">
-                        <iconify-icon icon="solar:user-circle-bold-duotone" style="color: #6366f1;"></iconify-icon>
+                    <div class="activity-icon" style="background: {{ $act['role'] == 'Online' ? '#e0e7ff' : '#f1f5f9' }};">
+                        <iconify-icon icon="{{ $act['icon'] }}" style="color: {{ $act['role'] == 'Online' ? '#4f46e5' : '#64748b' }};"></iconify-icon>
                     </div>
                     <div class="activity-content">
                         <div class="flex justify-between items-start">
                             <span class="activity-user">{{ $act['user'] }}</span>
                             <span class="activity-time">{{ $act['time'] }}</span>
                         </div>
-                        <p class="activity-text"><span class="font-bold text-[10px] uppercase text-slate-400">{{ $act['role'] }}</span> | {{ $act['action'] }}</p>
+                        <p class="activity-text">
+                            <span class="font-bold text-[10px] uppercase {{ $act['role'] == 'Online' ? 'text-indigo-500' : 'text-slate-400' }}">
+                                {{ $act['role'] }}
+                            </span> | {{ $act['action'] }}
+                        </p>
                     </div>
                 </div>
                 @empty
-                <p class="text-center py-8 text-slate-400">Belum ada aktivitas.</p>
+                <div class="text-center py-8">
+                    <p class="text-slate-400 text-sm font-bold">Belum ada aktivitas penjualan hari ini.</p>
+                </div>
                 @endforelse
             </div>
         </div>
@@ -526,34 +813,37 @@
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-    // Main Sales Chart
-    const salesOptions = {
-        series: [{
-            name: 'Penjualan',
-            data: @json(collect($chartData)->pluck('y'))
-        }],
+    const datasets = {
+        harian: { labels: @json($chartHarian['labels']), offline: @json($chartHarian['offline']), online: @json($chartHarian['online']) },
+        mingguan: { labels: @json($chartMingguan['labels']), offline: @json($chartMingguan['offline']), online: @json($chartMingguan['online']) },
+        bulanan: { labels: @json($chartBulanan['labels']), offline: @json($chartBulanan['offline']), online: @json($chartBulanan['online']) },
+        tahunan: { labels: @json($chartTahunan['labels']), offline: @json($chartTahunan['offline']), online: @json($chartTahunan['online']) }
+    };
+
+    const mainChart = new ApexCharts(document.querySelector("#mainSalesChart"), {
+        series: [{ name: 'Offline (Kasir)', data: datasets.harian.offline }, { name: 'Online (Web)', data: datasets.harian.online }],
         chart: {
             height: 300,
             type: 'area',
             toolbar: { show: false },
             zoom: { enabled: false },
             fontFamily: 'Plus Jakarta Sans',
-            sparkline: { enabled: false },
-            padding: { top: 0, bottom: 0 }
+            animations: { enabled: true, easing: 'easeinout', speed: 800 }
         },
         dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 4, colors: ['#3b82f6'] },
+        stroke: { curve: 'smooth', width: 3 },
+        colors: ['#3b82f6', '#10b981'],
         fill: {
             type: 'gradient',
             gradient: {
                 shadeIntensity: 1,
-                opacityFrom: 0.45,
+                opacityFrom: 0.35,
                 opacityTo: 0.05,
-                stops: [20, 100, 100, 100]
+                stops: [0, 90, 100]
             }
         },
         xaxis: {
-            categories: @json(collect($chartData)->pluck('x')),
+            categories: datasets.harian.labels,
             axisBorder: { show: false },
             axisTicks: { show: false },
             labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
@@ -565,21 +855,75 @@
             }
         },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
-        markers: { size: 4, colors: ['#3b82f6'], strokeWidth: 2, hover: { size: 7 } }
-    };
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            fontWeight: 700,
+            labels: { colors: '#64748b' },
+            markers: { radius: 12 }
+        },
+        markers: { size: 0, hover: { size: 5 } }
+    });
+    mainChart.render();
 
-    new ApexCharts(document.querySelector("#mainSalesChart"), salesOptions).render();
+    function updateMainChart(preset) {
+        const d = datasets[preset];
+        const picker = document.getElementById('year-range-picker');
+        
+        if (preset === 'tahunan') {
+            picker.classList.remove('hidden');
+        } else {
+            picker.classList.add('hidden');
+        }
+
+        mainChart.updateOptions({
+            xaxis: {
+                categories: d.labels,
+                labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
+            },
+            series: [
+                { name: 'Offline (Kasir)', data: d.offline },
+                { name: 'Online (Web)', data: d.online }
+            ]
+        });
+    }
+
+    function applyYearRange() {
+        const from = document.getElementById('year-from').value;
+        const to = document.getElementById('year-to').value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('year_from', from);
+        url.searchParams.set('year_to', to);
+        window.location.href = url.toString();
+    }
 
     // Mini Pemasukan Chart
-    const miniChartOpts = (color) => ({
-        series: [{ data: [10, 41, 35, 51, 49, 62, 69, 91, 148] }],
+    const miniChartOpts = (color, data) => ({
+        series: [{ data }],
         chart: { type: 'line', height: 60, sparkline: { enabled: true } },
         stroke: { curve: 'smooth', width: 3, colors: [color] },
         tooltip: { enabled: false }
     });
 
-    new ApexCharts(document.querySelector("#pemasukanChart"), miniChartOpts('#10b981')).render();
-    new ApexCharts(document.querySelector("#pengeluaranChart"), miniChartOpts('#f43f5e')).render();
+    const cfData = {
+        harian: @json($cfHarian),
+        mingguan: @json($cfMingguan),
+        bulanan: @json($cfBulanan),
+        tahunan: @json($cfTahunan)
+    };
+
+    const pChart = new ApexCharts(document.querySelector("#pemasukanChart"), miniChartOpts('#10b981', cfData.bulanan.p_series));
+    const eChart = new ApexCharts(document.querySelector("#pengeluaranChart"), miniChartOpts('#f43f5e', cfData.bulanan.e_series));
+    pChart.render();
+    eChart.render();
+
+    function updateCashFlow(preset) {
+        const d = cfData[preset];
+        document.getElementById('cf-total-pemasukan').innerText = 'Rp ' + (d.total_pemasukan / 1000).toFixed(0) + 'k';
+        document.getElementById('cf-total-pengeluaran').innerText = 'Rp ' + (d.total_pengeluaran / 1000).toFixed(0) + 'k';
+        pChart.updateSeries([{ data: d.p_series }]);
+        eChart.updateSeries([{ data: d.e_series }]);
+    }
 
     // Debt Donut Chart
     const debtOptions = {
@@ -634,6 +978,13 @@
             url.searchParams.delete('store_id');
         }
         window.location.href = url.toString();
+    }
+
+    function switchStockTab(tabId, btn) {
+        document.querySelectorAll('.stock-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.stock-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
     }
 </script>
 @endsection
