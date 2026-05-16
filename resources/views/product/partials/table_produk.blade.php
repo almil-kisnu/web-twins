@@ -81,6 +81,13 @@
         @endforelse
     </tbody>
 </table>
+
+{{-- Data transfer for JS Maps (Syncing during AJAX) --}}
+<div id="js-data-transfer" style="display: none;" 
+     data-products="{{ json_encode($all_products ?? []) }}"
+     data-alerts="{{ json_encode($alerts ?? []) }}">
+</div>
+
 @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
     <div class="pagination-container">
         {{ $products->appends(request()->query())->links() }}

@@ -35,6 +35,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/products/opname', [ProductController::class, 'opname'])->name('products.opname');
     Route::get('/products/request', [ProductController::class, 'request'])->name('products.request');
     Route::get('/products/opname-detail/{id}', [ProductController::class, 'show'])->name('products.opname.detail')->whereUuid('id');
+    Route::get('/products/detail/{id}', [ProductController::class, 'showProductDetail'])->name('products.detail');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');

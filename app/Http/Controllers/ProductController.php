@@ -111,7 +111,7 @@ class ProductController extends Controller
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
             'selected_store_id' => $selectedStoreId,
-            'all_products' => $this->mapProductsForJs(Product::all(), $user, $selectedStoreId),
+            'all_products' => $this->mapProductsForJs(Product::with(['category', 'priceLevels', 'stores.store'])->get(), $user, $selectedStoreId),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
     }
@@ -878,6 +878,8 @@ class ProductController extends Controller
             'harga_jual' => 'nullable|numeric',
         ]);
 
+        $imageUrl = null;
+
         if ($request->filled('cropped_image')) {
             $base64Image = $request->input('cropped_image');
             $cloudinaryUrl = LandingController::uploadToCloudinary($base64Image, 'products');
@@ -922,6 +924,17 @@ class ProductController extends Controller
             'jmlh' => 0,
             'keterangan' => 'Produk baru ditambahkan ke sistem',
         ]);
+
+        // Initialize ProductStore for all active stores with 0 stock
+        $activeStores = Outlet::where('status_aktif', true)->get();
+        foreach ($activeStores as $s) {
+            ProductStore::create([
+                'product_id' => $product->uuid,
+                'store_id' => $s->uuid,
+                'stok' => 0,
+                'status_aktif' => true,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan!');
     }
@@ -1542,35 +1555,50 @@ class ProductController extends Controller
         return [];
     }
 
+    public function showProductDetail($id)
+    {
+        $user = Auth::user();
+        $selectedStoreId = request('selected_store_id');
+        $product = Product::with(['category', 'priceLevels', 'stores.store'])->findOrFail($id);
+        
+        $mapped = $this->mapProductsForJs(collect([$product]), $user, $selectedStoreId)->first();
+        return response()->json($mapped);
+    }
+
     private function mapProductsForJs($products, $user, $selectedStoreId = null)
     {
         return $products->map(function($p) use ($user, $selectedStoreId) {
-            $stok = 0;
+            $data = $p->toArray();
+            
+            // Critical: Ensure these keys exist for the Detail Modal JS
+            $data['resolved_image_url'] = \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url);
+            $data['nama_category'] = $p->category ? $p->category->nama_category : ($p->kategori ? $p->kategori->nama_category : null);
+            
+            // Map stores and price levels explicitly
+            $data['price_levels'] = $p->priceLevels->toArray();
+            $data['stores'] = $p->stores->map(function($ps) {
+                return [
+                    'stok' => $ps->stok,
+                    'store' => [
+                        'nama' => $ps->store->nama ?? 'Cabang'
+                    ]
+                ];
+            })->toArray();
+
+            // Calculate current_stok based on context
             if ($user->isOwner()) {
                 if ($selectedStoreId && $selectedStoreId !== 'all') {
-                    $storeRelation = $p->stores->where('store_id', $selectedStoreId)->first();
-                    $stok = $storeRelation ? $storeRelation->stok : 0;
+                    $stRel = $p->stores->where('store_id', $selectedStoreId)->first();
+                    $data['current_stok'] = $stRel ? $stRel->stok : 0;
                 } else {
-                    $stok = $p->stores->sum('stok');
+                    $data['current_stok'] = $p->stores->sum('stok');
                 }
             } else {
-                $storeRelation = $p->stores->where('store_id', $user->store_id)->first();
-                $stok = $storeRelation ? $storeRelation->stok : 0;
+                $stRel = $p->stores->where('store_id', $user->store_id)->first();
+                $data['current_stok'] = $stRel ? $stRel->stok : 0;
             }
 
-            return [
-                'uuid' => $p->uuid,
-                'nama_produk' => $p->nama_produk,
-                'barcode' => $p->barcode,
-                'kategori_id' => $p->kategori_id,
-                'current_stok' => $stok,
-                'nama_category' => $p->category ? $p->category->nama_category : null,
-                'harga_modal' => $p->harga_modal,
-                'harga_jual' => $p->harga_jual,
-                'resolved_image_url' => \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url),
-                'price_levels' => $p->priceLevels ? $p->priceLevels->toArray() : [],
-                'stores' => $user->isOwner() ? $p->stores->map(fn($s) => ['stok' => $s->stok, 'store' => ['nama' => $s->store->nama ?? 'Cabang']]) : []
-            ];
+            return $data;
         });
     }
 

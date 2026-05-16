@@ -604,13 +604,19 @@ class LandingController extends Controller
             $cleanPath = substr($cleanPath, 8);
         }
 
-        // Strip 'products/' if it's already in the path to avoid duplication with the base URL
-        if (str_starts_with($cleanPath, 'products/')) {
-            $cleanPath = substr($cleanPath, 9);
+        // Check if file exists in local storage
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath)) {
+            return asset('storage/' . $cleanPath);
         }
 
-        // Use the specific Cloudinary URL provided by the user
-        return "https://res.cloudinary.com/dryxdouod/image/upload/v1777305563/products/" . $cleanPath;
+        // If not local, fallback to the specific Cloudinary URL structure
+        // Strip 'products/' if it's already in the path for Cloudinary
+        $cloudinaryPath = $cleanPath;
+        if (str_starts_with($cloudinaryPath, 'products/')) {
+            $cloudinaryPath = substr($cloudinaryPath, 9);
+        }
+
+        return "https://res.cloudinary.com/dryxdouod/image/upload/v1777305563/products/" . $cloudinaryPath;
     }
 
     public static function uploadToCloudinary($file, $folder = 'twins')

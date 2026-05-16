@@ -505,18 +505,17 @@
     </div>
 </div>
 
-<!-- Modal View Produk -->
 <div id="viewModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 600px; width: 95%;">
-        <div class="modal-header">
+    <div class="modal-content" style="max-width: 600px; width: 95%; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
+        <div class="modal-header" style="flex-shrink: 0;">
             <h3><iconify-icon icon="solar:eye-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Detail Produk</h3>
             <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
         </div>
-        <div class="modal-body" id="viewDetailContent" style="padding: 20px;">
+        <div class="modal-body" id="viewDetailContent" style="padding: 24px; flex: 1; overflow-y: auto;">
             {{-- Content will be injected via JS --}}
         </div>
-        <div style="padding: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: center;">
-            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('viewModal')">Tutup</button>
+        <div style="padding: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: center; background: #fff; flex-shrink: 0;">
+            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center; border-radius: 12px; font-weight: 600;" onclick="closeModal('viewModal')">Tutup</button>
         </div>
     </div>
 </div>
@@ -1021,7 +1020,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" crossorigin="anonymous"></script>
-
+{{-- Hidden container for Barcode Scanner initialization (Html5Qrcode) --}}
+<div id="barcode-scanner-container" style="display: none;"></div>
 
 <div class="fitur-container">
     {{-- PILL TABS --}}
@@ -1207,7 +1207,7 @@
     // --- Global Data Maps & State ---
     const allProductsMap = {};
     const stockAlertsMap = {};
-    const productsList = {!! json_encode(($active_tab == 'produk' || $active_tab == 'stok') && isset($products) ? $products->items() : ($all_products ?? []), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
+    const productsList = {!! json_encode(isset($all_products) ? $all_products : (($active_tab == 'produk' || $active_tab == 'stok') && isset($products) ? $products->items() : []), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
 
     function syncDataMaps() {
         // Method 1: From productsList (Blade initial load)
@@ -1410,10 +1410,26 @@
     }
 
     // --- Product Actions ---
-    function openViewModal(productUuid, alertData = null) {
-        const product = typeof productUuid === 'string' ? allProductsMap[productUuid] : productUuid;
+    async function openViewModal(productUuid, alertData = null) {
+        let product = typeof productUuid === 'string' ? allProductsMap[productUuid] : productUuid;
+        
+        // Data check: If product is missing or is an incomplete object (missing critical mapped fields)
+        const isIncomplete = product && (!product.nama_category || !product.price_levels || !product.stores);
+
+        if (!product || isIncomplete) {
+            try {
+                const response = await fetch(`/products/detail/${typeof productUuid === 'string' ? productUuid : product.uuid}`);
+                if (!response.ok) throw new Error('Failed to fetch');
+                product = await response.json();
+                allProductsMap[product.uuid] = product;
+            } catch (err) {
+                console.error('ViewModal Fetch Error:', err);
+                Swal.fire('Error', 'Gagal memuat data produk dari server.', 'error');
+                return;
+            }
+        }
+
         if (!product) {
-            console.error('ViewModal: Product data missing for UUID:', productUuid);
             Swal.fire('Error', 'Data produk tidak ditemukan.', 'error');
             return;
         }
@@ -1483,7 +1499,11 @@
              `;
         }
 
-        const imgUrl = product.resolved_image_url || (product.image_url ? `/storage/${product.image_url}` : 'https://placehold.co/200x200?text=No+Image');
+        const imgUrl = product.resolved_image_url || 
+                       (product.image_url && product.image_url.startsWith('http') ? product.image_url : 
+                       (product.image_url ? `/storage/${product.image_url}` : 'https://placehold.co/200x200?text=No+Image'));
+
+        const catName = product.nama_category || (product.category ? product.category.nama_category : 'Tanpa Kategori');
 
         modalBody.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -1495,7 +1515,7 @@
                         <div style="font-size: 18px; font-weight: 700; color: var(--primary-blue);">${product.nama_produk || 'Produk'}</div>
                         <div style="color: #64748b; font-size: 14px; margin-top: 4px;">Barcode: ${product.barcode || '-'}</div>
                         <div style="margin-top: 12px; display: inline-block; padding: 4px 12px; background: #eff6ff; color: var(--primary-blue); border-radius: 50px; font-size: 12px; font-weight: 600;">
-                            ${product.nama_category || 'Tanpa Kategori'}
+                            ${catName}
                         </div>
                     </div>
                 </div>
@@ -1619,12 +1639,21 @@
         });
     }
 
-    function openEditModal(productUuid) {
-        const product = allProductsMap[productUuid];
-        if (!product) {
-            console.error('openEditModal: Product not found for UUID:', productUuid);
-            Swal.fire('Error', 'Data produk tidak ditemukan.', 'error');
-            return;
+    async function openEditModal(productUuid) {
+        let product = allProductsMap[productUuid];
+        
+        const isIncomplete = product && (!product.nama_category || !product.price_levels);
+
+        if (!product || isIncomplete) {
+            try {
+                const response = await fetch(`/products/detail/${productUuid}`);
+                if (!response.ok) throw new Error('Failed to fetch');
+                product = await response.json();
+                allProductsMap[productUuid] = product;
+            } catch (err) {
+                Swal.fire('Error', 'Gagal memuat data edit dari server.', 'error');
+                return;
+            }
         }
         const form = document.getElementById('editForm');
         form.action = `/products/${product.uuid}`;
@@ -1746,7 +1775,7 @@
         showLoading('Menganalisis Gambar (Unified Scan)...');
         
         try {
-            const tempDecoder = new Html5Qrcode(targetInputId);
+            const tempDecoder = new Html5Qrcode("barcode-scanner-container");
             let result = null;
 
             // PASS 1: Original
@@ -1802,9 +1831,13 @@
 
     function lookupProductByBarcode(barcode) {
         if (!barcode) return;
-        showLoading('Mencari Detail Produk (Brand & Volume)...');
+        const cleanBarcode = barcode.toString().trim();
+        if (cleanBarcode === '') return;
+
+        showLoading('Mencari di Database Global...');
         
-        fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
+        // Use encodeURIComponent to handle special characters or hidden scanner codes
+        fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(cleanBarcode)}.json`)
             .then(r => r.json())
             .then(d => {
                 hideLoading();
@@ -1857,6 +1890,26 @@
 
     // --- AJAX Category Submission ---
     document.addEventListener('DOMContentLoaded', function() {
+        // Auto-lookup for hardware scanners or manual typing in the Add Modal
+        const barcodeInput = document.getElementById('barcodeAdd');
+        if (barcodeInput) {
+            let timeout = null;
+            barcodeInput.addEventListener('input', function() {
+                clearTimeout(timeout);
+                const val = this.value.trim();
+                if (val.length >= 8) { // Typical barcode length
+                    timeout = setTimeout(() => lookupProductByBarcode(val), 800);
+                }
+            });
+            // Handle ENTER from hardware scanners
+            barcodeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    lookupProductByBarcode(this.value.trim());
+                }
+            });
+        }
+
         const catForm = document.getElementById('addCategoryForm');
         if (catForm) {
             catForm.addEventListener('submit', function(e) {
@@ -2433,9 +2486,13 @@
         if (!html5Qrcode) html5Qrcode = new Html5Qrcode("reader");
         try {
             const blob = await (await fetch(b64)).blob();
-            const res = await tryScannerBrain(await processImage(blob));
+            const res = await tryBothScanners(await processImage(blob), new Html5Qrcode("barcode-scanner-container"));
             hideLoading();
-            if (res) onScanSuccess(res); else throw 0;
+            if (res) {
+                const input = document.getElementById('barcodeAdd');
+                if (input) input.value = res;
+                lookupProductByBarcode(res);
+            } else throw 0;
         } catch(e) { 
             hideLoading();
             Swal.fire('Gagal', 'Barcode tidak terdeteksi.', 'warning'); 
