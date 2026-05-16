@@ -481,19 +481,6 @@
         const url = new URL(window.location);
         url.searchParams.set('tab', tabId);
         window.history.pushState({}, '', url);
-
-        // Update Topbar Title and Icon Dynamically
-        const titleEl = document.getElementById('topbar-title');
-        const iconEl = document.getElementById('topbar-icon');
-        if (titleEl && iconEl) {
-            let icon = 'trending-up';
-            if (tabId === 'cashbox') { icon = 'wallet'; }
-            else if (tabId === 'arus-uang') { icon = 'arrow-left-right'; }
-            else if (tabId === 'pemindahan-saldo') { icon = 'move'; }
-            
-            iconEl.setAttribute('data-lucide', icon);
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }

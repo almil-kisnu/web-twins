@@ -127,73 +127,40 @@
         <header class="topbar">
             <div class="topbar-left">
                 @if (request()->routeIs('dashboard'))
-                    <i id="topbar-icon" data-lucide="layout-grid"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:widget-4-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Dashboard</h2>
                 @elseif(request()->is('products*'))
-                    <i id="topbar-icon" data-lucide="package"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:box-minimalistic-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Manajemen Produk</h2>
                 @elseif(request()->is('transaksi*'))
-                    <i id="topbar-icon" data-lucide="receipt"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:bill-list-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Transaksi & Diskon</h2>
                 @elseif(request()->is('keuangan*'))
-                    @php
-                        $tab = request('tab', 'cashbox');
-                        $icon = 'trending-up';
-                        $title = 'Keuangan';
-                        if ($tab == 'cashbox') {
-                            $icon = 'wallet';
-                        } elseif ($tab == 'arus-uang') {
-                            $icon = 'arrow-left-right';
-                        } elseif ($tab == 'pemindahan-saldo') {
-                            $icon = 'move';
-                        }
-                    @endphp
-                    <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
-                    <h2 id="topbar-title">{{ $title }}</h2>
+                    <iconify-icon id="topbar-icon" icon="solar:graph-up-bold-duotone" width="28" height="28"></iconify-icon>
+                    <h2 id="topbar-title">Keuangan</h2>
                 @elseif(request()->is('buku-kas*'))
-                    @php
-                        $tab = request('tab', 'pengeluaran');
-                        $icon = 'trending-up';
-                        $title = 'Buku Kas';
-                        if ($tab == 'pengeluaran') {
-                            $icon = 'round-arrow-left-down';
-                            $title = 'Pengeluaran';
-                        } elseif ($tab == 'pemasukan') {
-                            $icon = 'round-arrow-right-up';
-                            $title = 'Pemasukan';
-                        } elseif ($tab == 'hutang') {
-                            $icon = 'wallet-money';
-                            $title = 'Hutang';
-                        } elseif ($tab == 'piutang') {
-                            $icon = 'hand-money';
-                            $title = 'Piutang';
-                        }
-                    @endphp
-                    <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
-                    <h2 id="topbar-title">{{ $title }}</h2>
+                    <iconify-icon id="topbar-icon" icon="solar:wallet-money-bold-duotone" width="28" height="28"></iconify-icon>
+                    <h2 id="topbar-title">Buku Kas</h2>
                 @elseif(request()->is('outlet*'))
-                    <i id="topbar-icon" data-lucide="store"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:shop-2-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Operasional & Outlet</h2>
                 @elseif(request()->is('users*'))
-                    <i id="topbar-icon" data-lucide="users"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:users-group-rounded-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Manajemen User</h2>
                 @elseif(request()->routeIs('kontak.*'))
-                    <i id="topbar-icon" data-lucide="contact"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:phone-calling-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Kelola Kontak</h2>
-                @elseif(request()->is('buku-kas*'))
-                    <i id="topbar-icon" data-lucide="wallet"></i>
-                    <h2 id="topbar-title">Buku Kas</h2>
                 @elseif(request()->routeIs('laporan.*'))
-                    <i id="topbar-icon" data-lucide="file-text"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:document-text-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Laporan Keseluruhan</h2>
                 @elseif(request()->routeIs('absensi.*'))
-                    <i id="topbar-icon" data-lucide="calendar-check"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:calendar-date-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Kelola Jadwal & Absensi</h2>
                 @elseif(request()->is('perilaku*'))
-                    <i id="topbar-icon" data-lucide="bar-chart-3"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:graph-new-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Perilaku Customer & Produk</h2>
                 @else
-                    <i id="topbar-icon" data-lucide="layers"></i>
+                    <iconify-icon id="topbar-icon" icon="solar:layers-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Web Twins</h2>
                 @endif
             </div>

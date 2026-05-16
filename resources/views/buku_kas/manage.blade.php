@@ -308,23 +308,6 @@
         else if(tabId === 'hutang') addText = 'Tambah Hutang';
         else if(tabId === 'piutang') addText = 'Tambah Piutang';
         document.getElementById('btnAddText').innerText = addText;
-
-        // Topbar Sync (if app.blade.php handles it)
-        syncTopbar(tabId);
-    }
-
-    function syncTopbar(tabId) {
-        const titleEl = document.getElementById('topbar-title');
-        const iconEl = document.getElementById('topbar-icon');
-        if (titleEl && iconEl) {
-            let icon = 'round-arrow-left-down';
-            if (tabId === 'pemasukan') { icon = 'round-arrow-right-up'; }
-            else if (tabId === 'hutang') { icon = 'wallet-money'; }
-            else if (tabId === 'piutang') { icon = 'hand-money'; }
-            
-            iconEl.setAttribute('data-lucide', icon);
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
     }
 
     function handleMainAdd() {
