@@ -18,49 +18,6 @@
     .swal2-container { 
         z-index: 999999999 !important; 
     }
-    .global-loader-overlay {
-        position: fixed;
-        top: 30px;
-        right: 30px;
-        width: auto;
-        height: auto;
-        background: transparent;
-        backdrop-filter: none;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 999999999 !important;
-    }
-    .loader-card {
-        background: white;
-        padding: 12px 24px;
-        border-radius: 50px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 15px;
-        border: 1px solid #e2e8f0;
-        animation: slideInDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    @keyframes slideInDown {
-        from { transform: translateY(-20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-    .loading-spinner {
-        width: 20px;
-        height: 20px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid var(--primary-blue);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-    .loading-text {
-        font-weight: 600;
-        color: #334155;
-        font-size: 13px;
-        margin: 0;
-    }
     .modal-overlay { 
         z-index: 50000 !important; 
     }
@@ -228,19 +185,16 @@
 </style>
 <script>
     function showLoading(text = 'Sedang Memproses Data...') {
-        console.log('showLoading called with text:', text);
-        const el = document.getElementById('globalLoading');
-        if (!el) return;
-        const textEl = el.querySelector('.loading-text');
-        if (textEl) textEl.innerText = text;
-        el.style.setProperty('display', 'flex', 'important');
+        Swal.fire({
+            title: text,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
     }
     function hideLoading() {
-        console.log('hideLoading called');
-        const el = document.getElementById('globalLoading');
-        if (el) {
-            el.style.setProperty('display', 'none', 'important');
-        }
+        Swal.close();
     }
 
     function openModal(id, zIndex = 20000) {
@@ -1074,9 +1028,9 @@
                             <iconify-icon icon="solar:filter-bold-duotone" style="font-size: 24px;" class="{{ request('category_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ route('products.index', ['tab' => $tab, 'category_id' => '']) }}">Semua Kategori</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('category_id', '')">Semua Kategori</a>
                             @foreach($categories as $cat)
-                                <a href="{{ route('products.index', ['tab' => $tab, 'category_id' => $cat->uuid]) }}">{{ $cat->nama_category }}</a>
+                                <a href="javascript:void(0)" onclick="applyFilter('category_id', '{{ $cat->uuid }}')">{{ $cat->nama_category }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -1085,12 +1039,12 @@
                 @if($tab == 'restok')
                     <div class="dropdown">
                         <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Supplier">
-                            <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                            <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;" class="{{ request('supplier_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ route('products.index', ['tab' => 'restok', 'supplier_id' => '']) }}">Semua Supplier</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('supplier_id', '')">Semua Supplier</a>
                             @foreach($suppliers as $sup)
-                                <a href="{{ route('products.index', ['tab' => 'restok', 'supplier_id' => $sup->uuid]) }}">{{ $sup->nama }}</a>
+                                <a href="javascript:void(0)" onclick="applyFilter('supplier_id', '{{ $sup->uuid }}')">{{ $sup->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -1099,14 +1053,14 @@
                 @if($tab == 'transfer')
                     <div class="dropdown">
                         <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Status Transfer">
-                            <iconify-icon icon="solar:checklist-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                            <iconify-icon icon="solar:checklist-bold-duotone" style="font-size: 24px;" class="{{ request('status') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => '']) }}">Semua Status</a>
-                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Pending']) }}">Menunggu</a>
-                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Disetujui']) }}">Disetujui</a>
-                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Dikirim']) }}">Dikirim</a>
-                            <a href="{{ route('products.index', ['tab' => 'transfer', 'status' => 'Selesai']) }}">Selesai</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('status', '')">Semua Status</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Pending')">Menunggu</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Disetujui')">Disetujui</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Dikirim')">Dikirim</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Selesai')">Selesai</a>
                         </div>
                     </div>
                 @endif
@@ -1114,12 +1068,12 @@
                 @if(Auth::user()->isOwner())
                     <div class="dropdown">
                         <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Toko">
-                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') && request('store_id') != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ route('products.index', ['tab' => $tab, 'store_id' => 'all']) }}">Semua Toko</a>
+                            <a href="javascript:void(0)" onclick="applyFilter('store_id', 'all')">Semua Toko</a>
                             @foreach($stores as $s)
-                                <a href="{{ route('products.index', ['tab' => $tab, 'store_id' => $s->uuid]) }}">{{ $s->nama }}</a>
+                                <a href="javascript:void(0)" onclick="applyFilter('store_id', '{{ $s->uuid }}')">{{ $s->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -2327,6 +2281,9 @@
         if (abortController) abortController.abort();
         abortController = new AbortController();
 
+        // Close all dropdowns
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+
         if (!url) {
             const params = new URLSearchParams(window.location.search);
             params.set('tab', window.currentTab || 'produk');
@@ -2399,17 +2356,45 @@
     }
 
     function prefetchAdjacentPages(container) {
-        const links = container.querySelectorAll('.pagination a');
-        links.forEach(link => {
-            if (link.href && !pageCache.has(link.href) && !link.href.includes('javascript:')) {
-                fetch(link.href, { 
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    priority: 'low' 
-                }).then(r => r.text()).then(html => {
-                    if (!html.includes('sidebar')) pageCache.set(link.href, html);
-                }).catch(() => {});
+        const nextLink = container.querySelector('.pagination .page-item:not(.active):not(.disabled) a');
+        if (nextLink && !pageCache.has(nextLink.href)) {
+            fetch(nextLink.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.text())
+                .then(html => pageCache.set(nextLink.href, html))
+                .catch(() => {});
+        }
+    }
+
+    function applyFilter(key, value) {
+        const params = new URLSearchParams(window.location.search);
+        const tab = window.currentTab || 'produk';
+        params.set('tab', tab);
+        
+        if (value && value !== 'all') {
+            params.set(key, value);
+        } else {
+            params.delete(key);
+        }
+
+        // Also preserve current search if applicable
+        const searchInput = document.getElementById(`searchInput-${tab}`);
+        if (searchInput && searchInput.value) {
+            params.set('search', searchInput.value);
+        }
+
+        const newUrl = window.location.pathname + '?' + params.toString();
+        
+        // Update icon color immediately for feedback
+        const activeSection = document.getElementById(`section-${tab}`);
+        if (activeSection) {
+            const btn = activeSection.querySelector(`button[title*="${key.split('_')[0].charAt(0).toUpperCase() + key.split('_')[0].slice(1)}"] iconify-icon`);
+            if (btn) {
+                if (value && value !== 'all') btn.classList.add('text-primary-blue');
+                else btn.classList.remove('text-primary-blue');
             }
-        });
+        }
+
+        updateTableContent(newUrl);
     }
 
     // Intercept Pagination & Dropdown Filters for High Performance
@@ -3692,12 +3677,6 @@
     }
 </style>
 
-{{-- MINIMALIST GLOBAL LOADING INDICATOR --}}
-<div id="globalLoading" class="global-loader-overlay" style="display: none !important;">
-    <div class="loader-card">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Sedang Memproses Data...</div>
-    </div>
-</div>
+{{-- GLOBAL LOADING REMOVED PER USER REQUEST --}}
 
 @endsection

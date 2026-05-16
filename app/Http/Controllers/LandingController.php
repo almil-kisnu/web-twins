@@ -609,41 +609,58 @@ class LandingController extends Controller
             return asset('storage/' . $cleanPath);
         }
 
-        // If not local, fallback to the specific Cloudinary URL structure
-        // Strip 'products/' if it's already in the path for Cloudinary
+        // If not local, and it was just a filename/path, try to resolve to Cloudinary
+        // We use the cloud name from env instead of hardcoding it
+        $cloudName = env('CLOUDINARY_CLOUD_NAME', 'dryxdouod');
+        
         $cloudinaryPath = $cleanPath;
         if (str_starts_with($cloudinaryPath, 'products/')) {
             $cloudinaryPath = substr($cloudinaryPath, 9);
         }
 
-        return "https://res.cloudinary.com/dryxdouod/image/upload/v1777305563/products/" . $cloudinaryPath;
+        return "https://res.cloudinary.com/{$cloudName}/image/upload/products/" . $cloudinaryPath;
     }
 
-    public static function uploadToCloudinary($file, $folder = 'twins')
+    public static function uploadToCloudinary($file, $folder = 'products')
     {
         $cloudName = env('CLOUDINARY_CLOUD_NAME');
-        $uploadPreset = env('CLOUDINARY_UPLOAD_PRESET', 'ml_default');
+        $apiKey = env('CLOUDINARY_API_KEY');
+        $apiSecret = env('CLOUDINARY_API_SECRET');
 
-        if (!$cloudName) {
+        if (!$cloudName || !$apiKey || !$apiSecret) {
+            \Illuminate\Support\Facades\Log::warning('Cloudinary credentials not fully configured.');
             return null;
         }
 
         $url = "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload";
+        $timestamp = time();
+        
+        // Prepare parameters for signature (must be alphabetized for signature)
+        $params = [
+            'folder' => $folder,
+            'timestamp' => $timestamp,
+        ];
+        
+        // Generate signature: hash of params (alphabetized) + API secret
+        $paramString = "folder={$folder}&timestamp={$timestamp}" . $apiSecret;
+        $signature = sha1($paramString);
 
         try {
-            // Jika file adalah base64 string
+            // Handle both base64 string and UploadedFile object
             if (is_string($file) && str_starts_with($file, 'data:image')) {
-                $response = Http::asForm()->post($url, [
+                $response = Http::asMultipart()->post($url, [
                     'file' => $file,
-                    'upload_preset' => $uploadPreset,
+                    'api_key' => $apiKey,
+                    'timestamp' => $timestamp,
+                    'signature' => $signature,
                     'folder' => $folder
                 ]);
-            }
-            // Jika file adalah UploadedFile object
-            else {
+            } else {
                 $response = Http::attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                     ->post($url, [
-                        'upload_preset' => $uploadPreset,
+                        'api_key' => $apiKey,
+                        'timestamp' => $timestamp,
+                        'signature' => $signature,
                         'folder' => $folder
                     ]);
             }

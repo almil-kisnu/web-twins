@@ -873,6 +873,7 @@ class ProductController extends Controller
     {
         $request->validate([
             'nama_produk' => 'required|string|max:255',
+            'barcode' => 'nullable|string|max:100|unique:products,barcode',
             'kategori_id' => 'required|exists:category,uuid',
             'harga_modal' => 'nullable|numeric',
             'harga_jual' => 'nullable|numeric',
@@ -945,6 +946,7 @@ class ProductController extends Controller
         
         $request->validate([
             'nama_produk' => 'required|string|max:255',
+            'barcode' => 'nullable|string|max:100|unique:products,barcode,' . $product->uuid . ',uuid',
             'kategori_id' => 'required|exists:category,uuid',
             'harga_modal' => 'nullable|numeric',
             'harga_jual' => 'nullable|numeric',
