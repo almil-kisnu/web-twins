@@ -20,12 +20,12 @@
     }
     .global-loader-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(4px);
+        top: 30px;
+        right: 30px;
+        width: auto;
+        height: auto;
+        background: transparent;
+        backdrop-filter: none;
         display: none;
         justify-content: center;
         align-items: center;
@@ -33,14 +33,33 @@
     }
     .loader-card {
         background: white;
-        padding: 40px;
-        border-radius: 16px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        padding: 12px 24px;
+        border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
-        gap: 20px;
-        min-width: 320px;
+        gap: 15px;
+        border: 1px solid #e2e8f0;
+        animation: slideInDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes slideInDown {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .loading-spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid var(--primary-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    .loading-text {
+        font-weight: 600;
+        color: #334155;
+        font-size: 13px;
+        margin: 0;
     }
     .modal-overlay { 
         z-index: 50000 !important; 
@@ -3616,12 +3635,11 @@
     }
 </style>
 
-{{-- GLOBAL LOADING OVERLAY --}}
+{{-- MINIMALIST GLOBAL LOADING INDICATOR --}}
 <div id="globalLoading" class="global-loader-overlay" style="display: none !important;">
     <div class="loader-card">
-        <div class="loading-text">Sedang Memproses Data...</div>
         <div class="loading-spinner"></div>
-        <div style="font-size: 12px; color: #64748b;">Mohon tunggu sebentar</div>
+        <div class="loading-text">Sedang Memproses Data...</div>
     </div>
 </div>
 

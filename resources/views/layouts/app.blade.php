@@ -142,13 +142,10 @@
                         $title = 'Keuangan';
                         if ($tab == 'cashbox') {
                             $icon = 'wallet';
-                            $title = 'Cashbox';
                         } elseif ($tab == 'arus-uang') {
                             $icon = 'arrow-left-right';
-                            $title = 'Arus Uang';
                         } elseif ($tab == 'pemindahan-saldo') {
                             $icon = 'move';
-                            $title = 'Pemindahan Saldo';
                         }
                     @endphp
                     <i id="topbar-icon" data-lucide="{{ $icon }}"></i>
@@ -205,8 +202,7 @@
                 <div class="topbar-center">
                     <div class="greeting" id="greeting-text">Selamat Pagi</div>
                     <div class="datetime">
-                        <span id="date-text"></span><br>
-                        <span class="time-bold" id="time-text"></span>
+                        <span id="date-text"></span> | <span class="time-bold" id="time-text"></span>
                     </div>
                 </div>
                 <div class="user-profile">
@@ -245,8 +241,11 @@
             };
             const dateStr = now.toLocaleDateString('id-ID', optionsDate);
             const timeStr = now.toLocaleTimeString('id-ID', {
-                hour12: false
-            });
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }).replace(/\./g, ':');
 
             const dateEl = document.getElementById('date-text');
             const timeEl = document.getElementById('time-text');

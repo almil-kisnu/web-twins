@@ -146,6 +146,42 @@
     .btn-icon-table:hover { background: #e0f2fe; color: #0ea5e9; }
     .btn-icon-table.text-danger:hover { background: #fee2e2; color: #ef4444; }
 
+    /* Action Buttons Premium Style (Identical to Image) */
+    .btn-action-premium {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+    .btn-read-premium {
+        background: #f0f9ff;
+        color: #0ea5e9;
+        border-color: #38bdf8; /* Brighter blue border */
+    }
+    .btn-read-premium:hover {
+        background: #0ea5e9;
+        color: white;
+        border-color: #0ea5e9;
+    }
+    .btn-delete-premium {
+        background: #fff1f2;
+        color: #f43f5e;
+        border-color: #fecdd3; /* Soft pinkish border */
+    }
+    .btn-delete-premium:hover {
+        background: #f43f5e;
+        color: white;
+        border-color: #f43f5e;
+    }
+    .btn-action-premium iconify-icon {
+        font-size: 14px;
+    }
+
     .modal {
         display: none;
         position: fixed;
@@ -274,19 +310,19 @@
                     <td>{{ $product['lokasi_rak'] ?? '-' }}</td>
                     <td>
                         <div class="action-buttons-table">
-                            <button class="btn-icon-table" 
+                            <button class="btn-action-premium btn-read-premium" 
                                     data-product="{{ json_encode($product) }}"
-                                    onclick="handleView(this)">
-                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                                    onclick="handleView(this)" title="Lihat Detail">
+                                <iconify-icon icon="solar:eye-bold"></iconify-icon>
                             </button>
-                            <button class="btn-icon-table text-primary" style="color: #0ea5e9;"
+                            <button class="btn-action-premium btn-read-premium" style="background: #f0fdf4; color: #16a34a; border-color: #86efac;"
                                     data-product="{{ json_encode($product) }}"
-                                    onclick="handleEdit(this)">
-                                <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                                    onclick="handleEdit(this)" title="Edit Produk">
+                                <iconify-icon icon="solar:pen-bold"></iconify-icon>
                             </button>
-                            <button class="btn-icon-table text-danger" style="color: #ef4444;"
-                                    onclick="confirmDelete('{{ $product['id'] }}', '{{ addslashes($product['nama_produk']) }}')">
-                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            <button class="btn-action-premium btn-delete-premium"
+                                    onclick="confirmDelete('{{ $product['id'] }}', '{{ addslashes($product['nama_produk']) }}')" title="Hapus Produk">
+                                <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
                             </button>
                         </div>
                     </td>
@@ -338,13 +374,13 @@
                     <td>{{ $opname['keterangan'] }}</td>
                     <td>
                         <div class="action-buttons-table">
-                            <button class="btn-icon-table text-primary" style="color: #0ea5e9;"
-                                    onclick="openEditOpname({{ json_encode($opname) }})">
-                                <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                            <button class="btn-action-premium btn-read-premium"
+                                    onclick="openEditOpname({{ json_encode($opname) }})" title="Detail Opname">
+                                <iconify-icon icon="solar:eye-bold"></iconify-icon>
                             </button>
-                            <button class="btn-icon-table text-danger" style="color: #ef4444;"
-                                    onclick="confirmDeleteOpname('{{ $opname['id'] }}')">
-                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            <button class="btn-action-premium btn-delete-premium"
+                                    onclick="confirmDeleteOpname('{{ $opname['id'] }}')" title="Hapus Opname">
+                                <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
                             </button>
                         </div>
                     </td>

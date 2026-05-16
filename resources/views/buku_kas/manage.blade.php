@@ -317,13 +317,11 @@
         const titleEl = document.getElementById('topbar-title');
         const iconEl = document.getElementById('topbar-icon');
         if (titleEl && iconEl) {
-            let title = 'Pengeluaran';
             let icon = 'round-arrow-left-down';
-            if (tabId === 'pemasukan') { title = 'Pemasukan'; icon = 'round-arrow-right-up'; }
-            else if (tabId === 'hutang') { title = 'Hutang'; icon = 'wallet-money'; }
-            else if (tabId === 'piutang') { title = 'Piutang'; icon = 'hand-money'; }
+            if (tabId === 'pemasukan') { icon = 'round-arrow-right-up'; }
+            else if (tabId === 'hutang') { icon = 'wallet-money'; }
+            else if (tabId === 'piutang') { icon = 'hand-money'; }
             
-            titleEl.innerText = title;
             iconEl.setAttribute('data-lucide', icon);
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }

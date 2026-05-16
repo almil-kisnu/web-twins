@@ -642,7 +642,7 @@
     <!-- Third Row Tables -->
     <div class="main-grid">
         <!-- Stok & Kadaluarsa Tabbed Card -->
-        <div class="col-span-12 lg:col-span-4 card" style="background: #fffaf0; border-color: rgba(249, 115, 22, 0.1);">
+        <div class="col-span-12 lg:col-span-4 card" style="background: #fff1f2; border-color: rgba(225, 29, 72, 0.1);">
             <div class="card-header" style="margin-bottom: 10px;">
                 <h3 class="card-title">Stok & Kadaluarsa</h3>
                 <a href="{{ url('/products?tab=stok') }}" class="btn-detail-modern" style="--btn-theme: #3b82f6; --btn-bg: rgba(59, 130, 246, 0.08); --btn-border: rgba(59, 130, 246, 0.1);">
@@ -777,7 +777,7 @@
         </div>
 
         <!-- Aktivitas Penjualan Feed -->
-        <div class="col-span-12 lg:col-span-4 card" style="background: #f0f4ff; border-color: rgba(99, 102, 241, 0.1);">
+        <div class="col-span-12 lg:col-span-4 card" style="background: #f0fdfa; border-color: rgba(20, 184, 166, 0.1);">
             <div class="card-header">
                 <h3 class="card-title">Aktivitas Penjualan</h3>
                 <iconify-icon icon="solar:history-bold-duotone" style="color: #64748b;"></iconify-icon>
@@ -794,7 +794,7 @@
                             <span class="activity-time">{{ $act['time'] }}</span>
                         </div>
                         <p class="activity-text">
-                            <span class="font-bold text-[10px] uppercase {{ $act['role'] == 'Online' ? 'text-indigo-500' : 'text-slate-400' }}">
+                            <span class="font-bold text-[10px] uppercase {{ $act['role'] == 'Online' ? 'text-teal-600' : 'text-slate-400' }}">
                                 {{ $act['role'] }}
                             </span> | {{ $act['action'] }}
                         </p>

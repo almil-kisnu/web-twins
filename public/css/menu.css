@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+/* Public Sans Typography - Premium & Bold */
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
     --background: #0477bf;
@@ -17,10 +18,11 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Public Sans', sans-serif !important;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Public Sans', sans-serif !important;
     display: flex;
     height: 100vh;
     overflow: hidden;
@@ -63,9 +65,29 @@ body {
     overflow: hidden;
     transition: all 0.3s ease;
     color: white;
-    font-weight: bold;
-    font-size: 1.2rem;
+    font-weight: 800;
+    font-size: 1.4rem;
     margin-left: 0;
+}
+
+.greeting {
+    font-weight: 700 !important;
+    font-size: 1rem;
+}
+
+.datetime {
+    font-weight: 600 !important;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.user-profile span {
+    font-weight: 600 !important;
+    font-size: 1rem;
+}
+
+.time-bold {
+    font-weight: 700 !important;
 }
 
 .logo-section {
@@ -197,7 +219,7 @@ body {
 .menu-item span {
     margin-left: 17px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
     opacity: 0;
     visibility: hidden;
@@ -210,7 +232,23 @@ body {
 .sidebar:hover .menu-item span {
     opacity: 1;
     visibility: visible;
+    font-weight: 600;
     transition: opacity 0.4s ease 0.1s;
+}
+
+.menu-item.active span {
+    font-weight: 700 !important;
+}
+
+#topbar-title {
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    font-family: 'Public Sans', sans-serif !important;
+}
+
+#topbar-icon {
+    width: 26px !important;
+    height: 26px !important;
 }
 
 .menu-item.active {
@@ -303,12 +341,29 @@ body {
 .user-profile {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 16px;
+    gap: 8px;
+    background-color: #f1f5f9;
+    padding: 6px 14px;
     border-radius: 20px;
-    background: #f1f5f1;
-    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+}
+
+.user-profile:hover {
+    background-color: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.user-profile iconify-icon {
+    font-size: 20px;
+    color: var(--dark-bg);
+}
+
+.user-profile span {
     font-size: 13px;
+    font-weight: 700;
+    color: var(--dark-bg);
 }
 
 .btn-logout {
@@ -318,10 +373,27 @@ body {
     background-color: var(--red-logout);
     color: white;
     border: none;
-    padding: 9px 20px;
+    padding: 6px 16px;
     border-radius: 20px;
-    font-weight: 700;
     cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-logout:hover {
+    background-color: #c53030;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(217, 67, 53, 0.3);
+}
+
+.btn-logout:hover iconify-icon {
+    transform: translateX(3px);
+}
+
+.btn-logout iconify-icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
 }
 
 .main-content {

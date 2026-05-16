@@ -1,3 +1,42 @@
+<style>
+    /* Action Buttons Premium Style (Identical to Image 2) */
+    .btn-action-premium {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+        background: white;
+    }
+    .btn-read-premium {
+        background: #f0f9ff;
+        color: #0ea5e9;
+        border-color: #38bdf8; /* Brighter blue border */
+    }
+    .btn-read-premium:hover {
+        background: #0ea5e9;
+        color: white;
+        border-color: #0ea5e9;
+    }
+    .btn-delete-premium {
+        background: #fff1f2;
+        color: #f43f5e;
+        border-color: #fecdd3; /* Soft pinkish border */
+    }
+    .btn-delete-premium:hover {
+        background: #f43f5e;
+        color: white;
+        border-color: #f43f5e;
+    }
+    .btn-action-premium iconify-icon {
+        font-size: 14px;
+    }
+</style>
+
 {{-- Sub-tab Navigation --}}
 <div class="sub-tab-navigation" style="margin-bottom: 20px;">
     <a href="{{ route('products.opname', ['sub_tab' => 'semua']) }}" class="sub-tab-pill {{ ($sub_tab ?? 'semua') == 'semua' ? 'active' : '' }}" onclick="event.preventDefault(); updateTableContent(this.href)">
@@ -81,11 +120,17 @@
                     </td>
                     <td>
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn-filter" onclick="openOpnameDetailModal('{{ $opname->uuid }}')"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openOpnameDetailModal('{{ $opname->uuid }}')" title="Detail">
+                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                            </button>
                             @if($opname->status == 'Pending')
-                                <button type="button" class="btn-filter" onclick="openEditOpnameModal('{{ $opname->uuid }}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #16a34a; border-color: #dcfce7; background: #f0fdf4;" onclick="openEditOpnameModal('{{ $opname->uuid }}')" title="Edit">
+                                    <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                </button>
                             @endif
-                            <button type="button" class="btn-filter" onclick="confirmDeleteOpname('{{ $opname->uuid }}', '{{ $opname->tanggal }}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #ef4444; border-color: #fee2e2; background: #fff5f5;" onclick="confirmDeleteOpname('{{ $opname->uuid }}', '{{ $opname->tanggal }}')" title="Hapus">
+                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            </button>
                         </div>
                     </td>
                 </tr>

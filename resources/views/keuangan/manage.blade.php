@@ -486,13 +486,11 @@
         const titleEl = document.getElementById('topbar-title');
         const iconEl = document.getElementById('topbar-icon');
         if (titleEl && iconEl) {
-            let title = 'Keuangan';
             let icon = 'trending-up';
-            if (tabId === 'cashbox') { title = 'Cashbox'; icon = 'wallet'; }
-            else if (tabId === 'arus-uang') { title = 'Arus Uang'; icon = 'arrow-left-right'; }
-            else if (tabId === 'pemindahan-saldo') { title = 'Pemindahan Saldo'; icon = 'move'; }
+            if (tabId === 'cashbox') { icon = 'wallet'; }
+            else if (tabId === 'arus-uang') { icon = 'arrow-left-right'; }
+            else if (tabId === 'pemindahan-saldo') { icon = 'move'; }
             
-            titleEl.innerText = title;
             iconEl.setAttribute('data-lucide', icon);
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
