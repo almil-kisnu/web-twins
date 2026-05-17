@@ -1,27 +1,27 @@
 <?php
 
-// Vercel serverless environment configuration
-if (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL'])) {
-    $tmp_dir = '/tmp/laravel';
-    if (!is_dir($tmp_dir)) {
-        mkdir($tmp_dir . '/framework/cache/data', 0777, true);
-        mkdir($tmp_dir . '/framework/views', 0777, true);
-        mkdir($tmp_dir . '/framework/sessions', 0777, true);
-        mkdir($tmp_dir . '/logs', 0777, true);
-    }
+$_SERVER['VERCEL'] = true;
+$_ENV['VERCEL'] = true;
 
-    // Force environment variables to use /tmp and serverless-friendly drivers
-    $_ENV['VIEW_COMPILED_PATH'] = $tmp_dir . '/framework/views';
-    putenv('VIEW_COMPILED_PATH=' . $tmp_dir . '/framework/views');
+// Set Laravel to use /tmp for all caching to avoid read-only filesystem errors
+$_ENV['APP_CONFIG_CACHE'] = '/tmp/config.php';
+$_ENV['APP_EVENTS_CACHE'] = '/tmp/events.php';
+$_ENV['APP_PACKAGES_CACHE'] = '/tmp/packages.php';
+$_ENV['APP_ROUTES_CACHE'] = '/tmp/routes.php';
+$_ENV['APP_SERVICES_CACHE'] = '/tmp/services.php';
+$_ENV['VIEW_COMPILED_PATH'] = '/tmp';
+$_ENV['CACHE_STORE'] = 'array';
+$_ENV['CACHE_DRIVER'] = 'array';
+$_ENV['LOG_CHANNEL'] = 'stderr';
+$_ENV['SESSION_DRIVER'] = 'cookie';
 
-    $_ENV['SESSION_DRIVER'] = 'cookie';
-    putenv('SESSION_DRIVER=cookie');
-
-    $_ENV['LOG_CHANNEL'] = 'stderr';
-    putenv('LOG_CHANNEL=stderr');
-
-    $_ENV['CACHE_STORE'] = 'array';
-    putenv('CACHE_STORE=array');
+// Create framework directories if they don't exist in /tmp
+if (!is_dir('/tmp/storage')) {
+    mkdir('/tmp/storage', 0777, true);
+    mkdir('/tmp/storage/framework/cache/data', 0777, true);
+    mkdir('/tmp/storage/framework/views', 0777, true);
+    mkdir('/tmp/storage/framework/sessions', 0777, true);
+    mkdir('/tmp/storage/logs', 0777, true);
 }
 
 require __DIR__ . '/../public/index.php';

@@ -31,7 +31,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
     })->create();
 
 if (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL'])) {
-    $app->useStoragePath('/tmp/laravel');
+    $app->useStoragePath('/tmp/storage');
 }
 
 return $app;
